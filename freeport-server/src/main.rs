@@ -8,7 +8,8 @@ async fn main() {
 
     let router = Router::new()
         .nest("/index", routes::index::index_router())
-        .nest("/api/v1/crates/", routes::api::api_router());
+        .nest("/api/v1/crates/", routes::api::api_router())
+        .fallback(routes::handle_global_fallback);
 
     axum::Server::bind(&"0.0.0.0:1999".parse().unwrap())
         .serve(router.into_make_service())

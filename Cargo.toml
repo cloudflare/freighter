@@ -4,8 +4,9 @@ members = [
 ]
 
 [workspace.dependencies]
-axum = { version = "0.6.18" }
-semver = { version = "1.0.17" }
-tokio = { version = "1.28.1" }
+axum = { version = "0.6.18", default-features = false, features = ["form", "http1", "json", "tokio", "original-uri"] }
+semver = { version = "1.0.17", features = ["serde"] }
+serde = { version = "1.0.162", features = ["derive"]}
+tokio = { version = "1.28.1", features = ["rt-multi-thread", "macros"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }

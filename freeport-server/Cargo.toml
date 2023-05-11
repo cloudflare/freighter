@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 axum = { workspace = true }
-semver = { workspace = true, features = ["serde"] }
+serde = { workspace = true }
+semver = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio = { workspace = true }

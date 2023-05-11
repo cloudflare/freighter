@@ -1,9 +1,31 @@
+use axum::http::{Method, StatusCode, Uri};
 use axum::routing::get;
-use axum::Router;
+use axum::{Json, Router};
 use semver::{Version, VersionReq};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub struct Crate {
+pub fn index_router() -> Router {
+    Router::new()
+        .route("/config.json", get(config))
+        .fallback(handle_index_fallback)
+}
+
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
+struct RegistryConfig {
+    dl: String,
+    api: String,
+}
+
+async fn config() -> Json<RegistryConfig> {
+    RegistryConfig {
+        dl: "https://localhost:1999/dowloads/{crate}/{version}".to_string(),
+        api: "https://localhost:1999/api".to_string(),
+    }
+    .into()
+}
+
+struct Crate {
     /// The name of the package.
     /// This must only contain alphanumeric, `-`, or `_` characters.
     name: String,
@@ -61,7 +83,7 @@ pub struct Crate {
     features2: HashMap<String, Vec<String>>,
 }
 
-pub struct Dependency {
+struct Dependency {
     /// Name of the dependency.
     /// If the dependency is renamed from the original package name,
     /// this is the new name. The original package name is stored in
@@ -97,16 +119,18 @@ pub struct Dependency {
     package: Option<String>,
 }
 
-pub enum DependencyKind {
+enum DependencyKind {
     Normal,
     Dev,
     Build,
 }
 
-pub fn index_router() -> Router {
-    Router::new().route("/", get(config))
-}
+async fn handle_index_fallback(method: Method, uri: Uri) -> StatusCode {
+    tracing::error!(
+        ?method,
+        ?uri,
+        "Could not match request with any routes on index"
+    );
 
-pub async fn config() {
-    todo!()
+    StatusCode::NOT_FOUND
 }
