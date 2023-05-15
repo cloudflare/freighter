@@ -5,8 +5,17 @@ members = [
 
 [workspace.dependencies]
 axum = { version = "0.6.18", default-features = false, features = ["form", "http1", "json", "tokio", "original-uri"] }
+axum-extra = { version = "0.7.4", features = ["json-lines"] }
+clap = { version = "4.2.7", features = ["derive", "cargo", "unicode", "wrap_help"] }
+deadpool-postgres = { version = "0.10.5", features = ["serde"] }
+postgres-types = { version = "0.2.5", features = ["derive"] }
 semver = { version = "1.0.17", features = ["serde"] }
-serde = { version = "1.0.162", features = ["derive"]}
-tokio = { version = "1.28.1", features = ["rt-multi-thread", "macros"] }
+serde = { version = "1.0.162", features = ["derive"] }
+serde_json = { version = "1.0.96" }
+serde_yaml = "0.9.21"
+sha2 = "0.10.6"
+tokio = { version = "1.28.1", features = ["rt-multi-thread", "macros", "sync"] }
+tokio-stream = { version = "0.1.14", default-features = false }
+tower-http = { version = "0.4.0", features = ["catch-panic"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }

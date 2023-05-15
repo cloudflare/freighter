@@ -1,0 +1,1 @@
+select * from freeport.crate_versions where crate = $1
