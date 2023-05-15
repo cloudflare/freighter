@@ -106,6 +106,7 @@ impl ServiceState {
         &self,
         version: &api::Publish,
         checksum: &str,
+        crate_bytes: &[u8],
     ) -> Option<api::PublishOperationInfo> {
         let mut client = self.pool.get().await.unwrap();
 
@@ -191,6 +192,19 @@ impl ServiceState {
 
                         return None;
                     }
+                }
+
+                if tokio::fs::write(
+                    format!("{}-{}.crate", &version.name, &version.vers),
+                    crate_bytes,
+                )
+                .await
+                .is_err()
+                {
+                    tracing::error!("Failed to write crate file to disk");
+                    transaction.rollback().await.unwrap();
+
+                    return None;
                 }
 
                 if transaction.commit().await.is_ok() {

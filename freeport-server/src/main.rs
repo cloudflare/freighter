@@ -23,8 +23,9 @@ async fn main() {
     let state = Arc::new(model::ServiceState::new(config));
 
     let router = Router::new()
+        .nest("/downloads", routes::downloads::downloads_router())
         .nest("/index", routes::index::index_router())
-        .nest("/api/v1/crates/", routes::api::api_router())
+        .nest("/api/v1/crates", routes::api::api_router())
         .with_state(state)
         .fallback(routes::handle_global_fallback)
         .layer(CatchPanicLayer::new());

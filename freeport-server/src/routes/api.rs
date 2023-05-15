@@ -35,8 +35,10 @@ async fn publish(State(state): State<Arc<ServiceState>>, mut body: Bytes) {
 
     let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
-    state.publish_crate(&json, &hash).await.unwrap();
-    std::fs::write(format!("{}-{}.crate", &json.name, &json.vers), crate_bytes).unwrap();
+    state
+        .publish_crate(&json, &hash, &crate_bytes)
+        .await
+        .unwrap();
 }
 
 async fn yank() {
