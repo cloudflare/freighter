@@ -19,9 +19,14 @@ pub mod api;
     ToSql,
     FromSql,
 )]
+#[serde(rename_all = "lowercase")]
+#[postgres(name = "dependency_kind")]
 pub enum DependencyKind {
+    #[postgres(name = "normal")]
     #[default]
     Normal,
+    #[postgres(name = "dev")]
     Dev,
+    #[postgres(name = "build")]
     Build,
 }

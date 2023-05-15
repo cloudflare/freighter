@@ -27,12 +27,10 @@ impl ServiceState {
         // prepare these at once to take advantage of pipelining
         let (existential_statement, versions_statement, features_statement, dependencies_statement) =
             tokio::try_join!(
-                client.prepare_cached(include_str!("../../../sql/sparse-index/get-crate.sql")),
-                client.prepare_cached(include_str!("../../../sql/sparse-index/get-versions.sql")),
-                client.prepare_cached(include_str!("../../../sql/sparse-index/get-features.sql")),
-                client.prepare_cached(include_str!(
-                    "../../../sql/sparse-index/get-dependencies.sql"
-                ))
+                client.prepare_cached(include_str!("../../sql/sparse-index/get-crate.sql")),
+                client.prepare_cached(include_str!("../../sql/sparse-index/get-versions.sql")),
+                client.prepare_cached(include_str!("../../sql/sparse-index/get-features.sql")),
+                client.prepare_cached(include_str!("../../sql/sparse-index/get-dependencies.sql"))
             )
             .unwrap();
 
@@ -123,10 +121,10 @@ impl ServiceState {
             insert_dependency_statement,
             insert_features_statement,
         ) = tokio::try_join!(
-            transaction.prepare_cached(include_str!("../../../sql/publish/insert-crate.sql")),
-            transaction.prepare_cached(include_str!("../../../sql/publish/insert-version.sql")),
-            transaction.prepare_cached(include_str!("../../../sql/publish/insert-dependency.sql")),
-            transaction.prepare_cached(include_str!("../../../sql/publish/insert-features.sql")),
+            transaction.prepare_cached(include_str!("../../sql/publish/insert-crate.sql")),
+            transaction.prepare_cached(include_str!("../../sql/publish/insert-version.sql")),
+            transaction.prepare_cached(include_str!("../../sql/publish/insert-dependency.sql")),
+            transaction.prepare_cached(include_str!("../../sql/publish/insert-features.sql")),
         )
         .unwrap();
 
@@ -152,7 +150,7 @@ impl ServiceState {
                 let version_id: i32 = insert_version_row.get("id");
 
                 for dependency in version.deps.iter() {
-                    if transaction
+                    if let Err(error) = transaction
                         .query_one(
                             &insert_dependency_statement,
                             &[
@@ -169,9 +167,8 @@ impl ServiceState {
                             ],
                         )
                         .await
-                        .is_err()
                     {
-                        tracing::error!("Failed to insert dependency");
+                        tracing::error!(?error, "Failed to insert dependency");
                         transaction.rollback().await.unwrap();
 
                         return None;
