@@ -3,6 +3,6 @@ select id
 from ins
 union all
 select id
-from freeport.crates
+from crates_index.crates
 where name = $1
   and registry is null

@@ -7,7 +7,7 @@ create table crates
     id       integer primary key generated always as identity,
     name     text not null,
     registry text,
-    unique (name, registry)
+    unique nulls not distinct (name, registry)
 );
 
 create index crates_name_index on crates (name);
