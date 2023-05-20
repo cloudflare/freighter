@@ -2,6 +2,8 @@
 name = "freeport-server"
 version = "0.0.1"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
