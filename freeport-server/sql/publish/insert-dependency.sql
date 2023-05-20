@@ -1,4 +1,4 @@
-with ins as (insert into freeport.crates (name, registry) values ($1, $2) on conflict do nothing returning id),
+with ins as (insert into crates_index.crates (name, registry) values ($1, $2) on conflict do nothing returning id),
      dependency_crate as
          (select id
           from ins

@@ -1,1 +1,1 @@
-select id from freeport.crates where name = $1
+select id from crates_index.crates where name = $1

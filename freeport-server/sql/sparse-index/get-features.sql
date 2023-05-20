@@ -1,1 +1,1 @@
-select * from freeport.features where crate_version = $1
+select *from crates_index.features where crate_version = $1

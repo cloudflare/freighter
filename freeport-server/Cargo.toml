@@ -2,6 +2,7 @@
 name = "freeport-server"
 version = "0.0.1"
 edition = "2021"
+publish = ["nkcompute"]
 
 [dependencies]
 axum = { workspace = true }

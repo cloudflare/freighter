@@ -1,6 +1,6 @@
-drop schema if exists freeport cascade;
-create schema freeport;
-set schema 'freeport';
+drop schema if exists crates_index cascade;
+create schema crates_index;
+set schema 'crates_index';
 
 create table crates
 (

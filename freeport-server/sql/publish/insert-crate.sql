@@ -1,4 +1,4 @@
-with ins as (insert into freeport.crates (name) values ($1) on conflict do nothing returning id)
+with ins as (insert into crates_index.crates (name) values ($1) on conflict do nothing returning id)
 select id
 from ins
 union all
