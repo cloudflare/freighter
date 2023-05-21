@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::model::types::api::PublishOperationInfo;
 use crate::model::types::{api, index};
+use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls};
 use deadpool_postgres::{GenericClient, Pool, Runtime};
@@ -38,6 +39,7 @@ impl ServiceState {
             .query_one(&existential_statement, &[&crate_name])
             .await
         {
+            tracing::info!(?crate_row);
             let id: i32 = crate_row.get("id");
 
             // this is a major hotpath
@@ -105,7 +107,7 @@ impl ServiceState {
         version: &api::Publish,
         checksum: &str,
         crate_bytes: &[u8],
-    ) -> Option<api::PublishOperationInfo> {
+    ) -> Result<PublishOperationInfo, StatusCode> {
         let mut client = self.pool.get().await.unwrap();
 
         let transaction = client
@@ -171,7 +173,7 @@ impl ServiceState {
                         tracing::error!(?error, "Failed to insert dependency");
                         transaction.rollback().await.unwrap();
 
-                        return None;
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
                     }
                 }
 
@@ -187,7 +189,7 @@ impl ServiceState {
                         tracing::error!("Failed to insert feature");
                         transaction.rollback().await.unwrap();
 
-                        return None;
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
                     }
                 }
 
@@ -201,26 +203,26 @@ impl ServiceState {
                     tracing::error!("Failed to write crate file to disk");
                     transaction.rollback().await.unwrap();
 
-                    return None;
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
                 }
 
                 if transaction.commit().await.is_ok() {
-                    Some(PublishOperationInfo { warnings: None })
+                    Ok(PublishOperationInfo { warnings: None })
                 } else {
                     tracing::error!("Failed to commit transaction");
-                    None
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             } else {
                 tracing::error!("Failed to insert version");
                 transaction.rollback().await.unwrap();
 
-                None
+                Err(StatusCode::CONFLICT)
             }
         } else {
             tracing::error!("Failed to insert or get crate");
             transaction.rollback().await.unwrap();
 
-            None
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }

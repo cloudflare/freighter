@@ -1,9 +1,10 @@
+use crate::model::types::api::PublishOperationInfo;
 use crate::model::ServiceState;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::routing::{delete, get, put};
-use axum::Router;
+use axum::{Json, Router};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
@@ -19,8 +20,11 @@ pub fn api_router() -> Router<Arc<ServiceState>> {
         .fallback(handle_api_fallback)
 }
 
-// todo don't panic
-async fn publish(State(state): State<Arc<ServiceState>>, mut body: Bytes) {
+// todo don't panic on bad input
+async fn publish(
+    State(state): State<Arc<ServiceState>>,
+    mut body: Bytes,
+) -> Result<Json<PublishOperationInfo>, StatusCode> {
     let json_len_bytes = body.split_to(4);
     let json_len = u32::from_le_bytes(json_len_bytes.as_ref().try_into().unwrap());
 
@@ -38,7 +42,7 @@ async fn publish(State(state): State<Arc<ServiceState>>, mut body: Bytes) {
     state
         .publish_crate(&json, &hash, &crate_bytes)
         .await
-        .unwrap();
+        .map(|x| Json(x))
 }
 
 async fn yank() {
