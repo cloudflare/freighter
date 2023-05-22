@@ -53,3 +53,34 @@ create table dependencies
 );
 
 create index dependencies_dependent_index on dependencies (dependent);
+
+-- bf hash of password
+create table users
+(
+    id            integer primary key generated always as identity,
+    username      text not null unique,
+    password_hash text not null
+);
+
+-- bf hash of token
+create table tokens
+(
+    id         integer not null primary key generated always as identity,
+    user_id    integer not null references users (id),
+    token_hash text    not null,
+    unique (user_id, token_hash)
+);
+
+create index tokens_user_index on tokens (user_id);
+create index tokens_user_index on tokens (token_hash);
+
+create table crate_owners
+(
+    id       integer not null primary key generated always as identity,
+    user_id  integer not null references users (id),
+    crate_id integer not null references crates (id),
+    unique (user_id, crate_id)
+);
+
+create index crate_owners_crates_index on crate_owners (crate_id);
+create index crate_owners_users_index on crate_owners (user_id);
