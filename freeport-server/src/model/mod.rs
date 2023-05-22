@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls};
 use deadpool_postgres::{GenericClient, Pool, Runtime};
+use s3::Bucket;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
 
@@ -13,13 +14,25 @@ pub mod types;
 pub struct ServiceState {
     pub config: Config,
     pool: Pool,
+    bucket: Bucket,
 }
 
 impl ServiceState {
     pub fn new(config: Config) -> Self {
         let pool = config.db.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
 
-        Self { config, pool }
+        let bucket = Bucket::new(
+            &config.store.name,
+            config.store.region.clone(),
+            config.store.credentials.clone(),
+        )
+        .unwrap();
+
+        Self {
+            config,
+            pool,
+            bucket,
+        }
     }
 
     pub async fn get_sparse_metadata(&self, crate_name: &str) -> Option<Vec<index::CrateVersion>> {
@@ -193,14 +206,10 @@ impl ServiceState {
                     }
                 }
 
-                if tokio::fs::write(
-                    format!("{}-{}.crate", &version.name, &version.vers),
-                    crate_bytes,
-                )
-                .await
-                .is_err()
-                {
-                    tracing::error!("Failed to write crate file to disk");
+                let obj_path = format!("{}-{}.crate", &version.name, &version.vers);
+
+                if let Err(error) = self.bucket.put_object(obj_path, crate_bytes).await {
+                    tracing::error!(?error, "Failed to upload to store");
                     transaction.rollback().await.unwrap();
 
                     return Err(StatusCode::INTERNAL_SERVER_ERROR);
