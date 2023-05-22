@@ -14,6 +14,7 @@ pub struct ServiceConfig {
     pub address: SocketAddr,
     pub download_endpoint: String,
     pub api_endpoint: String,
+    pub metrics_address: SocketAddr,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

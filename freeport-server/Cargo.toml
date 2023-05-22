@@ -1,6 +1,6 @@
 [package]
 name = "freeport-server"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
@@ -13,6 +13,8 @@ aws-region = { workspace = true, features = ["serde"] }
 chrono = { workspace = true, features = ["clock"] }
 clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"] }
 deadpool-postgres = { workspace = true, features = ["serde"] }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
 postgres-types = { workspace = true, features = ["derive"] }
 rust-s3 = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
@@ -20,7 +22,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 sha2 = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "fs"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync"] }
 tokio-stream = { workspace = true }
 tower-http = { workspace = true, features = ["catch-panic"] }
 tracing = { workspace = true }

@@ -4,8 +4,10 @@ use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode, Uri};
 use axum::routing::get;
 use axum::Router;
+use metrics::histogram;
 use semver::Version;
 use std::sync::Arc;
+use std::time::Instant;
 
 pub fn downloads_router() -> Router<Arc<ServiceState>> {
     Router::new()
@@ -17,12 +19,19 @@ async fn serve_crate(
     State(state): State<Arc<ServiceState>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> Result<Bytes, StatusCode> {
-    if let Some(bytes) = state
+    let timer = Instant::now();
+
+    let resp = state
         .download_crate(&format!("{name}-{version}.crate"))
-        .await
-    {
+        .await;
+
+    let elapsed = timer.elapsed();
+
+    if let Some(bytes) = resp {
+        histogram!("request_duration_seconds", elapsed, "code" => "200", "endpoint" => "download_crate");
         Ok(Bytes::from(bytes))
     } else {
+        histogram!("request_duration_seconds", elapsed, "code" => "404", "endpoint" => "download_crate");
         Err(StatusCode::NOT_FOUND)
     }
 }
