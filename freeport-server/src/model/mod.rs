@@ -53,7 +53,6 @@ impl ServiceState {
             .query_one(&existential_statement, &[&crate_name])
             .await
         {
-            tracing::info!(?crate_row);
             let id: i32 = crate_row.get("id");
 
             // this is a major hotpath
