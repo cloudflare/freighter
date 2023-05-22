@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::model::types::api::PublishOperationInfo;
 use crate::model::types::{api, index};
+use axum::body::Bytes;
 use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls};
@@ -233,5 +234,13 @@ impl ServiceState {
 
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+
+    pub async fn download_crate(&self, name: &str) -> Option<Bytes> {
+        self.bucket
+            .get_object(name)
+            .await
+            .ok()
+            .map(|x| x.bytes().clone())
     }
 }

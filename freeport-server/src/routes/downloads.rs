@@ -1,6 +1,6 @@
 use crate::model::ServiceState;
 use axum::body::Bytes;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode, Uri};
 use axum::routing::get;
 use axum::Router;
@@ -13,8 +13,14 @@ pub fn downloads_router() -> Router<Arc<ServiceState>> {
         .fallback(handle_downloads_fallback)
 }
 
-async fn serve_crate(Path((name, version)): Path<(String, Version)>) -> Result<Bytes, StatusCode> {
-    if let Ok(bytes) = tokio::fs::read(format!("{name}-{version}.crate")).await {
+async fn serve_crate(
+    State(state): State<Arc<ServiceState>>,
+    Path((name, version)): Path<(String, Version)>,
+) -> Result<Bytes, StatusCode> {
+    if let Some(bytes) = state
+        .download_crate(&format!("{name}-{version}.crate"))
+        .await
+    {
         Ok(Bytes::from(bytes))
     } else {
         Err(StatusCode::NOT_FOUND)
