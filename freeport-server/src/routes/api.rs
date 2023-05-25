@@ -1,10 +1,10 @@
-use crate::model::types::api::PublishOperationInfo;
 use crate::model::ServiceState;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::routing::{delete, get, put};
 use axum::{Json, Router};
+use freeport_api::api::PublishOperationInfo;
 use metrics::histogram;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;

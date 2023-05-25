@@ -544,8 +544,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "freeport-api"
+version = "0.0.4"
+dependencies = [
+ "chrono",
+ "postgres-types",
+ "semver",
+ "serde",
+]
+
+[[package]]
+name = "freeport-e2e-tester"
+version = "0.0.4"
+dependencies = [
+ "freeport-api",
+]
+
+[[package]]
 name = "freeport-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "aws-region",
  "axum",
@@ -553,9 +570,9 @@ dependencies = [
  "chrono",
  "clap",
  "deadpool-postgres",
+ "freeport-api",
  "metrics",
  "metrics-exporter-prometheus",
- "postgres-types",
  "rust-s3",
  "semver",
  "serde",

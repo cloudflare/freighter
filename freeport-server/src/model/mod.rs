@@ -1,16 +1,14 @@
 use crate::config::Config;
-use crate::model::types::api::PublishOperationInfo;
-use crate::model::types::{api, index};
 use axum::body::Bytes;
 use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls};
 use deadpool_postgres::{GenericClient, Pool, Runtime};
+use freeport_api::api::{Publish, PublishOperationInfo};
+use freeport_api::index::{CrateVersion, Dependency};
 use s3::Bucket;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
-
-pub mod types;
 
 pub struct ServiceState {
     pub config: Config,
@@ -36,7 +34,7 @@ impl ServiceState {
         }
     }
 
-    pub async fn get_sparse_metadata(&self, crate_name: &str) -> Option<Vec<index::CrateVersion>> {
+    pub async fn get_sparse_metadata(&self, crate_name: &str) -> Option<Vec<CrateVersion>> {
         let client = self.pool.get().await.unwrap();
 
         // prepare these at once to take advantage of pipelining
@@ -82,7 +80,7 @@ impl ServiceState {
                 }
 
                 for deps_row in dependency_rows {
-                    deps.push(index::Dependency {
+                    deps.push(Dependency {
                         name: deps_row.get("name"),
                         req: VersionReq::parse(deps_row.get("req")).unwrap(),
                         features: deps_row.get("features"),
@@ -95,7 +93,7 @@ impl ServiceState {
                     });
                 }
 
-                versions.push(index::CrateVersion {
+                versions.push(CrateVersion {
                     name: crate_name.to_string(),
                     vers: Version::parse(version_row.get("version")).unwrap(),
                     deps,
@@ -117,7 +115,7 @@ impl ServiceState {
 
     pub async fn publish_crate(
         &self,
-        version: &api::Publish,
+        version: &Publish,
         checksum: &str,
         crate_bytes: &[u8],
     ) -> Result<PublishOperationInfo, StatusCode> {

@@ -1,4 +1,3 @@
-use crate::model::types::index::CrateVersion;
 use crate::model::ServiceState;
 use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode, Uri};
@@ -6,6 +5,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
+use freeport_api::index::CrateVersion;
 use metrics::histogram;
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;

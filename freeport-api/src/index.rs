@@ -1,4 +1,4 @@
-use crate::model::types::DependencyKind;
+use crate::DependencyKind;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

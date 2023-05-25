@@ -1,0 +1,15 @@
+[package]
+name = "freeport-api"
+version = "0.0.4"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = ["nkcompute"]
+
+[features]
+sql = ["postgres-types"]
+
+[dependencies]
+chrono = { workspace = true, features = ["clock"] }
+postgres-types = { workspace = true, features = ["derive"], optional = true }
+semver = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }

@@ -1,12 +1,14 @@
 [package]
 name = "freeport-server"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
+freeport-api = { path = "../freeport-api", features = ["sql"] }
+
 axum = { workspace = true, features = ["form", "http1", "json", "tokio", "original-uri"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 aws-region = { workspace = true, features = ["serde"] }
@@ -15,7 +17,6 @@ clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"
 deadpool-postgres = { workspace = true, features = ["serde"] }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
-postgres-types = { workspace = true, features = ["derive"] }
 rust-s3 = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
