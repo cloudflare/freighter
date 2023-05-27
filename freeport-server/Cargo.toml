@@ -9,7 +9,7 @@ publish = ["nkcompute"]
 [dependencies]
 freeport-api = { path = "../freeport-api", features = ["sql"] }
 
-axum = { workspace = true, features = ["form", "http1", "json", "tokio", "original-uri"] }
+axum = { workspace = true, features = ["form", "http1", "json", "tokio", "original-uri", "headers", "http2"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 aws-region = { workspace = true, features = ["serde"] }
 chrono = { workspace = true, features = ["clock"] }
@@ -25,6 +25,6 @@ serde_yaml = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync"] }
 tokio-stream = { workspace = true }
-tower-http = { workspace = true, features = ["catch-panic"] }
+tower-http = { workspace = true, features = ["catch-panic", "trace"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

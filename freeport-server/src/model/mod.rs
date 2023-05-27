@@ -113,6 +113,20 @@ impl ServiceState {
         }
     }
 
+    pub async fn auth_user_action(&self, token: &str, crate_name: &str) -> bool {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../../sql/common/auth-crate-action.sql"))
+            .await
+            .unwrap();
+
+        client
+            .query_one(&statement, &[&token, &crate_name])
+            .await
+            .is_ok()
+    }
+
     pub async fn publish_crate(
         &self,
         version: &Publish,

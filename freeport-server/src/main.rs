@@ -1,4 +1,5 @@
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use axum::middleware::map_response;
 use axum::response::{IntoResponse, Response};
 use axum::Router;
@@ -8,6 +9,8 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::classify::StatusInRangeAsFailures;
+use tower_http::trace::{DefaultOnFailure, TraceLayer};
 
 mod cli;
 mod config;
@@ -49,6 +52,20 @@ async fn main() {
 
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }))
+        .layer(
+            TraceLayer::new(StatusInRangeAsFailures::new(400..=599).into_make_classifier())
+                .make_span_with(|request: &Request<Body>| {
+                    // todo don't log stuff which may have sensitive information
+
+                    let method = request.method();
+                    let uri = request.uri();
+                    let headers = request.headers();
+                    let extensions = request.extensions();
+
+                    tracing::info_span!("http-request", ?method, ?uri, ?headers, ?extensions)
+                })
+                .on_failure(DefaultOnFailure::new()),
+        )
         .layer(map_response(record_status_code));
 
     axum::Server::bind(&addr)

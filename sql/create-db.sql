@@ -2,6 +2,8 @@ drop schema if exists crates_index cascade;
 create schema crates_index;
 set schema 'crates_index';
 
+create extension if not exists pgcrypto;
+
 create table crates
 (
     id       integer primary key generated always as identity,
@@ -72,7 +74,7 @@ create table tokens
 );
 
 create index tokens_user_index on tokens (user_id);
-create index tokens_user_index on tokens (token_hash);
+create index tokens_hash_index on tokens (token_hash);
 
 create table crate_owners
 (

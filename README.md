@@ -1,4 +1,5 @@
-# Freeport Crate Registry
+# Freighter Crate Registry
+
 
 ## Roadmap
 ### v0.1.0: MVP private registry
@@ -11,7 +12,7 @@
   - [ ] Password login
 - [ ] API
   - [ ] Authentication
-    - [ ] Publishing
+    - [X] Publishing
     - [ ] Owners
       - [ ] Listing
       - [ ] Addition

@@ -1,10 +1,11 @@
 use crate::model::ServiceState;
 use axum::body::Bytes;
 use axum::extract::State;
+use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::routing::{delete, get, put};
 use axum::{Json, Router};
-use freeport_api::api::PublishOperationInfo;
+use freeport_api::api::{Publish, PublishOperationInfo};
 use metrics::histogram;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -24,6 +25,7 @@ pub fn api_router() -> Router<Arc<ServiceState>> {
 
 // todo don't panic on bad input
 async fn publish(
+    headers: HeaderMap,
     State(state): State<Arc<ServiceState>>,
     mut body: Bytes,
 ) -> Result<Json<PublishOperationInfo>, StatusCode> {
@@ -39,14 +41,30 @@ async fn publish(
 
     let crate_bytes = body.split_to(crate_len as usize);
 
-    let json = serde_json::from_slice(&json_bytes).unwrap();
+    let json: Publish = serde_json::from_slice(&json_bytes).unwrap();
 
-    let hash = format!("{:x}", Sha256::digest(&crate_bytes));
+    let resp = if {
+        if let Some(auth) = headers
+            .get(AUTHORIZATION)
+            .map(|header| header.to_str().ok())
+            .flatten()
+        {
+            state.auth_user_action(auth, &json.name).await
+        } else {
+            false
+        }
+    } {
+        let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
-    let resp = state
-        .publish_crate(&json, &hash, &crate_bytes)
-        .await
-        .map(|x| Json(x));
+        let resp = state
+            .publish_crate(&json, &hash, &crate_bytes)
+            .await
+            .map(|x| Json(x));
+
+        resp
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    };
 
     let elapsed = timer.elapsed();
 
