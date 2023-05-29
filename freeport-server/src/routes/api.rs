@@ -1,12 +1,13 @@
 use crate::model::ServiceState;
 use axum::body::Bytes;
-use axum::extract::State;
+use axum::extract::{Path, Query, State};
 use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::routing::{delete, get, put};
 use axum::{Json, Router};
-use freeport_api::api::{Publish, PublishOperationInfo};
+use freeport_api::api::{Publish, PublishOperationInfo, SearchQuery, SearchResults};
 use metrics::histogram;
+use semver::Version;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::Instant;
@@ -69,7 +70,7 @@ async fn publish(
     let elapsed = timer.elapsed();
 
     let code = if let Err(e) = &resp {
-        e.to_string()
+        e.as_u16().to_string()
     } else {
         "200".to_string()
     };
@@ -79,12 +80,60 @@ async fn publish(
     resp
 }
 
-async fn yank() {
-    todo!()
+async fn yank(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState>>,
+    Path((name, version)): Path<(String, Version)>,
+) -> StatusCode {
+    let timer = Instant::now();
+
+    let code = if let Some(auth) = headers
+        .get(AUTHORIZATION)
+        .map(|header| header.to_str().ok())
+        .flatten()
+    {
+        if state.yank_crate(auth, &name, &version).await {
+            StatusCode::OK
+        } else {
+            StatusCode::UNAUTHORIZED
+        }
+    } else {
+        StatusCode::BAD_REQUEST
+    };
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "code" => code.as_u16().to_string(), "endpoint" => "yank");
+
+    code
 }
 
-async fn unyank() {
-    todo!()
+async fn unyank(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState>>,
+    Path((name, version)): Path<(String, Version)>,
+) -> StatusCode {
+    let timer = Instant::now();
+
+    let code = if let Some(auth) = headers
+        .get(AUTHORIZATION)
+        .map(|header| header.to_str().ok())
+        .flatten()
+    {
+        if state.unyank_crate(auth, &name, &version).await {
+            StatusCode::OK
+        } else {
+            StatusCode::UNAUTHORIZED
+        }
+    } else {
+        StatusCode::BAD_REQUEST
+    };
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "code" => code.as_u16().to_string(), "endpoint" => "unyank");
+
+    code
 }
 
 async fn list_owners() {
@@ -99,8 +148,23 @@ async fn remove_owner() {
     todo!()
 }
 
-async fn search() {
-    todo!()
+async fn search(
+    State(state): State<Arc<ServiceState>>,
+    Query(query): Query<SearchQuery>,
+) -> Json<SearchResults> {
+    let timer = Instant::now();
+
+    let resp = Json(
+        state
+            .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
+            .await,
+    );
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "code" => "200", "endpoint" => "search");
+
+    resp
 }
 
 async fn handle_api_fallback(method: Method, uri: Uri, headers: HeaderMap) -> StatusCode {

@@ -3,6 +3,37 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+pub struct SearchQuery {
+    /// The search query string.
+    pub q: String,
+    /// Number of results, default 10, max 100.
+    pub per_page: Option<u8>,
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+pub struct SearchResults {
+    /// Array of results.
+    pub crates: Vec<SearchResultsEntry>,
+    pub meta: SearchResultsMeta,
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+pub struct SearchResultsMeta {
+    /// Total number of results available on the server.
+    pub total: usize,
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Serialize, Deserialize)]
+pub struct SearchResultsEntry {
+    /// Name of the crate.
+    pub name: String,
+    /// The highest version available.
+    pub max_version: Version,
+    /// Textual description of the crate.
+    pub description: String,
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Publish {
     /// The name of the package.

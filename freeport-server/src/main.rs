@@ -2,6 +2,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use axum::middleware::map_response;
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use metrics::increment_counter;
@@ -45,6 +46,7 @@ async fn main() {
         .nest("/downloads", routes::downloads::downloads_router())
         .nest("/index", routes::index::index_router())
         .nest("/api/v1/crates", routes::api::api_router())
+        .route("/me", get(routes::login))
         .with_state(state)
         .fallback(routes::handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {

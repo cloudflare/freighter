@@ -2,9 +2,11 @@ use crate::config::Config;
 use axum::body::Bytes;
 use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
-use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls};
+use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row};
 use deadpool_postgres::{GenericClient, Pool, Runtime};
-use freeport_api::api::{Publish, PublishOperationInfo};
+use freeport_api::api::{
+    Publish, PublishOperationInfo, SearchResults, SearchResultsEntry, SearchResultsMeta,
+};
 use freeport_api::index::{CrateVersion, Dependency};
 use s3::Bucket;
 use semver::{Version, VersionReq};
@@ -117,7 +119,7 @@ impl ServiceState {
         let client = self.pool.get().await.unwrap();
 
         let statement = client
-            .prepare_cached(include_str!("../../sql/common/auth-crate-action.sql"))
+            .prepare_cached(include_str!("../../sql/auth-crate-action.sql"))
             .await
             .unwrap();
 
@@ -125,6 +127,60 @@ impl ServiceState {
             .query_one(&statement, &[&token, &crate_name])
             .await
             .is_ok()
+    }
+
+    pub async fn yank_crate(&self, token: &str, crate_name: &str, version: &Version) -> bool {
+        self.yank_inner(token, crate_name, version, true).await
+    }
+
+    pub async fn unyank_crate(&self, token: &str, crate_name: &str, version: &Version) -> bool {
+        self.yank_inner(token, crate_name, version, false).await
+    }
+
+    pub async fn search(&self, query_string: &str, limit: u8) -> SearchResults {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../../sql/search.sql"))
+            .await
+            .unwrap();
+
+        let mut rows: Vec<Row> = client.query(&statement, &[&query_string]).await.unwrap();
+
+        // return the client immediately to the pool in case sorting takes longer than we'd like
+        drop(client);
+
+        // we can't scale the DB as easily as we can this server, so let's sort in here
+        // warning: may be expensive!
+        rows.sort_unstable_by_key(|r| (r.get::<_, i64>("count"), r.get::<_, String>("name")));
+
+        let total = rows.len();
+
+        // also might be expensive
+        let crates = rows
+            .into_iter()
+            .take(limit as usize)
+            .map(|row| {
+                let versions: Vec<String> = row.get("versions");
+
+                // we should never receive 0 versions from our query
+                let max_version = versions
+                    .iter()
+                    .map(|s| Version::parse(&s).unwrap())
+                    .max()
+                    .unwrap();
+
+                SearchResultsEntry {
+                    name: row.get("name"),
+                    max_version,
+                    description: String::new(),
+                }
+            })
+            .collect();
+
+        let meta = SearchResultsMeta { total };
+
+        SearchResults { crates, meta }
     }
 
     pub async fn publish_crate(
@@ -253,5 +309,33 @@ impl ServiceState {
             .await
             .ok()
             .map(|x| x.bytes().clone())
+    }
+
+    async fn yank_inner(
+        &self,
+        token: &str,
+        crate_name: &str,
+        version: &Version,
+        val: bool,
+    ) -> bool {
+        if self.auth_user_action(token, crate_name).await {
+            let client = self.pool.get().await.unwrap();
+
+            let statement = client
+                .prepare_cached(include_str!("../../sql/set-yank.sql"))
+                .await
+                .unwrap();
+
+            let rows = client
+                .query(&statement, &[&crate_name, &version.to_string(), &val])
+                .await
+                .unwrap();
+
+            assert!(rows.len() <= 1);
+
+            rows.len() == 1
+        } else {
+            false
+        }
     }
 }

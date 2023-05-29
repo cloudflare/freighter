@@ -6,23 +6,19 @@
 - [X] Index
   - [x] Sparse
 - [X] Crate downloads via S3-compatible buckets
-- [ ] Cache control
-- [ ] UI
-  - [ ] Password registration
-  - [ ] Password login
+- [X] UI
+  - [X] Password registration
+  - [X] Password login
 - [ ] API
-  - [ ] Authentication
+  - [ ] Authenticated
     - [X] Publishing
-    - [ ] Owners
+    - [ ] Ownership
       - [ ] Listing
       - [ ] Addition
       - [ ] Removal
-    - [ ] Yanking & unyanking
-    - [ ] Password registration
-    - [ ] Password login
-  - [ ] Searching Crates
-- [ ] Operational
-  - [ ] E2E tests
+    - [X] Yanking & un-yanking
+  - [X] Searching Crates
+- [X] Operational
   - [X] Logging
     - [X] Error logging
   - [X] Basic Prometheus metrics

@@ -52,7 +52,7 @@ async fn get_sparse_meta(
     let elapsed = timer.elapsed();
 
     let code = if let Err(e) = &resp {
-        e.to_string()
+        e.as_u16().to_string()
     } else {
         "200".to_string()
     };

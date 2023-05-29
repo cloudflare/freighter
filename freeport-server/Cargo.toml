@@ -9,7 +9,7 @@ publish = ["nkcompute"]
 [dependencies]
 freeport-api = { path = "../freeport-api", features = ["sql"] }
 
-axum = { workspace = true, features = ["form", "http1", "json", "tokio", "original-uri", "headers", "http2"] }
+axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 aws-region = { workspace = true, features = ["serde"] }
 chrono = { workspace = true, features = ["clock"] }
