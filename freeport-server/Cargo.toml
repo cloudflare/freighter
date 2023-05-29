@@ -7,7 +7,7 @@ authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
-freeport-api = { workspace = true, features = ["sql"] }
+freeport-api = { path = "../freeport-api", version = "0.0.4", registry = "nkcompute", features = ["sql"] }
 
 axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
 axum-extra = { workspace = true, features = ["json-lines"] }

@@ -7,8 +7,6 @@ members = [
 ]
 
 [workspace.dependencies]
-freeport-api = { path = "freeport-api", version = "0.0.4", registry = "nkcompute" }
-
 axum = { version = "0.6.18", default-features = false }
 axum-extra = "0.7.4"
 aws-region = "0.25.3"
