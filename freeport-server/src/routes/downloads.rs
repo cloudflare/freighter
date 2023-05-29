@@ -1,7 +1,7 @@
 use crate::model::ServiceState;
 use axum::body::Bytes;
 use axum::extract::{Path, State};
-use axum::http::{Method, StatusCode, Uri};
+use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
 use metrics::histogram;
@@ -36,12 +36,6 @@ async fn serve_crate(
     }
 }
 
-async fn handle_downloads_fallback(method: Method, uri: Uri) -> StatusCode {
-    tracing::error!(
-        ?method,
-        ?uri,
-        "Could not match request with any routes on index"
-    );
-
+async fn handle_downloads_fallback() -> StatusCode {
     StatusCode::NOT_FOUND
 }

@@ -573,6 +573,7 @@ dependencies = [
  "freeport-api",
  "metrics",
  "metrics-exporter-prometheus",
+ "rand",
  "rust-s3",
  "semver",
  "serde",

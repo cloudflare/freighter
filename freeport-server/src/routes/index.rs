@@ -1,6 +1,6 @@
 use crate::model::ServiceState;
 use axum::extract::{Path, State};
-use axum::http::{Method, StatusCode, Uri};
+use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
@@ -62,12 +62,6 @@ async fn get_sparse_meta(
     resp
 }
 
-async fn handle_index_fallback(method: Method, uri: Uri) -> StatusCode {
-    tracing::error!(
-        ?method,
-        ?uri,
-        "Could not match request with any routes on index"
-    );
-
+async fn handle_index_fallback() -> StatusCode {
     StatusCode::NOT_FOUND
 }

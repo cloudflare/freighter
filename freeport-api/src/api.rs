@@ -4,6 +4,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+pub struct AuthForm {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct SearchQuery {
     /// The search query string.
     pub q: String,

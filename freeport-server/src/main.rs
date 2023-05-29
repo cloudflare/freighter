@@ -62,9 +62,8 @@ async fn main() {
                     let method = request.method();
                     let uri = request.uri();
                     let headers = request.headers();
-                    let extensions = request.extensions();
 
-                    tracing::info_span!("http-request", ?method, ?uri, ?headers, ?extensions)
+                    tracing::info_span!("http-request", ?method, ?uri, ?headers)
                 })
                 .on_failure(DefaultOnFailure::new()),
         )

@@ -8,6 +8,7 @@ use freeport_api::api::{
     Publish, PublishOperationInfo, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use freeport_api::index::{CrateVersion, Dependency};
+use rand::distributions::{Alphanumeric, DistString};
 use s3::Bucket;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
@@ -309,6 +310,46 @@ impl ServiceState {
             .await
             .ok()
             .map(|x| x.bytes().clone())
+    }
+
+    pub async fn register(&self, username: &str, password: &str) -> Option<String> {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../../sql/register.sql"))
+            .await
+            .unwrap();
+
+        if client
+            .query_one(&statement, &[&username, &password])
+            .await
+            .is_ok()
+        {
+            self.login(username, password).await
+        } else {
+            None
+        }
+    }
+
+    pub async fn login(&self, username: &str, password: &str) -> Option<String> {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../../sql/login.sql"))
+            .await
+            .unwrap();
+
+        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+
+        if client
+            .query_one(&statement, &[&username, &password, &token])
+            .await
+            .is_ok()
+        {
+            Some(token)
+        } else {
+            None
+        }
     }
 
     async fn yank_inner(

@@ -1,5 +1,5 @@
 <label><b>Sign In</b></label>
-<form action="/auth/login" method="post">
+<form action="/api/v1/crates/account/token" method="post">
     <div class="container">
         <label><b>Username</b></label>
         <input type="text" placeholder="Enter Username" name="username" required>
@@ -12,7 +12,7 @@
 </form>
 
 <label><b>Sign Up</b></label>
-<form action="/auth/signup" method="post">
+<form action="/api/v1/crates/account" method="post">
     <div class="container">
         <label><b>Username</b></label>
         <input type="text" name="username" required>

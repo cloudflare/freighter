@@ -69,8 +69,7 @@ create table tokens
 (
     id         integer not null primary key generated always as identity,
     user_id    integer not null references users (id),
-    token_hash text    not null,
-    unique (user_id, token_hash)
+    token_hash text    not null unique
 );
 
 create index tokens_user_index on tokens (user_id);

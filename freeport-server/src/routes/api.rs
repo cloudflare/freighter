@@ -2,10 +2,11 @@ use crate::model::ServiceState;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
 use axum::http::header::AUTHORIZATION;
-use axum::http::{HeaderMap, Method, StatusCode, Uri};
-use axum::routing::{delete, get, put};
-use axum::{Json, Router};
-use freeport_api::api::{Publish, PublishOperationInfo, SearchQuery, SearchResults};
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Html;
+use axum::routing::{delete, get, post, put};
+use axum::{Form, Json, Router};
+use freeport_api::api::{AuthForm, Publish, PublishOperationInfo, SearchQuery, SearchResults};
 use metrics::histogram;
 use semver::Version;
 use sha2::{Digest, Sha256};
@@ -20,6 +21,8 @@ pub fn api_router() -> Router<Arc<ServiceState>> {
         .route("/:crate_name/owners", get(list_owners))
         .route("/:crate_name/owners", delete(remove_owner))
         .route("/:crate_name/owners", put(add_owner))
+        .route("/account", post(register))
+        .route("/account/token", post(login))
         .route("/", get(search))
         .fallback(handle_api_fallback)
 }
@@ -148,6 +151,28 @@ async fn remove_owner() {
     todo!()
 }
 
+async fn register(
+    State(state): State<Arc<ServiceState>>,
+    Form(auth): Form<AuthForm>,
+) -> Result<Html<String>, StatusCode> {
+    if let Some(token) = state.register(&auth.username, &auth.password).await {
+        Ok(Html(token))
+    } else {
+        Err(StatusCode::CONFLICT)
+    }
+}
+
+async fn login(
+    State(state): State<Arc<ServiceState>>,
+    Form(auth): Form<AuthForm>,
+) -> Result<Html<String>, StatusCode> {
+    if let Some(token) = state.login(&auth.username, &auth.password).await {
+        Ok(Html(token))
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
 async fn search(
     State(state): State<Arc<ServiceState>>,
     Query(query): Query<SearchQuery>,
@@ -167,13 +192,6 @@ async fn search(
     resp
 }
 
-async fn handle_api_fallback(method: Method, uri: Uri, headers: HeaderMap) -> StatusCode {
-    tracing::error!(
-        ?method,
-        ?uri,
-        ?headers,
-        "Could not match request with any routes on api"
-    );
-
+async fn handle_api_fallback() -> StatusCode {
     StatusCode::NOT_FOUND
 }

@@ -16,6 +16,7 @@ deadpool-postgres = "0.10.5"
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.5"
+rand = "0.8.5"
 rust-s3 = "0.33.0"
 semver = "1.0.17"
 serde = "1.0.162"

@@ -9,7 +9,7 @@ publish = ["nkcompute"]
 [dependencies]
 freeport-api = { path = "../freeport-api", features = ["sql"] }
 
-axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query"] }
+axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 aws-region = { workspace = true, features = ["serde"] }
 chrono = { workspace = true, features = ["clock"] }
@@ -17,6 +17,7 @@ clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"
 deadpool-postgres = { workspace = true, features = ["serde"] }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
+rand = { workspace = true }
 rust-s3 = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
