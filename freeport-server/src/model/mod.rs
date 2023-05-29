@@ -320,15 +320,12 @@ impl ServiceState {
             .await
             .unwrap();
 
-        if client
+        client
             .query_one(&statement, &[&username, &password])
             .await
-            .is_ok()
-        {
-            self.login(username, password).await
-        } else {
-            None
-        }
+            .unwrap();
+
+        self.login(username, password).await
     }
 
     pub async fn login(&self, username: &str, password: &str) -> Option<String> {

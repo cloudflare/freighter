@@ -1,13 +1,13 @@
 [package]
 name = "freeport-server"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
-freeport-api = { path = "../freeport-api", version = "0.0.4", registry = "nkcompute", features = ["sql"] }
+freeport-api = { workspace = true, features = ["sql"] }
 
 axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
 axum-extra = { workspace = true, features = ["json-lines"] }

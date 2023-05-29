@@ -6,7 +6,7 @@ with ins as (insert into crates_index.crates (name, registry) values ($1, $2) on
           select id
           from crates_index.crates
           where name = $1
-            and registry = $2)
+            and (registry = $2 or registry is null and $2 is null))
 insert
 into crates_index.dependencies
 (dependent, dependency, req, features, optional, default_features, target, kind, package)

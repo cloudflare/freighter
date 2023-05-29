@@ -562,7 +562,7 @@ dependencies = [
 
 [[package]]
 name = "freeport-server"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "aws-region",
  "axum",
