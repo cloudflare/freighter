@@ -4,12 +4,12 @@ use axum::http::StatusCode;
 use deadpool_postgres::tokio_postgres::types::ToSql;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row};
 use deadpool_postgres::{GenericClient, Pool, Runtime};
+use ever_given::Bucket;
 use freeport_api::api::{
     Publish, PublishOperationInfo, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use freeport_api::index::{CrateVersion, Dependency};
 use rand::distributions::{Alphanumeric, DistString};
-use s3::Bucket;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
 

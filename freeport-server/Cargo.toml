@@ -7,6 +7,7 @@ authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
+ever-given = { workspace = true }
 freeport-api = { workspace = true, features = ["sql"] }
 
 axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
@@ -18,7 +19,6 @@ deadpool-postgres = { workspace = true, features = ["serde"] }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
 rand = { workspace = true }
-rust-s3 = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

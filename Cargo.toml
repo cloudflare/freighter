@@ -7,6 +7,7 @@ members = [
 ]
 
 [workspace.dependencies]
+ever-given = { path = "ever-given", registry = "nkcompute" }
 freeport-api = { path = "freeport-api", version = "0.0.4", registry = "nkcompute" }
 
 axum = { version = "0.6.18", default-features = false }

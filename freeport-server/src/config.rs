@@ -1,4 +1,4 @@
-use s3::creds::Credentials;
+use ever_given::creds::Credentials;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
