@@ -18,7 +18,7 @@ hyper = { version = "0.14", default-features = false, features = [
     "http1",
     "stream",
 ] }
-md5 = "0.7"
+md5 = { workspace = true }
 percent-encoding = "2"
 serde = { workspace = true, features = ["derive"] }
 quick-xml = { version = "0.28", features = ["serialize"] }

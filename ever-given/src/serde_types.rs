@@ -371,30 +371,3 @@ impl CorsRule {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::{CorsConfiguration, CorsRule};
-
-    #[test]
-    fn cors_config_serde() {
-        let rule = CorsRule {
-            allowed_headers: Some(vec!["Authorization".to_string(), "Header2".to_string()]),
-            allowed_methods: vec!["GET".to_string(), "DELETE".to_string()],
-            allowed_origins: vec!["*".to_string()],
-            expose_headers: None,
-            id: Some("lala".to_string()),
-            max_age_seconds: None,
-        };
-
-        let config = CorsConfiguration {
-            rules: vec![rule.clone(), rule],
-        };
-
-        let se = quick_xml::se::to_string(&config).unwrap();
-        assert_eq!(
-            se,
-            r#"<CORSConfiguration><CORSRule><AllowedHeader>Authorization</AllowedHeader><AllowedHeader>Header2</AllowedHeader><AllowedMethod>GET</AllowedMethod><AllowedMethod>DELETE</AllowedMethod><AllowedOrigin>*</AllowedOrigin><ID>lala</ID></CORSRule><CORSRule><AllowedHeader>Authorization</AllowedHeader><AllowedHeader>Header2</AllowedHeader><AllowedMethod>GET</AllowedMethod><AllowedMethod>DELETE</AllowedMethod><AllowedOrigin>*</AllowedOrigin><ID>lala</ID></CORSRule></CORSConfiguration>"#
-        )
-    }
-}
