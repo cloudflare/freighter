@@ -1,9 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "evergrande",
+    "ever-given",
     "freeport-api",
-    "freeport-e2e-tester",
     "freeport-server"
 ]
 
@@ -12,6 +11,7 @@ freeport-api = { path = "freeport-api", version = "0.0.4", registry = "nkcompute
 
 axum = { version = "0.6.18", default-features = false }
 axum-extra = "0.7.4"
+aws-creds = "0.35.0"
 aws-region = "0.25.3"
 chrono = "0.4.24"
 clap = "4.2.7"
@@ -20,6 +20,7 @@ metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.5"
 rand = "0.8.5"
+reqwest = "0.11.17"
 rust-s3 = "0.33.0"
 semver = "1.0.17"
 serde = "1.0.162"

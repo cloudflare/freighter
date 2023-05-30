@@ -1,0 +1,31 @@
+[package]
+name = "ever-given"
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = ["nkcompute"]
+
+[dependencies]
+aws-creds = { workspace = true }
+aws-region = { workspace = true }
+base64 = "0.21"
+time = { version = "^0.3.6", features = ["formatting", "macros"] }
+futures = { version = "0.3" }
+hex = "0.4"
+hmac = "0.12"
+hyper = { version = "0.14", default-features = false, features = [
+    "client",
+    "http1",
+    "stream",
+] }
+md5 = "0.7"
+percent-encoding = "2"
+serde = { workspace = true, features = ["derive"] }
+quick-xml = { version = "0.28", features = ["serialize"] }
+sha2 = { workspace = true }
+thiserror = "1"
+reqwest = { workspace = true, features = ["stream"] }
+tokio = { workspace = true, features = ["io-util"] }
+tokio-stream = { workspace = true }
+url = "2"
+bytes = { version = "1" }

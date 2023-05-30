@@ -12,8 +12,8 @@ pub enum CannedBucketAcl {
     Custom(String),
 }
 
-use http::header::HeaderName;
-use http::HeaderMap;
+use hyper::http::header::HeaderName;
+use hyper::http::HeaderMap;
 use std::fmt;
 
 impl fmt::Display for CannedBucketAcl {

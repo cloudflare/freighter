@@ -11,8 +11,8 @@ use base64::Engine;
 use bytes::Bytes;
 use futures::TryStreamExt;
 use hmac::Mac;
-use http::header::{ACCEPT, AUTHORIZATION, CONTENT_LENGTH, CONTENT_TYPE, DATE, HOST, RANGE};
-use http::{HeaderMap, HeaderName};
+use hyper::http::header::{ACCEPT, AUTHORIZATION, CONTENT_LENGTH, CONTENT_TYPE, DATE, HOST, RANGE};
+use hyper::http::{HeaderMap, HeaderName};
 use hyper::Body;
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -43,15 +43,15 @@ impl<'a> HyperRequest<'a> {
         let client = reqwest::Client::new();
 
         let method = match self.command.http_verb() {
-            HttpMethod::Delete => http::Method::DELETE,
-            HttpMethod::Get => http::Method::GET,
-            HttpMethod::Post => http::Method::POST,
-            HttpMethod::Put => http::Method::PUT,
-            HttpMethod::Head => http::Method::HEAD,
+            HttpMethod::Delete => hyper::http::Method::DELETE,
+            HttpMethod::Get => hyper::http::Method::GET,
+            HttpMethod::Post => hyper::http::Method::POST,
+            HttpMethod::Put => hyper::http::Method::PUT,
+            HttpMethod::Head => hyper::http::Method::HEAD,
         };
 
         let request = {
-            let mut request = http::Request::builder()
+            let mut request = hyper::http::Request::builder()
                 .method(method)
                 .uri(self.url()?.as_str());
 
@@ -62,12 +62,6 @@ impl<'a> HyperRequest<'a> {
             request.body(Body::from(self.request_body()))?
         };
         let response = client.execute(request.try_into().unwrap()).await?;
-
-        if cfg!(feature = "fail-on-err") && !response.status().is_success() {
-            let status = response.status().as_u16();
-            let text = String::from_utf8(response.bytes().await?.into())?;
-            return Err(S3Error::HttpFailWithBody(status, text));
-        }
 
         Ok(response)
     }
@@ -550,9 +544,8 @@ mod tests {
     use crate::bucket::Bucket;
     use crate::command::Command;
     use crate::request::tokio_backend::HyperRequest;
-    use crate::request::Request;
     use awscreds::Credentials;
-    use http::header::{HOST, RANGE};
+    use hyper::http::header::{HOST, RANGE};
 
     // Fake keys - otherwise using Credentials::default will use actual user
     // credentials if they exist.

@@ -21,23 +21,21 @@ pub enum S3Error {
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
     #[error("http: {0}")]
-    Http(#[from] http::Error),
+    Http(#[from] hyper::http::Error),
     #[error("hyper: {0}")]
     Hyper(#[from] hyper::Error),
     #[error("hyper: {0}")]
     Reqwest(#[from] reqwest::Error),
-    #[error("native-tls: {0}")]
-    NativeTls(#[from] native_tls::Error),
     #[error("header to string: {0}")]
-    HeaderToStr(#[from] http::header::ToStrError),
+    HeaderToStr(#[from] hyper::http::header::ToStrError),
     #[error("from utf8: {0}")]
     FromUtf8(#[from] std::string::FromUtf8Error),
     #[error("serde xml: {0}")]
     SerdeXml(#[from] quick_xml::de::DeError),
     #[error("invalid header value: {0}")]
-    InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
+    InvalidHeaderValue(#[from] hyper::http::header::InvalidHeaderValue),
     #[error("invalid header name: {0}")]
-    InvalidHeaderName(#[from] http::header::InvalidHeaderName),
+    InvalidHeaderName(#[from] hyper::http::header::InvalidHeaderName),
     #[error("Could not get Write lock on Credentials")]
     WLCredentials,
     #[error("Could not get Read lock on Credentials")]

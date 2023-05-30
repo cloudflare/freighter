@@ -27,7 +27,7 @@ impl fmt::Display for HttpMethod {
     }
 }
 use crate::bucket_ops::BucketConfiguration;
-use http::HeaderMap;
+use hyper::http::HeaderMap;
 
 #[derive(Clone, Debug)]
 pub struct Multipart<'a> {

@@ -76,7 +76,7 @@ pub trait GetAndConvertHeaders {
     fn get_string(&self, header: &str) -> Option<String>;
 }
 
-impl GetAndConvertHeaders for http::header::HeaderMap {
+impl GetAndConvertHeaders for hyper::http::header::HeaderMap {
     fn get_and_convert<T: FromStr>(&self, header: &str) -> Option<T> {
         self.get(header)?.to_str().ok()?.parse::<T>().ok()
     }
@@ -85,8 +85,8 @@ impl GetAndConvertHeaders for http::header::HeaderMap {
     }
 }
 
-impl From<&http::HeaderMap> for HeadObjectResult {
-    fn from(headers: &http::HeaderMap) -> Self {
+impl From<&hyper::http::HeaderMap> for HeadObjectResult {
+    fn from(headers: &hyper::http::HeaderMap) -> Self {
         let mut result = HeadObjectResult {
             accept_ranges: headers.get_string("accept-ranges"),
             cache_control: headers.get_string("Cache-Control"),

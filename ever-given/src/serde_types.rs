@@ -63,6 +63,7 @@ pub struct MultipartUpload {
     pub id: String,
 }
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 impl fmt::Display for CompleteMultipartUploadData {

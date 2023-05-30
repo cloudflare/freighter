@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::str;
 
 use hmac::{Hmac, Mac};
-use http::HeaderMap;
+use hyper::http::HeaderMap;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use sha2::{Digest, Sha256};
 use time::{macros::format_description, OffsetDateTime};
@@ -272,8 +272,8 @@ mod tests {
     use std::convert::TryInto;
     use std::str;
 
-    use http::header::{HeaderName, HOST, RANGE};
-    use http::HeaderMap;
+    use hyper::http::header::{HeaderName, HOST, RANGE};
+    use hyper::http::HeaderMap;
     use time::Date;
     use url::Url;
 
