@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "evergrande",
     "freeport-api",
     "freeport-e2e-tester",
     "freeport-server"

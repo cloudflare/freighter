@@ -1,0 +1,50 @@
+[package]
+name = "evergrande"
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = ["nkcompute"]
+
+[dependencies]
+aws-creds = { version = "0.35.0" }
+# aws-creds = { path = "../aws-creds", default-features = false }
+aws-region = "0.25.3"
+# aws-region = {path = "../aws-region"}
+base64 = "0.21"
+cfg-if = "1"
+time = { version = "^0.3.6", features = ["formatting", "macros"] }
+futures = { version = "0.3" }
+futures-io = { version = "0.3" }
+futures-util = { version = "0.3", features = ["io"] }
+hex = "0.4"
+hmac = "0.12"
+http = "0.2"
+hyper = { version = "0.14", default-features = false, features = [
+    "client",
+    "http1",
+    "stream",
+] }
+log = "0.4"
+md5 = "0.7"
+percent-encoding = "2"
+serde = "1"
+serde_derive = "1"
+quick-xml = { version = "0.28", features = ["serialize"] }
+sha2 = "0.10"
+thiserror = "1"
+reqwest = { version = "0.11.18", features = ["stream"] }
+tokio = { version = "1", features = ["io-util"] }
+tokio-native-tls = { version = "0.3" }
+native-tls = { version = "0.2" }
+tokio-stream = { version = "0.1" }
+url = "2"
+minidom = { version = "0.15" }
+bytes = { version = "1" }
+block_on_proc = { version = "0.2" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "fs"] }
+async-std = { version = "1", features = ["attributes"] }
+uuid = { version = "1", features = ["v4"] }
+env_logger = "0.10"
+anyhow = "1"
