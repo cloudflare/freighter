@@ -13,7 +13,6 @@ freeport-api = { workspace = true, features = ["sql"] }
 axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 aws-region = { workspace = true, features = ["serde"] }
-chrono = { workspace = true, features = ["clock"] }
 clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"] }
 deadpool-postgres = { workspace = true, features = ["serde"] }
 metrics = { workspace = true }

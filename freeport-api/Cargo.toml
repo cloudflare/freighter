@@ -9,7 +9,6 @@ publish = ["nkcompute"]
 sql = ["postgres-types"]
 
 [dependencies]
-chrono = { workspace = true, features = ["clock"] }
 postgres-types = { workspace = true, features = ["derive"], optional = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }

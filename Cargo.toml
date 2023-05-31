@@ -14,7 +14,6 @@ axum = { version = "0.6.18", default-features = false }
 axum-extra = "0.7.4"
 aws-creds = "0.35.0"
 aws-region = "0.25.3"
-chrono = "0.4.24"
 clap = "4.2.7"
 deadpool-postgres = "0.10.5"
 metrics = "0.21.0"
