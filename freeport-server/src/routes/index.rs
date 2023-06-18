@@ -5,7 +5,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
-use freeport_api::index::CrateVersion;
+use freighter_index::{CrateVersion, IndexClient};
 use metrics::histogram;
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
@@ -13,7 +13,10 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio_stream::{Stream, StreamExt};
 
-pub fn index_router() -> Router<Arc<ServiceState>> {
+pub fn index_router<I>() -> Router<Arc<ServiceState<I>>>
+where
+    I: IndexClient + Send + Sync + 'static,
+{
     Router::new()
         .route("/config.json", get(config))
         .route("/:prefix_1/:prefix_2/:crate_name", get(get_sparse_meta))
@@ -26,7 +29,7 @@ struct RegistryConfig {
     api: String,
 }
 
-async fn config(State(state): State<Arc<ServiceState>>) -> Json<RegistryConfig> {
+async fn config<I>(State(state): State<Arc<ServiceState<I>>>) -> Json<RegistryConfig> {
     RegistryConfig {
         dl: state.config.service.download_endpoint.clone(),
         api: state.config.service.api_endpoint.clone(),
@@ -34,20 +37,28 @@ async fn config(State(state): State<Arc<ServiceState>>) -> Json<RegistryConfig> 
     .into()
 }
 
-async fn get_sparse_meta(
-    State(state): State<Arc<ServiceState>>,
+async fn get_sparse_meta<I>(
+    State(state): State<Arc<ServiceState<I>>>,
     Path((_, _, crate_name)): Path<(String, String, String)>,
 ) -> Result<JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>, StatusCode>
+where
+    I: IndexClient,
 {
     // todo we can make this streamable, does it get us anything to do so?
 
     let timer = Instant::now();
 
     let resp = state
-        .get_sparse_metadata(&crate_name)
+        .index
+        .get_sparse_entry(&crate_name)
         .await
-        .ok_or(StatusCode::NOT_FOUND)
-        .map(|crate_versions| JsonLines::new(tokio_stream::iter(crate_versions).map(|c| Ok(c))));
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .and_then(|crate_versions| crate_versions.ok_or(StatusCode::NOT_FOUND))
+        .and_then(|crate_versions| {
+            Ok(JsonLines::new(
+                tokio_stream::iter(crate_versions).map(|c| Ok(c)),
+            ))
+        });
 
     let elapsed = timer.elapsed();
 

@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use clap::Parser;
+use freighter_index::postgres_client::PostgreSQLIndex;
 use metrics::increment_counter;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
@@ -40,7 +41,10 @@ async fn main() {
 
     let addr = config.service.address;
 
-    let state = Arc::new(model::ServiceState::new(config));
+    let state = Arc::new(model::ServiceState::new(
+        config.clone(),
+        PostgreSQLIndex::new(config.db).unwrap(),
+    ));
 
     let router = Router::new()
         .nest("/downloads", routes::downloads::downloads_router())

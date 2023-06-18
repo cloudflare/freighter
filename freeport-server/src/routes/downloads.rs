@@ -9,14 +9,17 @@ use semver::Version;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub fn downloads_router() -> Router<Arc<ServiceState>> {
+pub fn downloads_router<I>() -> Router<Arc<ServiceState<I>>>
+where
+    I: Send + Sync + 'static,
+{
     Router::new()
         .route("/:name/:version", get(serve_crate))
         .fallback(handle_downloads_fallback)
 }
 
-async fn serve_crate(
-    State(state): State<Arc<ServiceState>>,
+async fn serve_crate<I>(
+    State(state): State<Arc<ServiceState<I>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> Result<Bytes, StatusCode> {
     let timer = Instant::now();

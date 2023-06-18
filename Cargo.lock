@@ -83,6 +83,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.71"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
+
+[[package]]
 name = "async-trait"
 version = "0.1.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -544,23 +550,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "freeport-api"
-version = "0.0.4"
-dependencies = [
- "chrono",
- "postgres-types",
- "semver",
- "serde",
-]
-
-[[package]]
-name = "freeport-e2e-tester"
-version = "0.0.4"
-dependencies = [
- "freeport-api",
-]
-
-[[package]]
 name = "freeport-server"
 version = "0.0.5"
 dependencies = [
@@ -570,7 +559,7 @@ dependencies = [
  "chrono",
  "clap",
  "deadpool-postgres",
- "freeport-api",
+ "freighter-index",
  "metrics",
  "metrics-exporter-prometheus",
  "rand",
@@ -586,6 +575,33 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "freighter-auth"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+]
+
+[[package]]
+name = "freighter-index"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "deadpool-postgres",
+ "postgres-types",
+ "semver",
+ "serde",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "freighter-storage"
+version = "0.1.0"
 
 [[package]]
 name = "futures"

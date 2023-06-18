@@ -6,14 +6,19 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
-use freeport_api::api::{AuthForm, Publish, PublishOperationInfo, SearchQuery, SearchResults};
+use freighter_index::{
+    AuthForm, CompletedPublication, IndexClient, Publish, SearchQuery, SearchResults,
+};
 use metrics::histogram;
 use semver::Version;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::Instant;
 
-pub fn api_router() -> Router<Arc<ServiceState>> {
+pub fn api_router<I>() -> Router<Arc<ServiceState<I>>>
+where
+    I: IndexClient + Send + Sync + 'static,
+{
     Router::new()
         .route("/new", put(publish))
         .route("/:crate_name/:version/yank", delete(yank))
@@ -28,11 +33,14 @@ pub fn api_router() -> Router<Arc<ServiceState>> {
 }
 
 // todo don't panic on bad input
-async fn publish(
+async fn publish<I>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState>>,
+    State(state): State<Arc<ServiceState<I>>>,
     mut body: Bytes,
-) -> Result<Json<PublishOperationInfo>, StatusCode> {
+) -> Result<Json<CompletedPublication>, StatusCode>
+where
+    I: IndexClient,
+{
     let timer = Instant::now();
 
     let json_len_bytes = body.split_to(4);
@@ -61,11 +69,12 @@ async fn publish(
         let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
         let resp = state
-            .publish_crate(&json, &hash, &crate_bytes)
+            .index
+            .publish(&json, &hash, Box::pin(async { todo!() }))
             .await
             .map(|x| Json(x));
 
-        resp
+        resp.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
     } else {
         Err(StatusCode::UNAUTHORIZED)
     };
@@ -83,19 +92,22 @@ async fn publish(
     resp
 }
 
-async fn yank(
+async fn yank<I>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState>>,
+    State(state): State<Arc<ServiceState<I>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> StatusCode {
+) -> StatusCode
+where
+    I: IndexClient,
+{
     let timer = Instant::now();
 
-    let code = if let Some(auth) = headers
+    let code = if let Some(_auth) = headers
         .get(AUTHORIZATION)
         .map(|header| header.to_str().ok())
         .flatten()
     {
-        if state.yank_crate(auth, &name, &version).await {
+        if state.index.yank_crate(&name, &version).await.is_ok() {
             StatusCode::OK
         } else {
             StatusCode::UNAUTHORIZED
@@ -111,19 +123,22 @@ async fn yank(
     code
 }
 
-async fn unyank(
+async fn unyank<I>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState>>,
+    State(state): State<Arc<ServiceState<I>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> StatusCode {
+) -> StatusCode
+where
+    I: IndexClient,
+{
     let timer = Instant::now();
 
-    let code = if let Some(auth) = headers
+    let code = if let Some(_auth) = headers
         .get(AUTHORIZATION)
         .map(|header| header.to_str().ok())
         .flatten()
     {
-        if state.unyank_crate(auth, &name, &version).await {
+        if state.index.unyank_crate(&name, &version).await.is_ok() {
             StatusCode::OK
         } else {
             StatusCode::UNAUTHORIZED
@@ -151,8 +166,8 @@ async fn remove_owner() {
     todo!()
 }
 
-async fn register(
-    State(state): State<Arc<ServiceState>>,
+async fn register<I>(
+    State(state): State<Arc<ServiceState<I>>>,
     Form(auth): Form<AuthForm>,
 ) -> Result<Html<String>, StatusCode> {
     if let Some(token) = state.register(&auth.username, &auth.password).await {
@@ -162,8 +177,8 @@ async fn register(
     }
 }
 
-async fn login(
-    State(state): State<Arc<ServiceState>>,
+async fn login<I>(
+    State(state): State<Arc<ServiceState<I>>>,
     Form(auth): Form<AuthForm>,
 ) -> Result<Html<String>, StatusCode> {
     if let Some(token) = state.login(&auth.username, &auth.password).await {
@@ -173,16 +188,21 @@ async fn login(
     }
 }
 
-async fn search(
-    State(state): State<Arc<ServiceState>>,
+async fn search<I>(
+    State(state): State<Arc<ServiceState<I>>>,
     Query(query): Query<SearchQuery>,
-) -> Json<SearchResults> {
+) -> Json<SearchResults>
+where
+    I: IndexClient,
+{
     let timer = Instant::now();
 
     let resp = Json(
         state
+            .index
             .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
-            .await,
+            .await
+            .unwrap(),
     );
 
     let elapsed = timer.elapsed();

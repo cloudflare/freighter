@@ -1,0 +1,19 @@
+[package]
+name = "freighter-index"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+postgresql-client = ["postgres-types"]
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true, features = ["clock"] }
+deadpool-postgres = { workspace = true }
+postgres-types = { workspace = true, features = ["derive"], optional = true }
+semver = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+tracing = { workspace = true }
