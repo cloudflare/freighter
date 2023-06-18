@@ -526,8 +526,37 @@ dependencies = [
 ]
 
 [[package]]
-name = "freeport-server"
-version = "0.0.5"
+name = "freighter-auth"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "metrics",
+ "rand",
+ "serde",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "freighter-index"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "deadpool-postgres",
+ "metrics",
+ "postgres-types",
+ "semver",
+ "serde",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "freighter-server"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -552,37 +581,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "freighter-auth"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "metrics",
- "rand",
- "serde",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "freighter-index"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "deadpool-postgres",
- "metrics",
- "postgres-types",
- "semver",
- "serde",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "freighter-storage"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
