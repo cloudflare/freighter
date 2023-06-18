@@ -1,27 +1,17 @@
 use crate::config::Config;
-use axum::body::Bytes;
 
-use s3::Bucket;
-
-pub struct ServiceState<I> {
+pub struct ServiceState<I, S> {
     pub config: Config,
     pub index: I,
-    bucket: Bucket,
+    pub storage: S,
 }
 
-impl<I> ServiceState<I> {
-    pub fn new(config: Config, index: I) -> Self {
-        let bucket = Bucket::new(
-            &config.store.name,
-            config.store.region.clone(),
-            config.store.credentials.clone(),
-        )
-        .unwrap();
-
+impl<I, S> ServiceState<I, S> {
+    pub fn new(config: Config, index: I, storage: S) -> Self {
         Self {
             config,
             index,
-            bucket,
+            storage,
         }
     }
 
@@ -38,14 +28,6 @@ impl<I> ServiceState<I> {
         //     .query_one(&statement, &[&token, &crate_name])
         //     .await
         //     .is_ok()
-    }
-
-    pub async fn download_crate(&self, name: &str) -> Option<Bytes> {
-        self.bucket
-            .get_object(name)
-            .await
-            .ok()
-            .map(|x| x.bytes().clone())
     }
 
     pub async fn register(&self, _username: &str, _password: &str) -> Option<String> {

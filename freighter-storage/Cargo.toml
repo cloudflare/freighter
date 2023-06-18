@@ -3,6 +3,13 @@ name = "freighter-storage"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+aws-region = { workspace = true, features = ["serde"] }
+bytes = { workspace = true }
+metrics = { workspace = true }
+rand = { workspace = true }
+rust-s3 = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

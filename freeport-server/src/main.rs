@@ -6,6 +6,7 @@ use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use freighter_index::postgres_client::PostgreSQLIndex;
+use freighter_storage::s3_client::S3StorageClient;
 use metrics::increment_counter;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
@@ -44,6 +45,12 @@ async fn main() {
     let state = Arc::new(model::ServiceState::new(
         config.clone(),
         PostgreSQLIndex::new(config.db).unwrap(),
+        S3StorageClient::new(
+            &config.store.name,
+            config.store.region,
+            config.store.credentials,
+        )
+        .unwrap(),
     ));
 
     let router = Router::new()

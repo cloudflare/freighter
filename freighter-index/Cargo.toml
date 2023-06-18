@@ -9,8 +9,8 @@ postgresql-client = ["postgres-types"]
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-chrono = { workspace = true, features = ["clock"] }
 deadpool-postgres = { workspace = true }
+metrics = { workspace = true }
 postgres-types = { workspace = true, features = ["derive"], optional = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }

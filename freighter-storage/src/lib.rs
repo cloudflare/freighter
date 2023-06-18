@@ -1,14 +1,14 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use async_trait::async_trait;
+use bytes::Bytes;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod s3_client;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+mod error;
+
+pub use error::*;
+
+#[async_trait]
+pub trait StorageClient {
+    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes>;
+    async fn put_crate(&self, name: &str, version: &str, crate_bytes: &[u8]) -> StorageResult<()>;
 }

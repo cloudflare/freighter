@@ -25,7 +25,7 @@ pub use error::*;
 /// The index client does NOT authenticate user actions.
 /// User actions should be authenticated before an operation is performed.
 #[async_trait]
-pub trait IndexClient {
+pub trait IndexClient: Sync {
     /// Get the sparse index entry for a crate.
     ///
     /// If successful, a [`CrateVersion`] api object will be returned.
@@ -52,7 +52,7 @@ pub trait IndexClient {
         &self,
         version: &Publish,
         checksum: &str,
-        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + Sync>>,
+        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
     ) -> IndexResult<CompletedPublication>;
     /// List crates in the index, optionally specifying pagination.
     ///

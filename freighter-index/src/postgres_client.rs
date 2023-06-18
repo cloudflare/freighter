@@ -197,7 +197,7 @@ impl IndexClient for PostgreSQLIndex {
         &self,
         version: &Publish,
         checksum: &str,
-        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + Sync>>,
+        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
     ) -> IndexResult<CompletedPublication> {
         let mut client = self
             .pool

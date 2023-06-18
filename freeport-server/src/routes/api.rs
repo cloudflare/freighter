@@ -1,4 +1,5 @@
 use crate::model::ServiceState;
+use anyhow::Context;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
 use axum::http::header::AUTHORIZATION;
@@ -9,15 +10,17 @@ use axum::{Form, Json, Router};
 use freighter_index::{
     AuthForm, CompletedPublication, IndexClient, Publish, SearchQuery, SearchResults,
 };
+use freighter_storage::StorageClient;
 use metrics::histogram;
 use semver::Version;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::Instant;
 
-pub fn api_router<I>() -> Router<Arc<ServiceState<I>>>
+pub fn api_router<I, S>() -> Router<Arc<ServiceState<I, S>>>
 where
     I: IndexClient + Send + Sync + 'static,
+    S: StorageClient + Send + Sync + Clone + 'static,
 {
     Router::new()
         .route("/new", put(publish))
@@ -33,13 +36,14 @@ where
 }
 
 // todo don't panic on bad input
-async fn publish<I>(
+async fn publish<I, S>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I>>>,
+    State(state): State<Arc<ServiceState<I, S>>>,
     mut body: Bytes,
 ) -> Result<Json<CompletedPublication>, StatusCode>
 where
-    I: IndexClient,
+    I: IndexClient + Send + Sync,
+    S: StorageClient + Send + Sync + Clone + 'static,
 {
     let timer = Instant::now();
 
@@ -68,9 +72,22 @@ where
     } {
         let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
+        let name = json.name.clone();
+        let version = json.vers.to_string();
+        let storage = state.storage.clone();
+
         let resp = state
             .index
-            .publish(&json, &hash, Box::pin(async { todo!() }))
+            .publish(
+                &json,
+                &hash,
+                Box::pin(async move {
+                    storage
+                        .put_crate(&name, &version, &crate_bytes)
+                        .await
+                        .context("Failed to store crate in storage medium")
+                }),
+            )
             .await
             .map(|x| Json(x));
 
@@ -92,9 +109,9 @@ where
     resp
 }
 
-async fn yank<I>(
+async fn yank<I, S>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I>>>,
+    State(state): State<Arc<ServiceState<I, S>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> StatusCode
 where
@@ -123,9 +140,9 @@ where
     code
 }
 
-async fn unyank<I>(
+async fn unyank<I, S>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I>>>,
+    State(state): State<Arc<ServiceState<I, S>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> StatusCode
 where
@@ -166,8 +183,8 @@ async fn remove_owner() {
     todo!()
 }
 
-async fn register<I>(
-    State(state): State<Arc<ServiceState<I>>>,
+async fn register<I, S>(
+    State(state): State<Arc<ServiceState<I, S>>>,
     Form(auth): Form<AuthForm>,
 ) -> Result<Html<String>, StatusCode> {
     if let Some(token) = state.register(&auth.username, &auth.password).await {
@@ -177,8 +194,8 @@ async fn register<I>(
     }
 }
 
-async fn login<I>(
-    State(state): State<Arc<ServiceState<I>>>,
+async fn login<I, S>(
+    State(state): State<Arc<ServiceState<I, S>>>,
     Form(auth): Form<AuthForm>,
 ) -> Result<Html<String>, StatusCode> {
     if let Some(token) = state.login(&auth.username, &auth.password).await {
@@ -188,8 +205,8 @@ async fn login<I>(
     }
 }
 
-async fn search<I>(
-    State(state): State<Arc<ServiceState<I>>>,
+async fn search<I, S>(
+    State(state): State<Arc<ServiceState<I, S>>>,
     Query(query): Query<SearchQuery>,
 ) -> Json<SearchResults>
 where
