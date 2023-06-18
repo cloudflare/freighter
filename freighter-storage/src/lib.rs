@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 
+#[cfg(feature = "s3-backend")]
 pub mod s3_client;
 
 mod error;

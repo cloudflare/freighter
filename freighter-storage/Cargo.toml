@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-s3-backend = []
+s3-backend = ["aws-region", "rust-s3"]
 
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-aws-region = { workspace = true, features = ["serde"] }
+aws-region = { workspace = true, features = ["serde"], optional = true }
 bytes = { workspace = true }
 metrics = { workspace = true }
-rust-s3 = { workspace = true }
+rust-s3 = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

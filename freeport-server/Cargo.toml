@@ -8,7 +8,7 @@ publish = ["nkcompute"]
 
 [dependencies]
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
-freighter-storage = { workspace = true, features = [] }
+freighter-storage = { workspace = true, features = ["s3-backend"] }
 
 anyhow = { workspace = true }
 aws-region = { workspace = true, features = ["serde"] }
