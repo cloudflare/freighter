@@ -1,4 +1,4 @@
-use s3::creds::Credentials;
+use freighter_storage::s3_client::exports::{awsregion, creds};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -21,5 +21,5 @@ pub struct ServiceConfig {
 pub struct StoreConfig {
     pub name: String,
     pub region: awsregion::Region,
-    pub credentials: Credentials,
+    pub credentials: creds::Credentials,
 }

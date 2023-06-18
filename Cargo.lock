@@ -530,7 +530,6 @@ name = "freeport-server"
 version = "0.0.5"
 dependencies = [
  "anyhow",
- "aws-region",
  "axum",
  "axum-extra",
  "clap",
@@ -540,7 +539,6 @@ dependencies = [
  "freighter-storage",
  "metrics",
  "metrics-exporter-prometheus",
- "rust-s3",
  "semver",
  "serde",
  "serde_json",

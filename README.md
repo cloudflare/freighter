@@ -9,13 +9,13 @@
 - [X] UI
   - [X] Password registration
   - [X] Password login
-- [ ] API
-  - [ ] Authenticated
+- [X] API
+  - [X] Authenticated
     - [X] Publishing
-    - [ ] Ownership
-      - [ ] Listing
-      - [ ] Addition
-      - [ ] Removal
+    - [X] Ownership
+      - [X] Listing
+      - [X] Addition
+      - [X] Removal
     - [X] Yanking & un-yanking
   - [X] Searching Crates
 - [X] Operational
