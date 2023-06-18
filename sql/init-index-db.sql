@@ -1,9 +1,4 @@
-drop schema if exists crates_index cascade;
-create schema crates_index;
-set schema 'crates_index';
-
-create extension if not exists pgcrypto;
-
+drop table if exists crates cascade;
 create table crates
 (
     id       integer primary key generated always as identity,
@@ -12,8 +7,7 @@ create table crates
     unique nulls not distinct (name, registry)
 );
 
-create index crates_name_index on crates (name);
-
+drop table if exists crate_versions cascade;
 create table crate_versions
 (
     id      integer primary key generated always as identity,
@@ -25,8 +19,6 @@ create table crate_versions
     unique (crate, version)
 );
 
-create index crate_versions_crate_index on crate_versions (crate);
-
 create table features
 (
     id            integer primary key generated always as identity,
@@ -35,8 +27,6 @@ create table features
     values        text[]  not null,
     unique (crate_version, name)
 );
-
-create index features_index on features (crate_version);
 
 create type dependency_kind as enum ('normal', 'dev', 'build');
 
@@ -54,34 +44,7 @@ create table dependencies
     package          text
 );
 
+create index crates_name_index on crates (name);
+create index crate_versions_crate_index on crate_versions (crate);
+create index features_index on features (crate_version);
 create index dependencies_dependent_index on dependencies (dependent);
-
--- bf hash of password
-create table users
-(
-    id            integer primary key generated always as identity,
-    username      text not null unique,
-    password_hash text not null
-);
-
--- bf hash of token
-create table tokens
-(
-    id         integer not null primary key generated always as identity,
-    user_id    integer not null references users (id),
-    token_hash text    not null unique
-);
-
-create index tokens_user_index on tokens (user_id);
-create index tokens_hash_index on tokens (token_hash);
-
-create table crate_owners
-(
-    id       integer not null primary key generated always as identity,
-    user_id  integer not null references users (id),
-    crate_id integer not null references crates (id),
-    unique (user_id, crate_id)
-);
-
-create index crate_owners_crates_index on crate_owners (crate_id);
-create index crate_owners_users_index on crate_owners (user_id);

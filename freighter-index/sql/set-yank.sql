@@ -1,6 +1,6 @@
-update crates_index.crate_versions cv
+update crate_versions cv
 set yanked = $3
-from crates_index.crates c
+from crates c
 where c.name = $1
   and cv.crate = c.id
   and cv.version = $2

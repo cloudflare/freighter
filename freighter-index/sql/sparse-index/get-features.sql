@@ -1,1 +1,3 @@
-select *from crates_index.features where crate_version = $1
+select *
+from features
+where crate_version = $1
