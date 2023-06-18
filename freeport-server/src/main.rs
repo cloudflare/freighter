@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use clap::Parser;
+use freighter_auth::yes_backend::YesAuthClient;
 use freighter_index::postgres_client::PostgreSQLIndex;
 use freighter_storage::s3_client::S3StorageClient;
 use metrics::increment_counter;
@@ -51,6 +52,7 @@ async fn main() {
             config.store.credentials,
         )
         .unwrap(),
+        YesAuthClient,
     ));
 
     let router = Router::new()

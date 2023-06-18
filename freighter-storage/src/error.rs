@@ -9,5 +9,5 @@ pub enum StorageError {
     #[error("Failed to upload because crate was already present")]
     UploadConflict,
     #[error("Encountered uncategorized error")]
-    ServerError(#[from] anyhow::Error),
+    ServiceError(#[from] anyhow::Error),
 }

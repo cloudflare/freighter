@@ -10,18 +10,19 @@ use semver::Version;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub fn downloads_router<I, S>() -> Router<Arc<ServiceState<I, S>>>
+pub fn downloads_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
     I: Send + Sync + 'static,
     S: StorageClient + Send + Sync + 'static,
+    A: Send + Sync + 'static,
 {
     Router::new()
         .route("/:name/:version", get(serve_crate))
         .fallback(handle_downloads_fallback)
 }
 
-async fn serve_crate<I, S>(
-    State(state): State<Arc<ServiceState<I, S>>>,
+async fn serve_crate<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> Result<Bytes, StatusCode>
 where

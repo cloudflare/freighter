@@ -3,9 +3,14 @@ name = "freighter-auth"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+yes-backend = ["rand"]
+
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 metrics = { workspace = true }
+rand = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }

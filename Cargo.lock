@@ -535,6 +535,7 @@ dependencies = [
  "axum-extra",
  "clap",
  "deadpool-postgres",
+ "freighter-auth",
  "freighter-index",
  "freighter-storage",
  "metrics",
@@ -559,6 +560,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "metrics",
+ "rand",
+ "serde",
  "thiserror",
  "tracing",
 ]

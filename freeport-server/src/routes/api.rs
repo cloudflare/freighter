@@ -7,6 +7,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
+use freighter_auth::AuthClient;
 use freighter_index::{
     AuthForm, CompletedPublication, IndexClient, Publish, SearchQuery, SearchResults,
 };
@@ -17,10 +18,11 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::Instant;
 
-pub fn api_router<I, S>() -> Router<Arc<ServiceState<I, S>>>
+pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
     I: IndexClient + Send + Sync + 'static,
     S: StorageClient + Send + Sync + Clone + 'static,
+    A: AuthClient + Send + Sync + 'static,
 {
     Router::new()
         .route("/new", put(publish))
@@ -36,14 +38,15 @@ where
 }
 
 // todo don't panic on bad input
-async fn publish<I, S>(
+async fn publish<I, S, A>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S>>>,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     mut body: Bytes,
 ) -> Result<Json<CompletedPublication>, StatusCode>
 where
     I: IndexClient + Send + Sync,
     S: StorageClient + Send + Sync + Clone + 'static,
+    A: AuthClient,
 {
     let timer = Instant::now();
 
@@ -65,7 +68,7 @@ where
             .map(|header| header.to_str().ok())
             .flatten()
         {
-            state.auth_user_action(auth, &json.name).await
+            state.auth.publish(auth, &json.name).await.is_err()
         } else {
             false
         }
@@ -109,25 +112,30 @@ where
     resp
 }
 
-async fn yank<I, S>(
+async fn yank<I, S, A>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S>>>,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> StatusCode
 where
     I: IndexClient,
+    A: AuthClient,
 {
     let timer = Instant::now();
 
-    let code = if let Some(_auth) = headers
+    let code = if let Some(auth) = headers
         .get(AUTHORIZATION)
         .map(|header| header.to_str().ok())
         .flatten()
     {
-        if state.index.yank_crate(&name, &version).await.is_ok() {
-            StatusCode::OK
+        if state.auth.auth_yank(auth, &name).await.is_ok() {
+            if state.index.yank_crate(&name, &version).await.is_ok() {
+                StatusCode::OK
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         } else {
-            StatusCode::UNAUTHORIZED
+            StatusCode::INTERNAL_SERVER_ERROR
         }
     } else {
         StatusCode::BAD_REQUEST
@@ -140,13 +148,14 @@ where
     code
 }
 
-async fn unyank<I, S>(
+async fn unyank<I, S, A>(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S>>>,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> StatusCode
 where
     I: IndexClient,
+    A: AuthClient,
 {
     let timer = Instant::now();
 
@@ -183,30 +192,36 @@ async fn remove_owner() {
     todo!()
 }
 
-async fn register<I, S>(
-    State(state): State<Arc<ServiceState<I, S>>>,
+async fn register<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> Result<Html<String>, StatusCode> {
-    if let Some(token) = state.register(&auth.username, &auth.password).await {
+) -> Result<Html<String>, StatusCode>
+where
+    A: AuthClient,
+{
+    if let Ok(token) = state.auth.register(&auth.username, &auth.password).await {
         Ok(Html(token))
     } else {
         Err(StatusCode::CONFLICT)
     }
 }
 
-async fn login<I, S>(
-    State(state): State<Arc<ServiceState<I, S>>>,
+async fn login<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> Result<Html<String>, StatusCode> {
-    if let Some(token) = state.login(&auth.username, &auth.password).await {
+) -> Result<Html<String>, StatusCode>
+where
+    A: AuthClient,
+{
+    if let Ok(token) = state.auth.login(&auth.username, &auth.password).await {
         Ok(Html(token))
     } else {
         Err(StatusCode::UNAUTHORIZED)
     }
 }
 
-async fn search<I, S>(
-    State(state): State<Arc<ServiceState<I, S>>>,
+async fn search<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<SearchQuery>,
 ) -> Json<SearchResults>
 where

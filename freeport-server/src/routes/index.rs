@@ -13,10 +13,11 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio_stream::{Stream, StreamExt};
 
-pub fn index_router<I, S>() -> Router<Arc<ServiceState<I, S>>>
+pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
     I: IndexClient + Send + Sync + 'static,
     S: Send + Sync + 'static,
+    A: Send + Sync + 'static,
 {
     Router::new()
         .route("/config.json", get(config))
@@ -30,7 +31,7 @@ struct RegistryConfig {
     api: String,
 }
 
-async fn config<I, S>(State(state): State<Arc<ServiceState<I, S>>>) -> Json<RegistryConfig> {
+async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Json<RegistryConfig> {
     RegistryConfig {
         dl: state.config.service.download_endpoint.clone(),
         api: state.config.service.api_endpoint.clone(),
@@ -38,8 +39,8 @@ async fn config<I, S>(State(state): State<Arc<ServiceState<I, S>>>) -> Json<Regi
     .into()
 }
 
-async fn get_sparse_meta<I, S>(
-    State(state): State<Arc<ServiceState<I, S>>>,
+async fn get_sparse_meta<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((_, _, crate_name)): Path<(String, String, String)>,
 ) -> Result<JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>, StatusCode>
 where

@@ -32,7 +32,7 @@ pub trait IndexClient: Sync {
     ///
     /// If the crate could not be found in the index, [`None`] will be returned.
     ///
-    /// If an error occurs while trying to generate the sparse entry, [`IndexError::ServerError`]
+    /// If an error occurs while trying to generate the sparse entry, [`IndexError::ServiceError`]
     /// will be returned.
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Option<Vec<CrateVersion>>>;
     /// Yank a crate version.
