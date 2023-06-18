@@ -2,7 +2,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[cfg_attr(
     feature = "postgresql-backend",
     derive(postgres_types::ToSql, postgres_types::FromSql)
@@ -19,7 +19,7 @@ pub enum DependencyKind {
     Build,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CrateVersion {
     /// The name of the package.
     ///
@@ -78,7 +78,7 @@ pub struct CrateVersion {
     pub features2: HashMap<String, Vec<String>>,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct Dependency {
     /// Name of the dependency.
     ///
@@ -117,13 +117,13 @@ pub struct Dependency {
     pub package: Option<String>,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct AuthForm {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct SearchQuery {
     /// The search query string.
     pub q: String,
@@ -131,20 +131,20 @@ pub struct SearchQuery {
     pub per_page: Option<usize>,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct SearchResults {
     /// Array of results.
     pub crates: Vec<SearchResultsEntry>,
     pub meta: SearchResultsMeta,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct SearchResultsMeta {
     /// Total number of results available on the server.
     pub total: usize,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct SearchResultsEntry {
     /// Name of the crate.
     pub name: String,
@@ -154,7 +154,7 @@ pub struct SearchResultsEntry {
     pub description: String,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Publish {
     /// The name of the package.
     pub name: String,
@@ -222,7 +222,7 @@ pub struct Publish {
     pub links: Option<String>,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct PublishDependency {
     /// Name of the dependency.
     ///
@@ -255,13 +255,13 @@ pub struct PublishDependency {
     pub explicit_name_in_toml: Option<String>,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CompletedPublication {
     /// Optional object of warnings to display to the user.
     pub warnings: Option<CompletedPublicationWarnings>,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CompletedPublicationWarnings {
     /// Array of strings of categories that are invalid and ignored.
     pub invalid_categories: Vec<String>,
