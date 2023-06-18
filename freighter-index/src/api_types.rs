@@ -4,18 +4,18 @@ use std::collections::HashMap;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 #[cfg_attr(
-    feature = "postgresql-client",
+    feature = "postgresql-backend",
     derive(postgres_types::ToSql, postgres_types::FromSql)
 )]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "postgresql-client", postgres(name = "dependency_kind"))]
+#[cfg_attr(feature = "postgresql-backend", postgres(name = "dependency_kind"))]
 pub enum DependencyKind {
-    #[cfg_attr(feature = "postgresql-client", postgres(name = "normal"))]
+    #[cfg_attr(feature = "postgresql-backend", postgres(name = "normal"))]
     #[default]
     Normal,
-    #[cfg_attr(feature = "postgresql-client", postgres(name = "dev"))]
+    #[cfg_attr(feature = "postgresql-backend", postgres(name = "dev"))]
     Dev,
-    #[cfg_attr(feature = "postgresql-client", postgres(name = "build"))]
+    #[cfg_attr(feature = "postgresql-backend", postgres(name = "build"))]
     Build,
 }
 

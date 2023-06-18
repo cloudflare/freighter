@@ -556,7 +556,11 @@ dependencies = [
 name = "freighter-auth"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
+ "metrics",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -584,7 +588,6 @@ dependencies = [
  "aws-region",
  "bytes",
  "metrics",
- "rand",
  "rust-s3",
  "thiserror",
  "tracing",

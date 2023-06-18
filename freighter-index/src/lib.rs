@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 
-#[cfg(feature = "postgresql-client")]
+#[cfg(feature = "postgresql-backend")]
 pub mod postgres_client;
 
 mod api_types;
