@@ -68,7 +68,7 @@ where
             .map(|header| header.to_str().ok())
             .flatten()
         {
-            state.auth.publish(auth, &json.name).await.is_err()
+            state.auth.publish(auth, &json.name).await.is_ok()
         } else {
             false
         }
