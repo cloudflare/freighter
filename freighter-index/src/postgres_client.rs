@@ -52,7 +52,7 @@ impl PostgreSQLIndex {
 
 #[async_trait]
 impl IndexClient for PostgreSQLIndex {
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Option<Vec<CrateVersion>>> {
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         let client = self.pool.get().await.unwrap();
 
         // prepare these at once to take advantage of pipelining
@@ -130,9 +130,9 @@ impl IndexClient for PostgreSQLIndex {
                 });
             }
 
-            Ok(Some(versions))
+            Ok(versions)
         } else {
-            Ok(None)
+            Err(IndexError::NotFound)
         }
     }
 

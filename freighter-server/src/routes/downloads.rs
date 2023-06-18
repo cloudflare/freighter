@@ -24,23 +24,22 @@ where
 async fn serve_crate<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> Result<Bytes, StatusCode>
+) -> axum::response::Result<Bytes>
 where
     S: StorageClient,
 {
     let timer = Instant::now();
 
-    let resp = state.storage.pull_crate(&name, &version.to_string()).await;
+    let crate_bytes = state
+        .storage
+        .pull_crate(&name, &version.to_string())
+        .await?;
 
     let elapsed = timer.elapsed();
 
-    if let Ok(bytes) = resp {
-        histogram!("request_duration_seconds", elapsed, "code" => "200", "endpoint" => "download_crate");
-        Ok(Bytes::from(bytes))
-    } else {
-        histogram!("request_duration_seconds", elapsed, "code" => "404", "endpoint" => "download_crate");
-        Err(StatusCode::NOT_FOUND)
-    }
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "download_crate");
+
+    Ok(Bytes::from(crate_bytes))
 }
 
 async fn handle_downloads_fallback() -> StatusCode {

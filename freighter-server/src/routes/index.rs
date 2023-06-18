@@ -42,7 +42,9 @@ async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Jso
 async fn get_sparse_meta<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((_, _, crate_name)): Path<(String, String, String)>,
-) -> Result<JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>, StatusCode>
+) -> axum::response::Result<
+    JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>,
+>
 where
     I: IndexClient,
 {
@@ -50,29 +52,15 @@ where
 
     let timer = Instant::now();
 
-    let resp = state
-        .index
-        .get_sparse_entry(&crate_name)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-        .and_then(|crate_versions| crate_versions.ok_or(StatusCode::NOT_FOUND))
-        .and_then(|crate_versions| {
-            Ok(JsonLines::new(
-                tokio_stream::iter(crate_versions).map(|c| Ok(c)),
-            ))
-        });
+    let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
+
+    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(|c| Ok(c)));
 
     let elapsed = timer.elapsed();
 
-    let code = if let Err(e) = &resp {
-        e.as_u16().to_string()
-    } else {
-        "200".to_string()
-    };
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "get_sparse");
 
-    histogram!("request_duration_seconds", elapsed, "code" => code, "endpoint" => "get_sparse");
-
-    resp
+    Ok(resp)
 }
 
 async fn handle_index_fallback() -> StatusCode {

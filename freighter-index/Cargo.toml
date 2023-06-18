@@ -1,6 +1,6 @@
 [package]
 name = "freighter-index"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
@@ -12,6 +12,7 @@ postgresql-backend = ["postgres-types"]
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+axum = { workspace = true }
 deadpool-postgres = { workspace = true }
 metrics = { workspace = true }
 postgres-types = { workspace = true, features = ["derive"], optional = true }

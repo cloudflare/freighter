@@ -14,9 +14,16 @@ use freighter_index::{
 use freighter_storage::StorageClient;
 use metrics::histogram;
 use semver::Version;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::Instant;
+
+#[non_exhaustive]
+#[derive(Deserialize)]
+pub struct OwnerListChange {
+    pub users: Vec<String>,
+}
 
 pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
@@ -29,8 +36,8 @@ where
         .route("/:crate_name/:version/yank", delete(yank))
         .route("/:crate_name/:version/unyank", put(unyank))
         .route("/:crate_name/owners", get(list_owners))
-        .route("/:crate_name/owners", delete(remove_owner))
-        .route("/:crate_name/owners", put(add_owner))
+        .route("/:crate_name/owners", delete(remove_owners))
+        .route("/:crate_name/owners", put(add_owners))
         .route("/account", post(register))
         .route("/account/token", post(login))
         .route("/", get(search))
@@ -42,7 +49,7 @@ async fn publish<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     mut body: Bytes,
-) -> Result<Json<CompletedPublication>, StatusCode>
+) -> axum::response::Result<Json<CompletedPublication>>
 where
     I: IndexClient + Send + Sync,
     S: StorageClient + Send + Sync + Clone + 'static,
@@ -62,186 +69,243 @@ where
 
     let json: Publish = serde_json::from_slice(&json_bytes).unwrap();
 
-    let resp = if {
-        if let Some(auth) = headers
-            .get(AUTHORIZATION)
-            .map(|header| header.to_str().ok())
-            .flatten()
-        {
-            state.auth.publish(auth, &json.name).await.is_ok()
-        } else {
-            false
-        }
-    } {
-        let hash = format!("{:x}", Sha256::digest(&crate_bytes));
+    let auth = headers
+        .get(AUTHORIZATION)
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
 
-        let name = json.name.clone();
-        let version = json.vers.to_string();
-        let storage = state.storage.clone();
+    state.auth.publish(auth, &json.name).await?;
 
-        let resp = state
-            .index
-            .publish(
-                &json,
-                &hash,
-                Box::pin(async move {
-                    storage
-                        .put_crate(&name, &version, &crate_bytes)
-                        .await
-                        .context("Failed to store crate in storage medium")
-                }),
-            )
-            .await
-            .map(|x| Json(x));
+    let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
-        resp.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
-    };
+    let name = json.name.clone();
+    let version = json.vers.to_string();
+    let storage = state.storage.clone();
+
+    let resp = state
+        .index
+        .publish(
+            &json,
+            &hash,
+            Box::pin(async move {
+                storage
+                    .put_crate(&name, &version, &crate_bytes)
+                    .await
+                    .context("Failed to store crate in storage medium")
+            }),
+        )
+        .await
+        .map(|x| Json(x))?;
 
     let elapsed = timer.elapsed();
 
-    let code = if let Err(e) = &resp {
-        e.as_u16().to_string()
-    } else {
-        "200".to_string()
-    };
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "publish");
 
-    histogram!("request_duration_seconds", elapsed, "code" => code, "endpoint" => "publish");
-
-    resp
+    Ok(resp)
 }
 
 async fn yank<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> StatusCode
+) -> axum::response::Result<()>
 where
     I: IndexClient,
     A: AuthClient,
 {
     let timer = Instant::now();
 
-    let code = if let Some(auth) = headers
+    let auth = headers
         .get(AUTHORIZATION)
-        .map(|header| header.to_str().ok())
-        .flatten()
-    {
-        if state.auth.auth_yank(auth, &name).await.is_ok() {
-            if state.index.yank_crate(&name, &version).await.is_ok() {
-                StatusCode::OK
-            } else {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-        } else {
-            StatusCode::INTERNAL_SERVER_ERROR
-        }
-    } else {
-        StatusCode::BAD_REQUEST
-    };
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
+
+    state.auth.auth_yank(auth, &name).await?;
+
+    state.index.yank_crate(&name, &version).await?;
 
     let elapsed = timer.elapsed();
 
-    histogram!("request_duration_seconds", elapsed, "code" => code.as_u16().to_string(), "endpoint" => "yank");
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "yank");
 
-    code
+    Ok(())
 }
 
 async fn unyank<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> StatusCode
+) -> axum::response::Result<()>
 where
     I: IndexClient,
     A: AuthClient,
 {
     let timer = Instant::now();
 
-    let code = if let Some(_auth) = headers
+    let auth = headers
         .get(AUTHORIZATION)
-        .map(|header| header.to_str().ok())
-        .flatten()
-    {
-        if state.index.unyank_crate(&name, &version).await.is_ok() {
-            StatusCode::OK
-        } else {
-            StatusCode::UNAUTHORIZED
-        }
-    } else {
-        StatusCode::BAD_REQUEST
-    };
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
+
+    state.auth.auth_unyank(auth, &name).await?;
+
+    state.index.unyank_crate(&name, &version).await?;
 
     let elapsed = timer.elapsed();
 
-    histogram!("request_duration_seconds", elapsed, "code" => code.as_u16().to_string(), "endpoint" => "unyank");
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "unyank");
 
-    code
+    Ok(())
 }
 
-async fn list_owners() {
-    todo!()
+async fn list_owners<I, S, A>(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+    Path(name): Path<String>,
+) -> axum::response::Result<()>
+where
+    A: AuthClient,
+{
+    let timer = Instant::now();
+
+    let auth = headers
+        .get(AUTHORIZATION)
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
+
+    state.auth.list_owners(auth, &name).await?;
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "list_owners");
+
+    Ok(())
 }
 
-async fn add_owner() {
-    todo!()
+async fn add_owners<I, S, A>(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+    Path(name): Path<String>,
+    Json(owners): Json<OwnerListChange>,
+) -> axum::response::Result<()>
+where
+    A: AuthClient,
+{
+    let timer = Instant::now();
+
+    let auth = headers
+        .get(AUTHORIZATION)
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
+
+    state
+        .auth
+        .add_owners(
+            auth,
+            &owners.users.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
+            &name,
+        )
+        .await?;
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "add_owners");
+
+    Ok(())
 }
 
-async fn remove_owner() {
-    todo!()
+async fn remove_owners<I, S, A>(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+    Path(name): Path<String>,
+    Json(owners): Json<OwnerListChange>,
+) -> axum::response::Result<()>
+where
+    A: AuthClient,
+{
+    let timer = Instant::now();
+
+    let auth = headers
+        .get(AUTHORIZATION)
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .or(Err(StatusCode::BAD_REQUEST))?;
+
+    state
+        .auth
+        .remove_owners(
+            auth,
+            &owners.users.iter().map(|x| x.as_str()).collect::<Vec<_>>(),
+            &name,
+        )
+        .await?;
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "remove_owners");
+
+    Ok(())
 }
 
 async fn register<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> Result<Html<String>, StatusCode>
+) -> axum::response::Result<Html<String>>
 where
     A: AuthClient,
 {
-    if let Ok(token) = state.auth.register(&auth.username, &auth.password).await {
-        Ok(Html(token))
-    } else {
-        Err(StatusCode::CONFLICT)
-    }
+    let timer = Instant::now();
+
+    let token = state.auth.register(&auth.username, &auth.password).await?;
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "register");
+
+    Ok(Html(token))
 }
 
 async fn login<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> Result<Html<String>, StatusCode>
+) -> axum::response::Result<Html<String>>
 where
     A: AuthClient,
 {
-    if let Ok(token) = state.auth.login(&auth.username, &auth.password).await {
-        Ok(Html(token))
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
-    }
-}
+    let timer = Instant::now();
 
+    let token = state.auth.login(&auth.username, &auth.password).await?;
+
+    let elapsed = timer.elapsed();
+
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "login");
+
+    Ok(Html(token))
+}
 async fn search<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<SearchQuery>,
-) -> Json<SearchResults>
+) -> axum::response::Result<Json<SearchResults>>
 where
     I: IndexClient,
 {
     let timer = Instant::now();
 
-    let resp = Json(
-        state
-            .index
-            .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
-            .await
-            .unwrap(),
-    );
+    let search_results = state
+        .index
+        .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
+        .await?;
 
     let elapsed = timer.elapsed();
 
-    histogram!("request_duration_seconds", elapsed, "code" => "200", "endpoint" => "search");
+    histogram!("request_duration_seconds", elapsed, "endpoint" => "search");
 
-    resp
+    Ok(Json(search_results))
 }
 
 async fn handle_api_fallback() -> StatusCode {

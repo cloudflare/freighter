@@ -34,7 +34,7 @@ pub trait IndexClient: Sync {
     ///
     /// If an error occurs while trying to generate the sparse entry, [`IndexError::ServiceError`]
     /// will be returned.
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Option<Vec<CrateVersion>>>;
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>>;
     /// Yank a crate version.
     async fn yank_crate(&self, crate_name: &str, version: &Version) -> IndexResult<()>;
     /// Unyank a crate version

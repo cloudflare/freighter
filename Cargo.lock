@@ -527,10 +527,11 @@ dependencies = [
 
 [[package]]
 name = "freighter-auth"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
+ "axum",
  "metrics",
  "rand",
  "serde",
@@ -540,10 +541,11 @@ dependencies = [
 
 [[package]]
 name = "freighter-index"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
+ "axum",
  "deadpool-postgres",
  "metrics",
  "postgres-types",
@@ -556,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-server"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -582,11 +584,12 @@ dependencies = [
 
 [[package]]
 name = "freighter-storage"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
  "aws-region",
+ "axum",
  "bytes",
  "metrics",
  "rust-s3",
