@@ -33,8 +33,8 @@ struct RegistryConfig {
 
 async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Json<RegistryConfig> {
     RegistryConfig {
-        dl: state.config.service.download_endpoint.clone(),
-        api: state.config.service.api_endpoint.clone(),
+        dl: state.config.download_endpoint.clone(),
+        api: state.config.api_endpoint.clone(),
     }
     .into()
 }

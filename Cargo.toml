@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "freighter",
     "freighter-auth",
     "freighter-index",
     "freighter-server",
@@ -8,6 +9,7 @@ members = [
 ]
 
 [workspace.dependencies]
+freighter = { path = "freighter" }
 freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.2" }
 freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.2" }
 freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.2" }

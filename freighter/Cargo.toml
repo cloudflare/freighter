@@ -1,0 +1,21 @@
+[package]
+name = "freighter"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+freighter-server = { workspace = true }
+freighter-auth = { workspace = true, features = ["yes-backend"] }
+freighter-index = { workspace = true, features = ["postgresql-backend"] }
+freighter-storage = { workspace = true, features = ["s3-backend"] }
+
+axum = { workspace = true, features = ["http1", "tokio", "http2"] }
+clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"] }
+deadpool-postgres = { workspace = true, features = ["serde"] }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
+serde = { workspace = true, features = ["derive"] }
+serde_yaml = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

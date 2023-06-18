@@ -526,6 +526,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "freighter"
+version = "0.0.1"
+dependencies = [
+ "axum",
+ "clap",
+ "deadpool-postgres",
+ "freighter-auth",
+ "freighter-index",
+ "freighter-server",
+ "freighter-storage",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "serde",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "freighter-auth"
 version = "0.0.2"
 dependencies = [
@@ -563,23 +583,17 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-extra",
- "clap",
- "deadpool-postgres",
  "freighter-auth",
  "freighter-index",
  "freighter-storage",
  "metrics",
- "metrics-exporter-prometheus",
  "semver",
  "serde",
  "serde_json",
- "serde_yaml",
  "sha2",
- "tokio",
  "tokio-stream",
  "tower-http",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

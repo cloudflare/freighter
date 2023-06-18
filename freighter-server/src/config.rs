@@ -1,25 +1,10 @@
-use freighter_storage::s3_client::exports::{awsregion, creds};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::net::SocketAddr;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub service: ServiceConfig,
-    pub db: deadpool_postgres::Config,
-    pub store: StoreConfig,
-}
-
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct ServiceConfig {
     pub address: SocketAddr,
     pub download_endpoint: String,
     pub api_endpoint: String,
     pub metrics_address: SocketAddr,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct StoreConfig {
-    pub name: String,
-    pub region: awsregion::Region,
-    pub credentials: creds::Credentials,
 }
