@@ -1,6 +1,5 @@
 use clap::Parser;
 use freighter_auth::pg_backend::PgAuthClient;
-use freighter_auth::yes_backend::YesAuthClient;
 use freighter_index::postgres_client::PostgreSQLIndex;
 use freighter_storage::s3_client::S3StorageClient;
 use metrics_exporter_prometheus::PrometheusBuilder;
