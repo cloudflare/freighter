@@ -1,4 +1,5 @@
 use clap::Parser;
+use freighter_auth::pg_backend::PgAuthClient;
 use freighter_auth::yes_backend::YesAuthClient;
 use freighter_index::postgres_client::PostgreSQLIndex;
 use freighter_storage::s3_client::S3StorageClient;
@@ -30,14 +31,14 @@ async fn main() {
 
     let addr = config.service.address;
 
-    let index_client = PostgreSQLIndex::new(config.db).unwrap();
+    let index_client = PostgreSQLIndex::new(config.db.clone()).unwrap();
     let storage_client = S3StorageClient::new(
         &config.store.name,
         config.store.region,
         config.store.credentials,
     )
     .unwrap();
-    let auth_client = YesAuthClient;
+    let auth_client = PgAuthClient::new(config.db).unwrap();
 
     let router =
         freighter_server::router(config.service, index_client, storage_client, auth_client);
