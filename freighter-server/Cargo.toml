@@ -12,7 +12,7 @@ freighter-index = { workspace = true, features = ["postgresql-backend"] }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
 
 anyhow = { workspace = true }
-axum = { workspace = true, features = ["http1", "json", "tokio", "http2", "query", "form"] }
+axum = { workspace = true, features = ["json", "query", "form", "matched-path"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
 metrics = { workspace = true }
 semver = { workspace = true, features = ["serde"] }

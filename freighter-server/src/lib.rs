@@ -1,14 +1,16 @@
 use axum::body::Body;
+use axum::extract::MatchedPath;
 use axum::http::{Request, StatusCode};
-use axum::middleware::map_response;
+use axum::middleware::{from_fn, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use freighter_auth::AuthClient;
 use freighter_index::IndexClient;
 use freighter_storage::StorageClient;
-use metrics::increment_counter;
+use metrics::{histogram, increment_counter};
 use std::sync::Arc;
+use std::time::Instant;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::classify::StatusInRangeAsFailures;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
@@ -62,11 +64,25 @@ where
                 })
                 .on_failure(DefaultOnFailure::new()),
         )
-        .layer(map_response(record_status_code))
+        .layer(from_fn(metrics_layer))
 }
 
-async fn record_status_code<B>(response: Response<B>) -> Response<B> {
-    let code = response.status().as_str().to_string();
-    increment_counter!("responses_total", "code" => code);
+async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
+    let timer = Instant::now();
+
+    let path = if let Some(path) = request.extensions().get::<MatchedPath>() {
+        path.as_str().to_string()
+    } else {
+        request.uri().path().to_string()
+    };
+
+    let response = next.run(request).await;
+
+    let elapsed = timer.elapsed();
+
+    let code = response.status().as_u16().to_string();
+
+    histogram!("request_duration_seconds", elapsed, "code" => code, "endpoint" => path);
+
     response
 }

@@ -12,13 +12,13 @@ mod config;
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let args = cli::FreePortArgs::parse();
+    let args = cli::FreighterArgs::parse();
 
     let config: config::Config =
         serde_yaml::from_str(&read_to_string(args.config).unwrap()).unwrap();
 
     PrometheusBuilder::new()
-        .add_global_label("service", "freeport-server")
+        .add_global_label("service", "freighter")
         .with_http_listener(config.service.metrics_address)
         .set_buckets(&[
             100e-6, 500e-6, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 2e-1, 3e-1, 4e-1, 5e-1, 6e-1, 7e-1, 8e-1,
@@ -47,9 +47,3 @@ async fn main() {
         .await
         .unwrap()
 }
-
-// async fn record_status_code<B>(response: Response<B>) -> Response<B> {
-//     let code = response.status().as_str().to_string();
-//     increment_counter!("responses_total", "code" => code);
-//     response
-// }

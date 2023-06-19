@@ -6,11 +6,9 @@ use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
 use freighter_index::{CrateVersion, IndexClient};
-use metrics::histogram;
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::sync::Arc;
-use std::time::Instant;
 use tokio_stream::{Stream, StreamExt};
 
 pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
@@ -48,17 +46,9 @@ async fn get_sparse_meta<I, S, A>(
 where
     I: IndexClient,
 {
-    // todo we can make this streamable, does it get us anything to do so?
-
-    let timer = Instant::now();
-
     let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
 
     let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(|c| Ok(c)));
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "get_sparse");
 
     Ok(resp)
 }

@@ -12,12 +12,10 @@ use freighter_index::{
     AuthForm, CompletedPublication, IndexClient, Publish, SearchQuery, SearchResults,
 };
 use freighter_storage::StorageClient;
-use metrics::histogram;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
-use std::time::Instant;
 
 #[non_exhaustive]
 #[derive(Deserialize)]
@@ -55,8 +53,6 @@ where
     S: StorageClient + Send + Sync + Clone + 'static,
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let json_len_bytes = body.split_to(4);
     let json_len = u32::from_le_bytes(json_len_bytes.as_ref().try_into().unwrap());
 
@@ -98,10 +94,6 @@ where
         .await
         .map(|x| Json(x))?;
 
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "publish");
-
     Ok(resp)
 }
 
@@ -114,8 +106,6 @@ where
     I: IndexClient,
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let auth = headers
         .get(AUTHORIZATION)
         .ok_or(StatusCode::BAD_REQUEST)?
@@ -125,10 +115,6 @@ where
     state.auth.auth_yank(auth, &name).await?;
 
     state.index.yank_crate(&name, &version).await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "yank");
 
     Ok(())
 }
@@ -142,8 +128,6 @@ where
     I: IndexClient,
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let auth = headers
         .get(AUTHORIZATION)
         .ok_or(StatusCode::BAD_REQUEST)?
@@ -153,10 +137,6 @@ where
     state.auth.auth_unyank(auth, &name).await?;
 
     state.index.unyank_crate(&name, &version).await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "unyank");
 
     Ok(())
 }
@@ -169,8 +149,6 @@ async fn list_owners<I, S, A>(
 where
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let auth = headers
         .get(AUTHORIZATION)
         .ok_or(StatusCode::BAD_REQUEST)?
@@ -178,10 +156,6 @@ where
         .or(Err(StatusCode::BAD_REQUEST))?;
 
     state.auth.list_owners(auth, &name).await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "list_owners");
 
     Ok(())
 }
@@ -195,8 +169,6 @@ async fn add_owners<I, S, A>(
 where
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let auth = headers
         .get(AUTHORIZATION)
         .ok_or(StatusCode::BAD_REQUEST)?
@@ -212,10 +184,6 @@ where
         )
         .await?;
 
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "add_owners");
-
     Ok(())
 }
 
@@ -228,8 +196,6 @@ async fn remove_owners<I, S, A>(
 where
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let auth = headers
         .get(AUTHORIZATION)
         .ok_or(StatusCode::BAD_REQUEST)?
@@ -245,10 +211,6 @@ where
         )
         .await?;
 
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "remove_owners");
-
     Ok(())
 }
 
@@ -259,13 +221,7 @@ async fn register<I, S, A>(
 where
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let token = state.auth.register(&auth.username, &auth.password).await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "register");
 
     Ok(Html(token))
 }
@@ -277,13 +233,7 @@ async fn login<I, S, A>(
 where
     A: AuthClient,
 {
-    let timer = Instant::now();
-
     let token = state.auth.login(&auth.username, &auth.password).await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "login");
 
     Ok(Html(token))
 }
@@ -294,16 +244,10 @@ async fn search<I, S, A>(
 where
     I: IndexClient,
 {
-    let timer = Instant::now();
-
     let search_results = state
         .index
         .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
         .await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "search");
 
     Ok(Json(search_results))
 }

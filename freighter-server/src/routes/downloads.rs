@@ -5,10 +5,8 @@ use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
 use freighter_storage::StorageClient;
-use metrics::histogram;
 use semver::Version;
 use std::sync::Arc;
-use std::time::Instant;
 
 pub fn downloads_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
@@ -28,16 +26,10 @@ async fn serve_crate<I, S, A>(
 where
     S: StorageClient,
 {
-    let timer = Instant::now();
-
     let crate_bytes = state
         .storage
         .pull_crate(&name, &version.to_string())
         .await?;
-
-    let elapsed = timer.elapsed();
-
-    histogram!("request_duration_seconds", elapsed, "endpoint" => "download_crate");
 
     Ok(Bytes::from(crate_bytes))
 }
