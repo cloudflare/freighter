@@ -2,24 +2,52 @@ use axum::body::Body;
 use axum::extract::MatchedPath;
 use axum::http::{Request, StatusCode};
 use axum::middleware::{from_fn, Next};
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use freighter_auth::AuthClient;
 use freighter_index::IndexClient;
 use freighter_storage::StorageClient;
 use metrics::{histogram, increment_counter};
+use serde::Deserialize;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::classify::StatusInRangeAsFailures;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
 
-pub use config::ServiceConfig;
+pub mod index;
 
-mod config;
-mod model;
-mod routes;
+pub mod api;
+
+pub mod downloads;
+
+#[derive(Clone, Deserialize)]
+pub struct ServiceConfig {
+    pub address: SocketAddr,
+    pub download_endpoint: String,
+    pub api_endpoint: String,
+    pub metrics_address: SocketAddr,
+}
+
+pub struct ServiceState<I, S, A> {
+    pub config: ServiceConfig,
+    pub index: I,
+    pub storage: S,
+    pub auth: A,
+}
+
+impl<I, S, A> ServiceState<I, S, A> {
+    pub fn new(config: ServiceConfig, index: I, storage: S, auth: A) -> Self {
+        Self {
+            config,
+            index,
+            storage,
+            auth,
+        }
+    }
+}
 
 pub fn router<I, S, A>(
     config: ServiceConfig,
@@ -32,7 +60,7 @@ where
     S: StorageClient + Clone + Send + Sync + 'static,
     A: AuthClient + Send + Sync + 'static,
 {
-    let state = Arc::new(model::ServiceState::new(
+    let state = Arc::new(ServiceState::new(
         config,
         index_client,
         storage_client,
@@ -40,12 +68,12 @@ where
     ));
 
     Router::new()
-        .nest("/downloads", routes::downloads::downloads_router())
-        .nest("/index", routes::index::index_router())
-        .nest("/api/v1/crates", routes::api::api_router())
-        .route("/me", get(routes::login))
+        .nest("/downloads", downloads::downloads_router())
+        .nest("/index", index::index_router())
+        .nest("/api/v1/crates", api::api_router())
+        .route("/me", get(login))
         .with_state(state)
-        .fallback(routes::handle_global_fallback)
+        .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
             increment_counter!("panics_total");
 
@@ -85,4 +113,12 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
     histogram!("request_duration_seconds", elapsed, "code" => code, "endpoint" => path);
 
     response
+}
+
+pub async fn login() -> Html<&'static str> {
+    Html(include_str!("../static/login.html"))
+}
+
+pub async fn handle_global_fallback() -> StatusCode {
+    StatusCode::NOT_FOUND
 }

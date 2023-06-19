@@ -1,4 +1,4 @@
-use crate::model::ServiceState;
+use crate::ServiceState;
 use anyhow::Context;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};

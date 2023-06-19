@@ -1,4 +1,4 @@
-use crate::model::ServiceState;
+use crate::ServiceState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::get;
