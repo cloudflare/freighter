@@ -527,7 +527,7 @@ dependencies = [
 
 [[package]]
 name = "freighter"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "axum",
  "clap",
@@ -547,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-auth"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -562,7 +562,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-index"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "axum",
@@ -599,7 +599,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-storage"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "async-trait",
