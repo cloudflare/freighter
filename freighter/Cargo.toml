@@ -7,9 +7,9 @@ authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 
 [dependencies]
-freighter-server = { workspace = true }
 freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
+freighter-server = { workspace = true }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
 
 axum = { workspace = true, features = ["http1", "tokio", "http2"] }
