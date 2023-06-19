@@ -65,74 +65,78 @@ impl IndexClient for PostgreSQLIndex {
             )
             .context("Failed to prepare transaction")?;
 
-        if let Ok(crate_row) = client
+        match client
             .query_one(&existential_statement, &[&crate_name])
             .await
         {
-            let id: i32 = crate_row.get("id");
+            Ok(crate_row) => {
+                let id: i32 = crate_row.get("id");
 
-            // this is a major hotpath
-            let version_rows = client
-                .query(&versions_statement, &[&id])
-                .await
-                .context("Failed to query versions")?;
+                // this is a major hotpath
+                let version_rows = client
+                    .query(&versions_statement, &[&id])
+                    .await
+                    .context("Failed to query versions")?;
 
-            let mut versions = Vec::with_capacity(version_rows.len());
+                let mut versions = Vec::with_capacity(version_rows.len());
 
-            // todo maybe look at running all of this concurrently for pipelining purposes
-            for version_row in version_rows {
-                let version_id: i32 = version_row.get("id");
+                // todo maybe look at running all of this concurrently for pipelining purposes
+                for version_row in version_rows {
+                    let version_id: i32 = version_row.get("id");
 
-                // this shouldn't be necessary but it is nonetheless
-                let version_id_query = [&version_id as &(dyn ToSql + Sync)];
+                    // this shouldn't be necessary but it is nonetheless
+                    let version_id_query = [&version_id as &(dyn ToSql + Sync)];
 
-                // pipeline the queries
-                let (feature_rows, dependency_rows) = tokio::try_join!(
-                    client.query(&features_statement, &version_id_query),
-                    client.query(&dependencies_statement, &version_id_query)
-                )
-                .context("Failed to query features or dependencies for crate")?;
+                    // pipeline the queries
+                    let (feature_rows, dependency_rows) = tokio::try_join!(
+                        client.query(&features_statement, &version_id_query),
+                        client.query(&dependencies_statement, &version_id_query)
+                    )
+                    .context("Failed to query features or dependencies for crate")?;
 
-                let mut features = HashMap::with_capacity(feature_rows.len());
-                let mut deps = Vec::with_capacity(dependency_rows.len());
+                    let mut features = HashMap::with_capacity(feature_rows.len());
+                    let mut deps = Vec::with_capacity(dependency_rows.len());
 
-                for feature_row in feature_rows {
-                    features.insert(feature_row.get("name"), feature_row.get("values"));
-                }
+                    for feature_row in feature_rows {
+                        features.insert(feature_row.get("name"), feature_row.get("values"));
+                    }
 
-                for deps_row in dependency_rows {
-                    deps.push(Dependency {
-                        name: deps_row.get("name"),
-                        req: VersionReq::parse(deps_row.get("req"))
-                            .context("Failed to parse dependency version req in db")?,
-                        features: deps_row.get("features"),
-                        optional: deps_row.get("optional"),
-                        default_features: deps_row.get("default_features"),
-                        target: deps_row.get("target"),
-                        kind: deps_row.get("kind"),
-                        registry: deps_row.get("registry"),
-                        package: deps_row.get("package"),
+                    for deps_row in dependency_rows {
+                        deps.push(Dependency {
+                            name: deps_row.get("name"),
+                            req: VersionReq::parse(deps_row.get("req"))
+                                .context("Failed to parse dependency version req in db")?,
+                            features: deps_row.get("features"),
+                            optional: deps_row.get("optional"),
+                            default_features: deps_row.get("default_features"),
+                            target: deps_row.get("target"),
+                            kind: deps_row.get("kind"),
+                            registry: deps_row.get("registry"),
+                            package: deps_row.get("package"),
+                        });
+                    }
+
+                    versions.push(CrateVersion {
+                        name: crate_name.to_string(),
+                        vers: Version::parse(version_row.get("version"))
+                            .context("Failed to parse crate version in db")?,
+                        deps,
+                        cksum: version_row.get("cksum"),
+                        features,
+                        yanked: version_row.get("yanked"),
+                        links: version_row.get("links"),
+                        v: 2,
+                        // todo maybe scrap
+                        features2: HashMap::new(),
                     });
                 }
 
-                versions.push(CrateVersion {
-                    name: crate_name.to_string(),
-                    vers: Version::parse(version_row.get("version"))
-                        .context("Failed to parse crate version in db")?,
-                    deps,
-                    cksum: version_row.get("cksum"),
-                    features,
-                    yanked: version_row.get("yanked"),
-                    links: version_row.get("links"),
-                    v: 2,
-                    // todo maybe scrap
-                    features2: HashMap::new(),
-                });
+                Ok(versions)
             }
-
-            Ok(versions)
-        } else {
-            Err(IndexError::NotFound)
+            Err(error) => {
+                tracing::warn!(?error, "Returning 404 for crate index");
+                Err(IndexError::NotFound)
+            }
         }
     }
 

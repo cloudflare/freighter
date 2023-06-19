@@ -3,6 +3,9 @@ use async_trait::async_trait;
 #[cfg(feature = "yes-backend")]
 pub mod yes_backend;
 
+#[cfg(feature = "pg-backend")]
+pub mod pg_backend;
+
 mod api_types;
 mod error;
 

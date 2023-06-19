@@ -552,10 +552,11 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "metrics",
+ "deadpool-postgres",
  "rand",
  "serde",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 

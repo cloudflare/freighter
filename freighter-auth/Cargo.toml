@@ -8,13 +8,15 @@ publish = ["nkcompute"]
 
 [features]
 yes-backend = ["rand"]
+pg-backend = []
 
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
-metrics = { workspace = true }
+deadpool-postgres = { workspace = true }
 rand = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"]}
 tracing = { workspace = true }
