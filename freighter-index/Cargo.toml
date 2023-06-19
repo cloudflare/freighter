@@ -1,0 +1,23 @@
+[package]
+name = "freighter-index"
+version = "0.0.4"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
+publish = ["nkcompute"]
+
+[features]
+postgresql-backend = ["postgres-types"]
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true }
+deadpool-postgres = { workspace = true }
+metrics = { workspace = true }
+postgres-types = { workspace = true, features = ["derive"], optional = true }
+semver = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+tracing = { workspace = true }

@@ -1,18 +1,25 @@
 [workspace]
 resolver = "2"
 members = [
-    "freeport-api",
-    "freeport-e2e-tester",
-    "freeport-server"
+    "freighter",
+    "freighter-auth",
+    "freighter-index",
+    "freighter-server",
+    "freighter-storage",
 ]
 
 [workspace.dependencies]
-freeport-api = { path = "freeport-api", version = "0.0.4", registry = "nkcompute" }
+freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.4" }
+freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.4" }
+freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.4"}
+freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.4" }
 
+anyhow = "1.0.71"
+async-trait = "0.1.68"
 axum = { version = "0.6.18", default-features = false }
 axum-extra = "0.7.4"
 aws-region = "0.25.3"
-chrono = "0.4.24"
+bytes = "1.4.0"
 clap = "4.2.7"
 deadpool-postgres = "0.10.5"
 metrics = "0.21.0"
@@ -25,6 +32,7 @@ serde = "1.0.162"
 serde_json = "1.0.96"
 serde_yaml = "0.9.21"
 sha2 = "0.10.6"
+thiserror = "1.0.40"
 tokio = "1.28.1"
 tokio-stream = { version = "0.1.14", default-features = false }
 tower-http = "0.4.0"

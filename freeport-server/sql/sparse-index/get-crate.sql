@@ -1,1 +1,0 @@
-select id from crates_index.crates where name = $1
