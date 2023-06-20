@@ -6,6 +6,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row};
 use deadpool_postgres::{Pool, Runtime};
+use futures_util::StreamExt;
 use postgres_types::ToSql;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
@@ -80,19 +81,33 @@ impl IndexClient for PgIndexClient {
 
                 let mut versions = Vec::with_capacity(version_rows.len());
 
-                // todo maybe look at running all of this concurrently for pipelining purposes
+                // drive them all concurrently to improve pipelining
+                let mut version_queries = futures_util::stream::FuturesUnordered::new();
+
                 for version_row in version_rows {
-                    let version_id: i32 = version_row.get("id");
+                    let client = &client;
+                    let features_statement = &features_statement;
+                    let dependencies_statement = &dependencies_statement;
 
-                    // this shouldn't be necessary but it is nonetheless
-                    let version_id_query = [&version_id as &(dyn ToSql + Sync)];
+                    version_queries.push(async move {
+                        let version_id: i32 = version_row.get("id");
 
-                    // pipeline the queries
-                    let (feature_rows, dependency_rows) = tokio::try_join!(
-                        client.query(&features_statement, &version_id_query),
-                        client.query(&dependencies_statement, &version_id_query)
-                    )
-                    .context("Failed to query features or dependencies for crate")?;
+                        // this shouldn't be necessary but it is nonetheless
+                        let version_id_query = [&version_id as &(dyn ToSql + Sync)];
+
+                        // pipeline the queries here too
+                        let (features_row, dependencies_row) = tokio::try_join!(
+                            client.query(features_statement, &version_id_query),
+                            client.query(dependencies_statement, &version_id_query)
+                        )
+                        .context("Failed to query features or dependencies for crate")?;
+
+                        anyhow::Ok((version_row, features_row, dependencies_row))
+                    });
+                }
+
+                while let Some(query_res) = version_queries.next().await {
+                    let (version_row, feature_rows, dependency_rows) = query_res?;
 
                     let mut features = HashMap::with_capacity(feature_rows.len());
                     let mut deps = Vec::with_capacity(dependency_rows.len());
