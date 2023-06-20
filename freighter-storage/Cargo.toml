@@ -1,6 +1,6 @@
 [package]
 name = "freighter-storage"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
@@ -15,7 +15,6 @@ axum = { workspace = true }
 async-trait = { workspace = true }
 aws-region = { workspace = true, features = ["serde"], optional = true }
 bytes = { workspace = true }
-metrics = { workspace = true }
 rust-s3 = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

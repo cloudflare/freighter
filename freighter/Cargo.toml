@@ -1,6 +1,6 @@
 [package]
 name = "freighter"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
@@ -12,13 +12,13 @@ freighter-index = { workspace = true, features = ["postgresql-backend"] }
 freighter-server = { workspace = true }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
 
+anyhow = { workspace = true }
 axum = { workspace = true, features = ["http1", "tokio", "http2"] }
-clap = { workspace = true, features = ["derive", "cargo", "unicode", "wrap_help"] }
+clap = { workspace = true, features = ["std", "derive", "cargo", "help", "wrap_help", "usage"] }
 deadpool-postgres = { workspace = true, features = ["serde"] }
-metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["std", "smallvec", "fmt", "tracing-log", "ansi"] }

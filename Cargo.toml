@@ -9,10 +9,10 @@ members = [
 ]
 
 [workspace.dependencies]
-freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.4" }
-freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.4" }
-freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.4"}
-freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.4" }
+freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.5" }
+freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.5" }
+freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.5"}
+freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.5" }
 
 anyhow = "1.0.71"
 async-trait = "0.1.68"
@@ -20,7 +20,7 @@ axum = { version = "0.6.18", default-features = false }
 axum-extra = "0.7.4"
 aws-region = "0.25.3"
 bytes = "1.4.0"
-clap = "4.2.7"
+clap = { version = "4.2.7", default-features = false }
 deadpool-postgres = "0.10.5"
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
@@ -37,7 +37,7 @@ tokio = "1.28.1"
 tokio-stream = { version = "0.1.14", default-features = false }
 tower-http = "0.4.0"
 tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", default-features = false }
 
 [profile.release]
 debug = true
