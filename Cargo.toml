@@ -11,7 +11,7 @@ members = [
 [workspace.dependencies]
 freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.5" }
 freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.5" }
-freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.5"}
+freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.5" }
 freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.5" }
 
 anyhow = "1.0.71"
@@ -22,6 +22,7 @@ aws-region = "0.25.3"
 bytes = "1.4.0"
 clap = { version = "4.2.7", default-features = false }
 deadpool-postgres = "0.10.5"
+futures-util = { version = "0.3.28", default-features = false }
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.5"
