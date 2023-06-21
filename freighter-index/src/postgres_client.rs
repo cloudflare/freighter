@@ -12,11 +12,11 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
-pub struct PostgreSQLIndex {
+pub struct PgIndexClient {
     pool: Pool,
 }
 
-impl PostgreSQLIndex {
+impl PgIndexClient {
     pub fn new(config: deadpool_postgres::Config) -> IndexResult<Self> {
         let pool = config
             .create_pool(Some(Runtime::Tokio1), NoTls)
@@ -51,7 +51,7 @@ impl PostgreSQLIndex {
 }
 
 #[async_trait]
-impl IndexClient for PostgreSQLIndex {
+impl IndexClient for PgIndexClient {
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         let client = self.pool.get().await.unwrap();
 
