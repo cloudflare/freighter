@@ -1,10 +1,44 @@
 drop table if exists crates cascade;
 create table crates
 (
-    id       integer primary key generated always as identity,
-    name     text not null,
-    registry text,
+    id            integer primary key generated always as identity,
+    name          text not null,
+    registry      text,
+    description   text,
+    documentation text,
+    homepage      text,
+    repository    text,
     unique nulls not distinct (name, registry)
+);
+
+drop table if exists keywords cascade;
+create table keywords
+(
+    id   integer primary key generated always as identity,
+    name text not null unique
+);
+
+drop table if exists categories cascade;
+create table categories
+(
+    id   integer primary key generated always as identity,
+    name text not null unique
+);
+
+drop table if exists crate_keywords cascade;
+create table crate_keywords
+(
+    id      integer primary key generated always as identity,
+    crate   integer not null references crates (id),
+    keyword integer not null references keywords (id)
+);
+
+drop table if exists crate_categories cascade;
+create table crate_categories
+(
+    id       integer primary key generated always as identity,
+    crate    integer not null references crates (id),
+    category integer not null references categories (id)
 );
 
 drop table if exists crate_versions cascade;
@@ -19,6 +53,7 @@ create table crate_versions
     unique (crate, version)
 );
 
+drop table if exists features cascade;
 create table features
 (
     id            integer primary key generated always as identity,
@@ -28,8 +63,10 @@ create table features
     unique (crate_version, name)
 );
 
+drop type if exists dependency_kind cascade;
 create type dependency_kind as enum ('normal', 'dev', 'build');
 
+drop table if exists dependencies cascade;
 create table dependencies
 (
     id               integer primary key generated always as identity,
@@ -44,6 +81,10 @@ create table dependencies
     package          text
 );
 
+create index crate_keyword_crate on crate_keywords (crate);
+create index crate_keyword_keyword on crate_keywords (keyword);
+create index crate_categories_crate on crate_keywords (crate);
+create index crate_categories_category on crate_categories (category);
 create index crates_name_index on crates (name);
 create index crate_versions_crate_index on crate_versions (crate);
 create index features_index on features (crate_version);

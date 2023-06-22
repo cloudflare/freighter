@@ -4,7 +4,7 @@ use crate::{
 };
 use anyhow::Context;
 use async_trait::async_trait;
-use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row};
+use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row, Statement};
 use deadpool_postgres::{Pool, Runtime};
 use futures_util::StreamExt;
 use postgres_types::ToSql;
@@ -84,26 +84,35 @@ impl IndexClient for PgIndexClient {
                 // drive them all concurrently to improve pipelining
                 let mut version_queries = futures_util::stream::FuturesUnordered::new();
 
+                // using a function like this can often make rustc a bit smarter about what it captures and generates
+                async fn query_version(
+                    version_row: Row,
+                    client: &deadpool_postgres::Client,
+                    features_statement: &Statement,
+                    dependencies_statement: &Statement,
+                ) -> anyhow::Result<(Row, Vec<Row>, Vec<Row>)> {
+                    let version_id: i32 = version_row.get("id");
+
+                    // this shouldn't be necessary but it is nonetheless
+                    let version_id_query = [&version_id as &(dyn ToSql + Sync)];
+
+                    // pipeline the queries here too
+                    let (features_row, dependencies_row) = tokio::try_join!(
+                        client.query(features_statement, &version_id_query),
+                        client.query(dependencies_statement, &version_id_query)
+                    )
+                    .context("Failed to query features or dependencies for crate")?;
+
+                    Ok((version_row, features_row, dependencies_row))
+                }
+
                 for version_row in version_rows {
-                    let client = &client;
-                    let features_statement = &features_statement;
-                    let dependencies_statement = &dependencies_statement;
-
-                    version_queries.push(async move {
-                        let version_id: i32 = version_row.get("id");
-
-                        // this shouldn't be necessary but it is nonetheless
-                        let version_id_query = [&version_id as &(dyn ToSql + Sync)];
-
-                        // pipeline the queries here too
-                        let (features_row, dependencies_row) = tokio::try_join!(
-                            client.query(features_statement, &version_id_query),
-                            client.query(dependencies_statement, &version_id_query)
-                        )
-                        .context("Failed to query features or dependencies for crate")?;
-
-                        anyhow::Ok((version_row, features_row, dependencies_row))
-                    });
+                    version_queries.push(query_version(
+                        version_row,
+                        &client,
+                        &features_statement,
+                        &dependencies_statement,
+                    ));
                 }
 
                 while let Some(query_res) = version_queries.next().await {
@@ -202,7 +211,7 @@ impl IndexClient for PgIndexClient {
                 SearchResultsEntry {
                     name: row.get("name"),
                     max_version,
-                    description: String::new(),
+                    description: row.try_get("description").unwrap_or(String::new()),
                 }
             })
             .collect();
@@ -212,6 +221,8 @@ impl IndexClient for PgIndexClient {
         Ok(SearchResults { crates, meta })
     }
 
+    // this one has a lot of optimization headroom, and is thus perfect for experiments
+    // sadly it does not matter, as this will never be as slow for the user as compiling the crate
     async fn publish(
         &self,
         version: &Publish,
@@ -236,20 +247,127 @@ impl IndexClient for PgIndexClient {
             insert_version_statement,
             insert_dependency_statement,
             insert_features_statement,
+            update_crate_statement,
+            get_crate_keywords_statement,
+            get_crate_categories_statement,
+            insert_keyword_statement,
+            insert_category_statement,
+            insert_crate_keyword_statement,
+            insert_crate_category_statement,
+            remove_crate_keyword_statement,
+            remove_crate_category_statement,
         ) = tokio::try_join!(
-            transaction.prepare_cached(include_str!("../sql/publish/insert-crate.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/get-or-insert-crate.sql")),
             transaction.prepare_cached(include_str!("../sql/publish/insert-version.sql")),
             transaction.prepare_cached(include_str!("../sql/publish/insert-dependency.sql")),
             transaction.prepare_cached(include_str!("../sql/publish/insert-features.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/update-crate.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/get-crate-keywords.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/get-crate-categories.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/insert-keyword.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/insert-category.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/insert-crate-keyword.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/insert-crate-category.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/remove-crate-keyword.sql")),
+            transaction.prepare_cached(include_str!("../sql/publish/remove-crate-category.sql")),
         )
         .context("Failed to prepare statements for publish transaction")?;
 
-        let crate_id_row = transaction
+        let crate_row = transaction
             .query_one(&get_or_insert_crate_statement, &[&version.name])
             .await
             .context("Crate get or insert failed")?;
 
-        let crate_id: i32 = crate_id_row.get("id");
+        let crate_id: i32 = crate_row.get("id");
+
+        // postgres will replace the whole row anyways, so lets just be slightly more convenient
+        if version.description != crate_row.get("description")
+            || version.documentation != crate_row.get("documentation")
+            || version.homepage != crate_row.get("homepage")
+            || version.repository != crate_row.get("repository")
+        {
+            transaction
+                .query(
+                    &update_crate_statement,
+                    &[
+                        &crate_id,
+                        &version.description,
+                        &version.documentation,
+                        &version.homepage,
+                        &version.repository,
+                    ],
+                )
+                .await
+                .context("Failed to update crate with new information")?;
+        }
+
+        let crate_keywords = transaction
+            .query(&get_crate_keywords_statement, &[&crate_id])
+            .await
+            .context("Failed to fetch crate keywords")?
+            .iter()
+            .map(|x| x.get("name"))
+            .collect::<Vec<String>>();
+
+        let crate_categories = transaction
+            .query(&get_crate_categories_statement, &[&crate_id])
+            .await
+            .context("Failed to fetch crate categories")?
+            .iter()
+            .map(|x| x.get("name"))
+            .collect::<Vec<String>>();
+
+        // add missing keywords and categories
+
+        for k in version.keywords.iter() {
+            if !crate_keywords.contains(k) {
+                let keyword_id: i32 = transaction
+                    .query_one(&insert_keyword_statement, &[k])
+                    .await
+                    .context("Failed to insert keyword")?
+                    .get("id");
+
+                transaction
+                    .query(&insert_crate_keyword_statement, &[&crate_id, &keyword_id])
+                    .await
+                    .context("Failed to insert crate_keyword")?;
+            }
+        }
+
+        for c in version.categories.iter() {
+            if !crate_categories.contains(c) {
+                let category_id: i32 = transaction
+                    .query_one(&insert_category_statement, &[c])
+                    .await
+                    .context("Failed to insert category")?
+                    .get("id");
+
+                transaction
+                    .query(&insert_crate_category_statement, &[&crate_id, &category_id])
+                    .await
+                    .context("Failed to insert crate_category")?;
+            }
+        }
+
+        // prune unneeded keywords and categories
+
+        for k in crate_keywords.iter() {
+            if !version.keywords.contains(k) {
+                transaction
+                    .query(&remove_crate_keyword_statement, &[&crate_id, k])
+                    .await
+                    .context("Failed to remove crate_keyword")?;
+            }
+        }
+
+        for c in crate_categories.iter() {
+            if !version.categories.contains(c) {
+                transaction
+                    .query(&remove_crate_category_statement, &[&crate_id, c])
+                    .await
+                    .context("Failed to remove crate_category")?;
+            }
+        }
 
         let insert_version_row = transaction
             .query_one(

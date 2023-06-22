@@ -474,7 +474,7 @@ dependencies = [
 
 [[package]]
 name = "freighter"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "anyhow",
  "axum",
@@ -509,7 +509,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-index"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -526,7 +526,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-server"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "anyhow",
  "axum",

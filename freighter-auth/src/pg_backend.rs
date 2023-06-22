@@ -56,7 +56,7 @@ impl PgAuthClient {
             .context("Failed to auth crate transaction")?
             .into_iter()
             .map(|row| ListedOwner {
-                id: row.get("id"),
+                id: row.get::<_, i32>("id") as u32,
                 login: row.get("username"),
                 name: None,
             })
