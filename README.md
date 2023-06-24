@@ -1,5 +1,5 @@
 # Freighter Crate Registry
-
+A rust private registry implementation.
 
 ## Roadmap
 ### v0.1.0: MVP private registry

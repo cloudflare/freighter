@@ -9,10 +9,10 @@ members = [
 ]
 
 [workspace.dependencies]
-freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.6" }
-freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.6" }
-freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.7" }
-freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.5" }
+freighter-auth = { path = "freighter-auth", registry = "nkcompute", version = "0.0.7" }
+freighter-index = { path = "freighter-index", registry = "nkcompute", version = "0.0.7" }
+freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.0.8" }
+freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.0.6" }
 
 anyhow = "1.0.71"
 async-trait = "0.1.68"

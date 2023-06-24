@@ -1,11 +1,13 @@
 [package]
 name = "freighter-auth"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
-categories = ["registries", "freighter"]
+repository = "https://github.com/Noah-Kennedy/freighter"
+description = "Crate index traits and implementations for the freighter registry"
+categories = ["asynchronous", "authentication"]
 keywords = ["registries", "freighter"]
 
 [features]

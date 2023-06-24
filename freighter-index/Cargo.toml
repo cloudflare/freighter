@@ -1,12 +1,14 @@
 [package]
 name = "freighter-index"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["nkcompute"]
 repository = "https://github.com/Noah-Kennedy/freighter"
 description = "Crate index traits and implementations for the freighter registry"
+categories = ["asynchronous"]
+keywords = ["registries", "freighter"]
 
 [features]
 postgresql-backend = ["postgres-types"]
