@@ -66,6 +66,8 @@ impl PgAuthClient {
     }
 
     async fn add_owners_no_auth(&self, users: &[&str], crate_name: &str) -> AuthResult<()> {
+        tracing::info!(?crate_name, ?users, "adding owners");
+
         let mut client = self
             .pool
             .get()
@@ -101,6 +103,11 @@ impl PgAuthClient {
                 .await
                 .context("Failed to add owner to crate")?;
         }
+
+        transaction
+            .commit()
+            .await
+            .context("Failed to commit add owners transaction")?;
 
         Ok(())
     }
