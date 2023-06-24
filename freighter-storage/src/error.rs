@@ -8,8 +8,6 @@ pub type StorageResult<T> = Result<T, StorageError>;
 pub enum StorageError {
     #[error("Crate was not found in the storage medium")]
     NotFound,
-    #[error("Failed to upload because crate was already present")]
-    UploadConflict,
     #[error("Encountered uncategorized error")]
     ServiceError(#[from] anyhow::Error),
 }
@@ -17,12 +15,7 @@ pub enum StorageError {
 impl IntoResponse for StorageError {
     fn into_response(self) -> Response {
         match self {
-            StorageError::NotFound => {
-                StatusCode::NOT_FOUND.into_response()
-            }
-            StorageError::UploadConflict => {
-                StatusCode::CONFLICT.into_response()
-            }
+            StorageError::NotFound => StatusCode::NOT_FOUND.into_response(),
             StorageError::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in storage operation");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()

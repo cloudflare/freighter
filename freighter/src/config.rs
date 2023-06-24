@@ -1,5 +1,4 @@
 use freighter_server::ServiceConfig;
-use freighter_storage::s3_client::exports::{awsregion, creds};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,6 +11,8 @@ pub struct Config {
 #[derive(Deserialize)]
 pub struct StoreConfig {
     pub name: String,
-    pub region: awsregion::Region,
-    pub credentials: creds::Credentials,
+    pub endpoint_url: String,
+    pub region: String,
+    pub access_key_id: String,
+    pub access_key_secret: String,
 }

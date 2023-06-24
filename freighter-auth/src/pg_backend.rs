@@ -66,8 +66,6 @@ impl PgAuthClient {
     }
 
     async fn add_owners_no_auth(&self, users: &[&str], crate_name: &str) -> AuthResult<()> {
-        tracing::info!(?crate_name, ?users, "adding owners");
-
         let mut client = self
             .pool
             .get()
