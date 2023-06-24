@@ -15,6 +15,5 @@ from crates
          left join crate_keywords ck on crates.id = ck.crate
          join keywords k on k.id = ck.keyword
 where crates.registry is null
-  and position($1 in crates.name) > 0
 group by crates.name, crates.description, crates.documentation, crates.homepage, crates.repository
 having count(cv.version) > 0

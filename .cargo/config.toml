@@ -1,2 +1,2 @@
 [registries]
-nkcompute = { index = "sparse+https://crates-registry.nkcompute.net/" }
+nkcompute = { index = "sparse+https://crates-registry.nkcompute.net/index/" }

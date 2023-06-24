@@ -9,7 +9,8 @@ use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_auth::AuthClient;
 use freighter_index::{
-    AuthForm, CompletedPublication, IndexClient, Publish, SearchQuery, SearchResults,
+    AuthForm, CompletedPublication, IndexClient, ListQuery, Publish, SearchQuery, SearchResults,
+    SearchResultsEntry,
 };
 use freighter_storage::StorageClient;
 use semver::Version;
@@ -39,6 +40,7 @@ where
         .route("/account", post(register))
         .route("/account/token", post(login))
         .route("/", get(search))
+        .route("/all", get(list))
         .fallback(handle_api_fallback)
 }
 
@@ -248,6 +250,18 @@ where
         .index
         .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
         .await?;
+
+    Ok(Json(search_results))
+}
+
+async fn list<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+    Query(query): Query<ListQuery>,
+) -> axum::response::Result<Json<Vec<SearchResultsEntry>>>
+where
+    I: IndexClient,
+{
+    let search_results = state.index.list(&query).await?;
 
     Ok(Json(search_results))
 }
