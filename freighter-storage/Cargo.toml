@@ -1,6 +1,6 @@
 [package]
 name = "freighter-storage"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
@@ -11,14 +11,14 @@ categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [features]
-s3-backend = ["aws-region", "rust-s3"]
+s3-backend = ["aws-credential-types", "aws-sdk-s3"]
 
 [dependencies]
 anyhow = { workspace = true }
 axum = { workspace = true }
 async-trait = { workspace = true }
-aws-region = { workspace = true, features = ["serde"], optional = true }
+aws-credential-types = { workspace = true, optional = true, features = ["hardcoded-credentials"] }
+aws-sdk-s3 = { workspace = true, optional = true, features = ["rt-tokio", "native-tls"] }
 bytes = { workspace = true }
-rust-s3 = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
