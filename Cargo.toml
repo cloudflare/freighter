@@ -14,7 +14,7 @@ freighter-index = { path = "freighter-index", registry = "nkcompute", version = 
 freighter-server = { path = "freighter-server", registry = "nkcompute", version = "0.1.0-rc" }
 freighter-storage = { path = "freighter-storage", registry = "nkcompute", version = "0.1.0-rc" }
 
-anyhow = "1.0.5"
+anyhow = "1.0.20"
 async-trait = "0.1.68"
 axum = { version = "0.6.9", default-features = false }
 axum-extra = "0.7.0"
