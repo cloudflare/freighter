@@ -21,7 +21,12 @@ async fn main() -> anyhow::Result<()> {
     )
     .context("Failed to deserialize config file, please make sure its in the right format")?;
 
-    let config::Config { service, db, store } = config;
+    let config::Config {
+        service,
+        index_db,
+        auth_db,
+        store,
+    } = config;
 
     PrometheusBuilder::new()
         .add_global_label("service", "freighter")
@@ -37,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = service.address;
 
     let index_client =
-        PgIndexProvider::new(db.clone()).context("Failed to construct index client")?;
+        PgIndexProvider::new(index_db).context("Failed to construct index client")?;
     let storage_client = S3StorageProvider::new(
         &store.name,
         &store.endpoint_url,
@@ -45,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         &store.access_key_id,
         &store.access_key_secret,
     );
-    let auth_client = PgAuthProvider::new(db).context("Failed to initialize auth client")?;
+    let auth_client = PgAuthProvider::new(auth_db).context("Failed to initialize auth client")?;
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
 
