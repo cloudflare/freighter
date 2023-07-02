@@ -28,5 +28,11 @@ Because of Freighter's modularity, it does not need to support everything out-of
 provided via trait implementations and which I deem to be "too niche" may not be accepted. That being said, I have a
 pretty limited definition of what is "too niche".
 
+## UI
+Regarding the user interface, there is none. This is largely because I am legally barred from user interface design by
+international human rights law, but also because no one has gotten around to this.
+
+If you want to contribute a user interface for Freighter, PRs are welcome!
+
 [tracing]: https://docs.rs/tracing/latest/tracing/
 [metrics]: https://docs.rs/metrics/latest/metrics/
