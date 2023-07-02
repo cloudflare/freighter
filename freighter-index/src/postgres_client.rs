@@ -1,17 +1,19 @@
 use crate::{
     CompletedPublication, CrateVersion, Dependency, IndexClient, IndexError, IndexResult,
-    Pagination, Publish, SearchResults, SearchResultsEntry, SearchResultsMeta,
+    ListQuery, Publish, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row, Statement};
 use deadpool_postgres::{Pool, Runtime};
 use futures_util::StreamExt;
+use metrics::histogram;
 use postgres_types::ToSql;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
+use std::time::Instant;
 
 pub struct PgIndexClient {
     pool: Pool,
@@ -164,6 +166,26 @@ impl IndexClient for PgIndexClient {
         }
     }
 
+    async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../sql/confirm-existence.sql"))
+            .await
+            .context("Failed to prepare confirm existence statement")?;
+
+        let rows: Vec<Row> = client
+            .query(&statement, &[&crate_name, &version.to_string()])
+            .await
+            .context("Failed to execute existential confirmation query")?;
+
+        if let Some(row) = rows.first() {
+            Ok(row.get("yanked"))
+        } else {
+            Err(IndexError::NotFound)
+        }
+    }
+
     async fn yank_crate(&self, crate_name: &str, version: &Version) -> IndexResult<()> {
         self.yank_inner(crate_name, version, true).await
     }
@@ -195,26 +217,7 @@ impl IndexClient for PgIndexClient {
         let total = rows.len();
 
         // also might be expensive
-        let crates = rows
-            .into_iter()
-            .take(limit as usize)
-            .map(|row| {
-                let versions: Vec<String> = row.get("versions");
-
-                // we should never receive 0 versions from our query
-                let max_version = versions
-                    .iter()
-                    .map(|s| Version::parse(&s).unwrap())
-                    .max()
-                    .unwrap();
-
-                SearchResultsEntry {
-                    name: row.get("name"),
-                    max_version,
-                    description: row.try_get("description").unwrap_or(String::new()),
-                }
-            })
-            .collect();
+        let crates = rows.iter().take(limit).map(search_row_to_entry).collect();
 
         let meta = SearchResultsMeta { total };
 
@@ -229,6 +232,8 @@ impl IndexClient for PgIndexClient {
         checksum: &str,
         end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
     ) -> IndexResult<CompletedPublication> {
+        let startup_timer = Instant::now();
+
         let mut client = self
             .pool
             .get()
@@ -273,6 +278,13 @@ impl IndexClient for PgIndexClient {
         )
         .context("Failed to prepare statements for publish transaction")?;
 
+        histogram!(
+            "publish_component_duration_seconds", startup_timer.elapsed(),
+            "component" => "startup"
+        );
+
+        let crate_timer = Instant::now();
+
         let crate_row = transaction
             .query_one(&get_or_insert_crate_statement, &[&version.name])
             .await
@@ -301,6 +313,13 @@ impl IndexClient for PgIndexClient {
                 .context("Failed to update crate with new information")?;
         }
 
+        histogram!(
+            "publish_component_duration_seconds", crate_timer.elapsed(),
+            "component" => "crate"
+        );
+
+        let get_keycat_timer = Instant::now();
+
         let crate_keywords = transaction
             .query(&get_crate_keywords_statement, &[&crate_id])
             .await
@@ -317,7 +336,14 @@ impl IndexClient for PgIndexClient {
             .map(|x| x.get("name"))
             .collect::<Vec<String>>();
 
+        histogram!(
+            "publish_component_duration_seconds", get_keycat_timer.elapsed(),
+            "component" => "get_keycat"
+        );
+
         // add missing keywords and categories
+
+        let add_to_keycat_timer = Instant::now();
 
         for k in version.keywords.iter() {
             if !crate_keywords.contains(k) {
@@ -349,7 +375,14 @@ impl IndexClient for PgIndexClient {
             }
         }
 
+        histogram!(
+            "publish_component_duration_seconds", add_to_keycat_timer.elapsed(),
+            "component" => "add_to_keycat"
+        );
+
         // prune unneeded keywords and categories
+
+        let prune_keycat_timer = Instant::now();
 
         for k in crate_keywords.iter() {
             if !version.keywords.contains(k) {
@@ -369,6 +402,13 @@ impl IndexClient for PgIndexClient {
             }
         }
 
+        histogram!(
+            "publish_component_duration_seconds", prune_keycat_timer.elapsed(),
+            "component" => "prune_keycat"
+        );
+
+        let insert_version_timer = Instant::now();
+
         let insert_version_row = transaction
             .query_one(
                 &insert_version_statement,
@@ -382,6 +422,13 @@ impl IndexClient for PgIndexClient {
             )
             .await
             .context("Failed to insert version")?;
+
+        histogram!(
+            "publish_component_duration_seconds", insert_version_timer.elapsed(),
+            "component" => "insert_version"
+        );
+
+        let insert_dependencies_timer = Instant::now();
 
         let version_id: i32 = insert_version_row.get("id");
 
@@ -406,6 +453,13 @@ impl IndexClient for PgIndexClient {
                 .context("Failed to insert dependency")?;
         }
 
+        histogram!(
+            "publish_component_duration_seconds", insert_dependencies_timer.elapsed(),
+            "component" => "insert_dependencies"
+        );
+
+        let insert_features_timer = Instant::now();
+
         for feature in version.features.iter() {
             transaction
                 .query_one(
@@ -416,19 +470,94 @@ impl IndexClient for PgIndexClient {
                 .context("Failed to insert feature")?;
         }
 
+        histogram!(
+            "publish_component_duration_seconds", insert_features_timer.elapsed(),
+            "component" => "insert_features"
+        );
+
+        let end_step_timer = Instant::now();
+
         end_step
             .await
             .context("Failed to execute end step in index upload transaction")?;
+
+        histogram!(
+            "publish_component_duration_seconds", end_step_timer.elapsed(),
+            "component" => "end_step"
+        );
+
+        let commit_timer = Instant::now();
 
         transaction
             .commit()
             .await
             .context("Failed to commit transaction")?;
 
+        histogram!(
+            "publish_component_duration_seconds", commit_timer.elapsed(),
+            "component" => "commit"
+        );
+
         Ok(CompletedPublication { warnings: None })
     }
 
-    async fn list(&self, _pagination: Option<&Pagination>) -> IndexResult<Vec<SearchResultsEntry>> {
-        todo!()
+    async fn list(&self, pagination: &ListQuery) -> IndexResult<Vec<SearchResultsEntry>> {
+        let client = self.pool.get().await.unwrap();
+
+        let statement = client
+            .prepare_cached(include_str!("../sql/list.sql"))
+            .await
+            .context("Failed to prepare search statement")?;
+
+        let mut rows: Vec<Row> = client
+            .query(&statement, &[])
+            .await
+            .context("Failed to execute search query")?;
+
+        // return the client immediately to the pool in case sorting takes longer than we'd like
+        drop(client);
+
+        // we can't scale the DB as easily as we can this server, so let's sort in here
+        // warning: may be expensive!
+        rows.sort_unstable_by_key(|r| (r.get::<_, i64>("count"), r.get::<_, String>("name")));
+
+        let crates = if let ListQuery {
+            per_page: Some(per_page),
+            page,
+        } = pagination
+        {
+            rows.chunks(*per_page)
+                .nth(page.unwrap_or_default())
+                .unwrap_or(&[])
+                .into_iter()
+                .map(search_row_to_entry)
+                .collect()
+        } else {
+            rows.iter().map(search_row_to_entry).collect()
+        };
+
+        Ok(crates)
+    }
+}
+
+fn search_row_to_entry(row: &Row) -> SearchResultsEntry {
+    let versions: Vec<String> = row.get("versions");
+
+    // we should never receive 0 versions from our query
+    let max_version = versions
+        .iter()
+        .map(|s| Version::parse(&s).unwrap())
+        .max()
+        .unwrap();
+
+    SearchResultsEntry {
+        name: row.get("name"),
+        max_version,
+        description: row.try_get("description").unwrap_or(String::new()),
+        homepage: row.get("homepage"),
+        repository: row.get("repository"),
+        documentation: row.get("documentation"),
+        keywords: row.get("keywords"),
+        categories: row.get("categories"),
     }
 }

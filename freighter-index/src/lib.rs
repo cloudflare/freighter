@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use semver::Version;
-use serde::{Deserialize, Serialize};
+
 use std::future::Future;
 use std::pin::Pin;
 
@@ -35,6 +35,8 @@ pub trait IndexClient: Sync {
     /// If an error occurs while trying to generate the sparse entry, [`IndexError::ServiceError`]
     /// will be returned.
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>>;
+    /// Confirm that a particular crate and version pair exists, and return its yank status
+    async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool>;
     /// Yank a crate version.
     async fn yank_crate(&self, crate_name: &str, version: &Version) -> IndexResult<()>;
     /// Unyank a crate version
@@ -57,14 +59,5 @@ pub trait IndexClient: Sync {
     /// List crates in the index, optionally specifying pagination.
     ///
     /// If no pagination is provided, all crates should be returned.
-    async fn list(&self, pagination: Option<&Pagination>) -> IndexResult<Vec<SearchResultsEntry>>;
-}
-
-/// Pagination information for certain operations.
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Pagination {
-    /// The number of crates to show in a given page.
-    per_page: usize,
-    /// The page to show.
-    page: usize,
+    async fn list(&self, pagination: &ListQuery) -> IndexResult<Vec<SearchResultsEntry>>;
 }

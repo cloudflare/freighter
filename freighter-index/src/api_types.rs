@@ -131,6 +131,15 @@ pub struct SearchQuery {
     pub per_page: Option<usize>,
 }
 
+/// Pagination information for certain operations.
+#[derive(Clone, Deserialize)]
+pub struct ListQuery {
+    /// The number of crates to show in a given page.
+    pub per_page: Option<usize>,
+    /// The page to show.
+    pub page: Option<usize>,
+}
+
 #[derive(Serialize)]
 pub struct SearchResults {
     /// Array of results.
@@ -152,6 +161,11 @@ pub struct SearchResultsEntry {
     pub max_version: Version,
     /// Textual description of the crate.
     pub description: String,
+    pub homepage: Option<String>,
+    pub repository: Option<String>,
+    pub documentation: Option<String>,
+    pub keywords: Vec<String>,
+    pub categories: Vec<String>,
 }
 
 #[derive(Deserialize)]
