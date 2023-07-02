@@ -23,7 +23,7 @@ aws-sdk-s3 = { version = "0.28.0", default-features = false }
 bytes = "1.1.0"
 clap = { version = "4.0", default-features = false }
 deadpool-postgres = "0.10.0"
-futures-util = { version = "0.3.11", default-features = false }
+futures-util = { version = "0.3.14", default-features = false }
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.0"
