@@ -37,7 +37,7 @@ thiserror = "1.0.0"
 tokio = "1.23.1"
 tokio-stream = { version = "0.1.9", default-features = false }
 tower-http = "0.4.0"
-tracing = "0.1.0"
+tracing = "0.1.2"
 tracing-subscriber = { version = "0.3.0", default-features = false }
 
 [profile.release]
