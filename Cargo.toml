@@ -18,7 +18,7 @@ anyhow = "1.0"
 async-trait = "0.1.68"
 axum = { version = "0.6.0", default-features = false }
 axum-extra = "0.7.0"
-aws-credential-types = "0.55.0"
+aws-credential-types = "0.55.3"
 aws-sdk-s3 = { version = "0.28.0", default-features = false }
 bytes = "1.0.0"
 clap = { version = "4.0", default-features = false }
