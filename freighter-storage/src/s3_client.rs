@@ -16,7 +16,7 @@
 //! It is perfectly possible to perform both streaming uploads and streaming downloads, however
 //! doing so has been left to the future.
 
-use crate::{StorageProvider, StorageError, StorageResult};
+use crate::{StorageError, StorageProvider, StorageResult};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;

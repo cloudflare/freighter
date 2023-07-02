@@ -55,10 +55,10 @@ pub fn router<I, S, A>(
     storage_client: S,
     auth_client: A,
 ) -> Router
-    where
-        I: IndexProvider + Send + Sync + 'static,
-        S: StorageProvider + Clone + Send + Sync + 'static,
-        A: AuthProvider + Send + Sync + 'static,
+where
+    I: IndexProvider + Send + Sync + 'static,
+    S: StorageProvider + Clone + Send + Sync + 'static,
+    A: AuthProvider + Send + Sync + 'static,
 {
     let state = Arc::new(ServiceState::new(
         config,

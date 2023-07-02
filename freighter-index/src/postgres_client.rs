@@ -1,5 +1,5 @@
 use crate::{
-    CompletedPublication, CrateVersion, Dependency, IndexProvider, IndexError, IndexResult,
+    CompletedPublication, CrateVersion, Dependency, IndexError, IndexProvider, IndexResult,
     ListQuery, Publish, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use anyhow::Context;
