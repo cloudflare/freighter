@@ -55,10 +55,10 @@ pub fn router<I, S, A>(
     storage_client: S,
     auth_client: A,
 ) -> Router
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: StorageProvider + Clone + Send + Sync + 'static,
-    A: AuthProvider + Send + Sync + 'static,
+    where
+        I: IndexProvider + Send + Sync + 'static,
+        S: StorageProvider + Clone + Send + Sync + 'static,
+        A: AuthProvider + Send + Sync + 'static,
 {
     let state = Arc::new(ServiceState::new(
         config,
@@ -82,13 +82,10 @@ where
         .layer(
             TraceLayer::new(StatusInRangeAsFailures::new(400..=599).into_make_classifier())
                 .make_span_with(|request: &Request<Body>| {
-                    // todo don't log stuff which may have sensitive information
-
                     let method = request.method();
                     let uri = request.uri();
-                    let headers = request.headers();
 
-                    tracing::info_span!("http-request", ?method, ?uri, ?headers)
+                    tracing::info_span!("http-request", ?method, ?uri)
                 })
                 .on_failure(DefaultOnFailure::new()),
         )

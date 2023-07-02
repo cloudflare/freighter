@@ -25,10 +25,10 @@ pub struct OwnerListChange {
 }
 
 pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: StorageProvider + Send + Sync + Clone + 'static,
-    A: AuthProvider + Send + Sync + 'static,
+    where
+        I: IndexProvider + Send + Sync + 'static,
+        S: StorageProvider + Send + Sync + Clone + 'static,
+        A: AuthProvider + Send + Sync + 'static,
 {
     Router::new()
         .route("/new", put(publish))
@@ -44,28 +44,43 @@ where
         .fallback(handle_api_fallback)
 }
 
-// todo don't panic on bad input
 async fn publish<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     mut body: Bytes,
 ) -> axum::response::Result<Json<CompletedPublication>>
-where
-    I: IndexProvider + Send + Sync,
-    S: StorageProvider + Send + Sync + Clone + 'static,
-    A: AuthProvider,
+    where
+        I: IndexProvider + Send + Sync,
+        S: StorageProvider + Send + Sync + Clone + 'static,
+        A: AuthProvider,
 {
-    let json_len_bytes = body.split_to(4);
-    let json_len = u32::from_le_bytes(json_len_bytes.as_ref().try_into().unwrap());
+    if body.len() <= 4 {
+        return Err(StatusCode::BAD_REQUEST.into());
+    }
 
-    let json_bytes = body.split_to(json_len as usize);
+    let json_len_bytes = body.split_to(4);
+    let json_len = u32::from_le_bytes(json_len_bytes.as_ref().try_into().unwrap()) as usize;
+
+    if body.len() < json_len {
+        return Err(StatusCode::BAD_REQUEST.into());
+    }
+
+    let json_bytes = body.split_to(json_len);
+
+    if body.len() <= 4 {
+        return Err(StatusCode::BAD_REQUEST.into());
+    }
 
     let crate_len_bytes = body.split_to(4);
-    let crate_len = u32::from_le_bytes(crate_len_bytes.as_ref().try_into().unwrap());
+    let crate_len = u32::from_le_bytes(crate_len_bytes.as_ref().try_into().unwrap()) as usize;
 
-    let crate_bytes = body.split_to(crate_len as usize);
+    if body.len() < crate_len {
+        return Err(StatusCode::BAD_REQUEST.into());
+    }
 
-    let json: Publish = serde_json::from_slice(&json_bytes).unwrap();
+    let crate_bytes = body.split_to(crate_len);
+
+    let json: Publish = serde_json::from_slice(&json_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let auth = headers
         .get(AUTHORIZATION)
@@ -104,9 +119,9 @@ async fn yank<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
-where
-    I: IndexProvider,
-    A: AuthProvider,
+    where
+        I: IndexProvider,
+        A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -126,9 +141,9 @@ async fn unyank<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
-where
-    I: IndexProvider,
-    A: AuthProvider,
+    where
+        I: IndexProvider,
+        A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -148,8 +163,8 @@ async fn list_owners<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(name): Path<String>,
 ) -> axum::response::Result<()>
-where
-    A: AuthProvider,
+    where
+        A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -168,8 +183,8 @@ async fn add_owners<I, S, A>(
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
-where
-    A: AuthProvider,
+    where
+        A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -195,8 +210,8 @@ async fn remove_owners<I, S, A>(
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
-where
-    A: AuthProvider,
+    where
+        A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -220,8 +235,8 @@ async fn register<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
-where
-    A: AuthProvider,
+    where
+        A: AuthProvider,
 {
     let token = state.auth.register(&auth.username, &auth.password).await?;
 
@@ -232,19 +247,20 @@ async fn login<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
-where
-    A: AuthProvider,
+    where
+        A: AuthProvider,
 {
     let token = state.auth.login(&auth.username, &auth.password).await?;
 
     Ok(Html(token))
 }
+
 async fn search<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<SearchQuery>,
 ) -> axum::response::Result<Json<SearchResults>>
-where
-    I: IndexProvider,
+    where
+        I: IndexProvider,
 {
     let search_results = state
         .index
@@ -258,8 +274,8 @@ async fn list<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<ListQuery>,
 ) -> axum::response::Result<Json<Vec<SearchResultsEntry>>>
-where
-    I: IndexProvider,
+    where
+        I: IndexProvider,
 {
     let search_results = state.index.list(&query).await?;
 
