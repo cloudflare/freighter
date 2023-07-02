@@ -16,7 +16,7 @@ freighter-storage = { path = "freighter-storage", registry = "nkcompute", versio
 
 anyhow = "1.0"
 async-trait = "0.1.68"
-axum = { version = "0.6.0", default-features = false }
+axum = { version = "0.6.9", default-features = false }
 axum-extra = "0.7.0"
 aws-credential-types = "0.55.3"
 aws-sdk-s3 = { version = "0.28.0", default-features = false }
