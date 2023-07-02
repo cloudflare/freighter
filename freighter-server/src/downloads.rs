@@ -4,15 +4,15 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
-use freighter_index::IndexClient;
-use freighter_storage::StorageClient;
+use freighter_index::IndexProvider;
+use freighter_storage::StorageProvider;
 use semver::Version;
 use std::sync::Arc;
 
 pub fn downloads_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
-    I: IndexClient + Send + Sync + 'static,
-    S: StorageClient + Send + Sync + 'static,
+    I: IndexProvider + Send + Sync + 'static,
+    S: StorageProvider + Send + Sync + 'static,
     A: Send + Sync + 'static,
 {
     Router::new()
@@ -25,8 +25,8 @@ async fn serve_crate<I, S, A>(
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<Bytes>
 where
-    I: IndexClient,
-    S: StorageClient,
+    I: IndexProvider,
+    S: StorageProvider,
 {
     let _is_yanked = state.index.confirm_existence(&name, &version).await?;
 

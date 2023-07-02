@@ -2,14 +2,14 @@
 //!
 //! This is exactly as insecure as it sounds, and is meant primarily for testing purposes.
 
-use crate::{AuthClient, AuthResult, ListedOwner};
+use crate::{AuthProvider, AuthResult, ListedOwner};
 use async_trait::async_trait;
 use rand::distributions::{Alphanumeric, DistString};
 
-pub struct YesAuthClient;
+pub struct YesAuthProvider;
 
 #[async_trait]
-impl AuthClient for YesAuthClient {
+impl AuthProvider for YesAuthProvider {
     async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
         let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
 

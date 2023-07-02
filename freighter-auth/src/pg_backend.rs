@@ -1,15 +1,15 @@
-use crate::{AuthClient, AuthResult, ListedOwner};
+use crate::{AuthProvider, AuthResult, ListedOwner};
 use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::NoTls;
 use deadpool_postgres::{GenericClient, Pool, Runtime};
 use rand::distributions::{Alphanumeric, DistString};
 
-pub struct PgAuthClient {
+pub struct PgAuthProvider {
     pool: Pool,
 }
 
-impl PgAuthClient {
+impl PgAuthProvider {
     pub fn new(config: deadpool_postgres::Config) -> AuthResult<Self> {
         let pool = config
             .create_pool(Some(Runtime::Tokio1), NoTls)
@@ -157,7 +157,7 @@ impl PgAuthClient {
 }
 
 #[async_trait]
-impl AuthClient for PgAuthClient {
+impl AuthProvider for PgAuthProvider {
     async fn register(&self, username: &str, password: &str) -> AuthResult<String> {
         let mut client = self
             .pool

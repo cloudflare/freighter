@@ -7,12 +7,12 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
-use freighter_auth::AuthClient;
+use freighter_auth::AuthProvider;
 use freighter_index::{
-    AuthForm, CompletedPublication, IndexClient, ListQuery, Publish, SearchQuery, SearchResults,
+    AuthForm, CompletedPublication, IndexProvider, ListQuery, Publish, SearchQuery, SearchResults,
     SearchResultsEntry,
 };
-use freighter_storage::StorageClient;
+use freighter_storage::StorageProvider;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -26,9 +26,9 @@ pub struct OwnerListChange {
 
 pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
-    I: IndexClient + Send + Sync + 'static,
-    S: StorageClient + Send + Sync + Clone + 'static,
-    A: AuthClient + Send + Sync + 'static,
+    I: IndexProvider + Send + Sync + 'static,
+    S: StorageProvider + Send + Sync + Clone + 'static,
+    A: AuthProvider + Send + Sync + 'static,
 {
     Router::new()
         .route("/new", put(publish))
@@ -51,9 +51,9 @@ async fn publish<I, S, A>(
     mut body: Bytes,
 ) -> axum::response::Result<Json<CompletedPublication>>
 where
-    I: IndexClient + Send + Sync,
-    S: StorageClient + Send + Sync + Clone + 'static,
-    A: AuthClient,
+    I: IndexProvider + Send + Sync,
+    S: StorageProvider + Send + Sync + Clone + 'static,
+    A: AuthProvider,
 {
     let json_len_bytes = body.split_to(4);
     let json_len = u32::from_le_bytes(json_len_bytes.as_ref().try_into().unwrap());
@@ -105,8 +105,8 @@ async fn yank<I, S, A>(
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
 where
-    I: IndexClient,
-    A: AuthClient,
+    I: IndexProvider,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -127,8 +127,8 @@ async fn unyank<I, S, A>(
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
 where
-    I: IndexClient,
-    A: AuthClient,
+    I: IndexProvider,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -149,7 +149,7 @@ async fn list_owners<I, S, A>(
     Path(name): Path<String>,
 ) -> axum::response::Result<()>
 where
-    A: AuthClient,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -169,7 +169,7 @@ async fn add_owners<I, S, A>(
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
 where
-    A: AuthClient,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -196,7 +196,7 @@ async fn remove_owners<I, S, A>(
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
 where
-    A: AuthClient,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -221,7 +221,7 @@ async fn register<I, S, A>(
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
 where
-    A: AuthClient,
+    A: AuthProvider,
 {
     let token = state.auth.register(&auth.username, &auth.password).await?;
 
@@ -233,7 +233,7 @@ async fn login<I, S, A>(
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
 where
-    A: AuthClient,
+    A: AuthProvider,
 {
     let token = state.auth.login(&auth.username, &auth.password).await?;
 
@@ -244,7 +244,7 @@ async fn search<I, S, A>(
     Query(query): Query<SearchQuery>,
 ) -> axum::response::Result<Json<SearchResults>>
 where
-    I: IndexClient,
+    I: IndexProvider,
 {
     let search_results = state
         .index
@@ -259,7 +259,7 @@ async fn list<I, S, A>(
     Query(query): Query<ListQuery>,
 ) -> axum::response::Result<Json<Vec<SearchResultsEntry>>>
 where
-    I: IndexClient,
+    I: IndexProvider,
 {
     let search_results = state.index.list(&query).await?;
 

@@ -13,7 +13,7 @@ pub use api_types::*;
 pub use error::*;
 
 #[async_trait]
-pub trait AuthClient {
+pub trait AuthProvider {
     /// Register a new user, returning a token if successful.
     async fn register(&self, username: &str, password: &str) -> AuthResult<String>;
     /// Retrieve a token for an existing user if the credentials match.

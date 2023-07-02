@@ -1,8 +1,8 @@
 use anyhow::Context;
 use clap::Parser;
-use freighter_auth::pg_backend::PgAuthClient;
-use freighter_index::postgres_client::PgIndexClient;
-use freighter_storage::s3_client::S3StorageBackend;
+use freighter_auth::pg_backend::PgAuthProvider;
+use freighter_index::postgres_client::PgIndexProvider;
+use freighter_storage::s3_client::S3StorageProvider;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
 
@@ -37,15 +37,15 @@ async fn main() -> anyhow::Result<()> {
     let addr = service.address;
 
     let index_client =
-        PgIndexClient::new(db.clone()).context("Failed to construct index client")?;
-    let storage_client = S3StorageBackend::new(
+        PgIndexProvider::new(db.clone()).context("Failed to construct index client")?;
+    let storage_client = S3StorageProvider::new(
         &store.name,
         &store.endpoint_url,
         &store.region,
         &store.access_key_id,
         &store.access_key_secret,
     );
-    let auth_client = PgAuthClient::new(db).context("Failed to initialize auth client")?;
+    let auth_client = PgAuthProvider::new(db).context("Failed to initialize auth client")?;
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
 

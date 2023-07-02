@@ -1,3 +1,3 @@
 select id
 from freighter_users
-where username = $1
+where username = $1;

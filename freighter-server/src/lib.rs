@@ -5,9 +5,9 @@ use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
-use freighter_auth::AuthClient;
-use freighter_index::IndexClient;
-use freighter_storage::StorageClient;
+use freighter_auth::AuthProvider;
+use freighter_index::IndexProvider;
+use freighter_storage::StorageProvider;
 use metrics::{histogram, increment_counter};
 use serde::Deserialize;
 use std::net::SocketAddr;
@@ -56,9 +56,9 @@ pub fn router<I, S, A>(
     auth_client: A,
 ) -> Router
 where
-    I: IndexClient + Send + Sync + 'static,
-    S: StorageClient + Clone + Send + Sync + 'static,
-    A: AuthClient + Send + Sync + 'static,
+    I: IndexProvider + Send + Sync + 'static,
+    S: StorageProvider + Clone + Send + Sync + 'static,
+    A: AuthProvider + Send + Sync + 'static,
 {
     let state = Arc::new(ServiceState::new(
         config,

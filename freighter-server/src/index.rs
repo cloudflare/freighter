@@ -5,7 +5,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
-use freighter_index::{CrateVersion, IndexClient};
+use freighter_index::{CrateVersion, IndexProvider};
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::sync::Arc;
@@ -13,7 +13,7 @@ use tokio_stream::{Stream, StreamExt};
 
 pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
-    I: IndexClient + Send + Sync + 'static,
+    I: IndexProvider + Send + Sync + 'static,
     S: Send + Sync + 'static,
     A: Send + Sync + 'static,
 {
@@ -44,7 +44,7 @@ async fn get_sparse_meta<I, S, A>(
     JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>,
 >
 where
-    I: IndexClient,
+    I: IndexProvider,
 {
     let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
 

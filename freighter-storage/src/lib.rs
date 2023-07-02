@@ -9,7 +9,7 @@ mod error;
 pub use error::*;
 
 #[async_trait]
-pub trait StorageClient {
+pub trait StorageProvider {
     async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes>;
     async fn put_crate(&self, name: &str, version: &str, crate_bytes: &[u8]) -> StorageResult<()>;
 }
