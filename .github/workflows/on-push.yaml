@@ -84,11 +84,11 @@ jobs:
         uses: taiki-e/install-action@cargo-hack
 
       - uses: Swatinem/rust-cache@v2
-      - name: "check --all-features -Z minimal-versions"
+      - name: "check --all-features -Z direct-minimal-versions"
         run: |
           # Remove dev-dependencies from Cargo.toml to prevent the next `cargo update`
           # from determining minimal versions based on dev-dependencies.
           cargo hack --remove-dev-deps --workspace
           # Update Cargo.lock to minimal version dependencies.
-          cargo update -Z minimal-versions
+          cargo update -Z direct-minimal-versions
           cargo hack check --all-features --ignore-private
