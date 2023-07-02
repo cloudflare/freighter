@@ -1,10 +1,12 @@
 use crate::ServiceState;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
+use axum::http::{HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
+use freighter_auth::AuthProvider;
 use freighter_index::{CrateVersion, IndexProvider};
 use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
@@ -15,7 +17,7 @@ pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
     I: IndexProvider + Send + Sync + 'static,
     S: Send + Sync + 'static,
-    A: Send + Sync + 'static,
+    A: AuthProvider + Send + Sync + 'static,
 {
     Router::new()
         .route("/config.json", get(config))
@@ -38,6 +40,7 @@ async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Jso
 }
 
 async fn get_sparse_meta<I, S, A>(
+    headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((_, _, crate_name)): Path<(String, String, String)>,
 ) -> axum::response::Result<
@@ -45,7 +48,15 @@ async fn get_sparse_meta<I, S, A>(
 >
 where
     I: IndexProvider,
+    A: AuthProvider + Sync,
 {
+    let token = headers
+        .get(AUTHORIZATION)
+        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+        .transpose()?;
+
+    state.auth.auth_index_fetch(token, &crate_name).await?;
+
     let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
 
     let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(|c| Ok(c)));

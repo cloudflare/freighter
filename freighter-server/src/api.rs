@@ -25,10 +25,10 @@ pub struct OwnerListChange {
 }
 
 pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
-    where
-        I: IndexProvider + Send + Sync + 'static,
-        S: StorageProvider + Send + Sync + Clone + 'static,
-        A: AuthProvider + Send + Sync + 'static,
+where
+    I: IndexProvider + Send + Sync + 'static,
+    S: StorageProvider + Send + Sync + Clone + 'static,
+    A: AuthProvider + Send + Sync + 'static,
 {
     Router::new()
         .route("/new", put(publish))
@@ -49,10 +49,10 @@ async fn publish<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     mut body: Bytes,
 ) -> axum::response::Result<Json<CompletedPublication>>
-    where
-        I: IndexProvider + Send + Sync,
-        S: StorageProvider + Send + Sync + Clone + 'static,
-        A: AuthProvider,
+where
+    I: IndexProvider + Send + Sync,
+    S: StorageProvider + Send + Sync + Clone + 'static,
+    A: AuthProvider,
 {
     if body.len() <= 4 {
         return Err(StatusCode::BAD_REQUEST.into());
@@ -119,9 +119,9 @@ async fn yank<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
-    where
-        I: IndexProvider,
-        A: AuthProvider,
+where
+    I: IndexProvider,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -141,9 +141,9 @@ async fn unyank<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
 ) -> axum::response::Result<()>
-    where
-        I: IndexProvider,
-        A: AuthProvider,
+where
+    I: IndexProvider,
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -163,8 +163,8 @@ async fn list_owners<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(name): Path<String>,
 ) -> axum::response::Result<()>
-    where
-        A: AuthProvider,
+where
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -183,8 +183,8 @@ async fn add_owners<I, S, A>(
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
-    where
-        A: AuthProvider,
+where
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -210,8 +210,8 @@ async fn remove_owners<I, S, A>(
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
 ) -> axum::response::Result<()>
-    where
-        A: AuthProvider,
+where
+    A: AuthProvider,
 {
     let auth = headers
         .get(AUTHORIZATION)
@@ -235,8 +235,8 @@ async fn register<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
-    where
-        A: AuthProvider,
+where
+    A: AuthProvider,
 {
     let token = state.auth.register(&auth.username, &auth.password).await?;
 
@@ -247,8 +247,8 @@ async fn login<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
 ) -> axum::response::Result<Html<String>>
-    where
-        A: AuthProvider,
+where
+    A: AuthProvider,
 {
     let token = state.auth.login(&auth.username, &auth.password).await?;
 
@@ -256,12 +256,21 @@ async fn login<I, S, A>(
 }
 
 async fn search<I, S, A>(
+    headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<SearchQuery>,
 ) -> axum::response::Result<Json<SearchResults>>
-    where
-        I: IndexProvider,
+where
+    I: IndexProvider,
+    A: AuthProvider + Sync,
 {
+    let token = headers
+        .get(AUTHORIZATION)
+        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+        .transpose()?;
+
+    state.auth.auth_view_full_index(token).await?;
+
     let search_results = state
         .index
         .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
@@ -271,12 +280,21 @@ async fn search<I, S, A>(
 }
 
 async fn list<I, S, A>(
+    headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<ListQuery>,
 ) -> axum::response::Result<Json<Vec<SearchResultsEntry>>>
-    where
-        I: IndexProvider,
+where
+    I: IndexProvider,
+    A: AuthProvider + Sync,
 {
+    let token = headers
+        .get(AUTHORIZATION)
+        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+        .transpose()?;
+
+    state.auth.auth_view_full_index(token).await?;
+
     let search_results = state.index.list(&query).await?;
 
     Ok(Json(search_results))
