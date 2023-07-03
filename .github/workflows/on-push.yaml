@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "master" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   # Depends on all actions that are required for a "successful" CI run.
   # Based on the ci here: https://github.com/tokio-rs/tokio/blob/master/.github/workflows/ci.yml
@@ -30,6 +34,7 @@ jobs:
         with:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
       - run: cargo hack check --each-feature
 
   clippy:
@@ -43,13 +48,11 @@ jobs:
         with:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
       - run: cargo hack clippy --each-feature
 
   rustfmt:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -68,4 +71,25 @@ jobs:
         with:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
       - run: cargo hack test --each-feature
+
+  minimal-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
+      - name: "check --all-features -Z direct-minimal-versions"
+        run: |
+          # Remove dev-dependencies from Cargo.toml to prevent the next `cargo update`
+          # from determining minimal versions based on dev-dependencies.
+          cargo hack --remove-dev-deps --workspace
+          # Update Cargo.lock to minimal version dependencies.
+          cargo update -Z direct-minimal-versions
+          cargo hack check --all-features --ignore-private

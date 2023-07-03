@@ -6,7 +6,7 @@
 //! well tuned at the moment.
 //!
 //! One performance limitation of this implementation is that the current simplistic API of this
-//! crate ([`StorageClient`]) does not allow for streamed uploads or downloads, increasing both
+//! crate ([`StorageProvider`]) does not allow for streamed uploads or downloads, increasing both
 //! memory usage and latency, as the entire body of data must be received before transmission can
 //! start.
 //! This means that when uploading, the server must wait for and store the entirety of the HTTP
@@ -16,7 +16,7 @@
 //! It is perfectly possible to perform both streaming uploads and streaming downloads, however
 //! doing so has been left to the future.
 
-use crate::{StorageClient, StorageError, StorageResult};
+use crate::{StorageError, StorageProvider, StorageResult};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
@@ -29,12 +29,12 @@ use bytes::Bytes;
 ///
 /// See [the module-level docs](super::s3_client) for more information.
 #[derive(Clone)]
-pub struct S3StorageBackend {
+pub struct S3StorageProvider {
     client: aws_sdk_s3::Client,
     bucket_name: String,
 }
 
-impl S3StorageBackend {
+impl S3StorageProvider {
     /// Construct a new client, returning an error if the information could not be used to
     /// communicate with a valid bucket.
     pub fn new(
@@ -62,7 +62,7 @@ impl S3StorageBackend {
 }
 
 #[async_trait]
-impl StorageClient for S3StorageBackend {
+impl StorageProvider for S3StorageProvider {
     async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes> {
         let path = construct_path(name, version);
 

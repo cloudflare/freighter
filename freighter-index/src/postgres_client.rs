@@ -1,5 +1,5 @@
 use crate::{
-    CompletedPublication, CrateVersion, Dependency, IndexClient, IndexError, IndexResult,
+    CompletedPublication, CrateVersion, Dependency, IndexError, IndexProvider, IndexResult,
     ListQuery, Publish, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use anyhow::Context;
@@ -15,11 +15,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
 
-pub struct PgIndexClient {
+pub struct PgIndexProvider {
     pool: Pool,
 }
 
-impl PgIndexClient {
+impl PgIndexProvider {
     pub fn new(config: deadpool_postgres::Config) -> IndexResult<Self> {
         let pool = config
             .create_pool(Some(Runtime::Tokio1), NoTls)
@@ -54,7 +54,7 @@ impl PgIndexClient {
 }
 
 #[async_trait]
-impl IndexClient for PgIndexClient {
+impl IndexProvider for PgIndexProvider {
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         let client = self.pool.get().await.unwrap();
 

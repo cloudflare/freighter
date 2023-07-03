@@ -4,7 +4,8 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Config {
     pub service: ServiceConfig,
-    pub db: deadpool_postgres::Config,
+    pub index_db: deadpool_postgres::Config,
+    pub auth_db: deadpool_postgres::Config,
     pub store: StoreConfig,
 }
 
