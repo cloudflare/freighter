@@ -71,7 +71,6 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - run: cargo hack test --each-feature
 
-
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
