@@ -24,6 +24,7 @@ bytes = "1.1.0"
 clap = { version = "4.0", default-features = false }
 deadpool-postgres = "0.10.5"
 futures-util = { version = "0.3.16", default-features = false }
+hyper = { version = "0.14", default-features = false }
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.1"
@@ -36,6 +37,7 @@ sha2 = "0.10.0"
 thiserror = "1.0.2"
 tokio = "1.23.1"
 tokio-stream = { version = "0.1.9", default-features = false }
+tower = { version = "0.4", default-features = false }
 tower-http = "0.4.0"
 tracing = "0.1.21"
 tracing-subscriber = { version = "0.3.0", default-features = false }

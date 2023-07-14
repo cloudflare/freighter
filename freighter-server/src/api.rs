@@ -109,7 +109,7 @@ where
             }),
         )
         .await
-        .map(|x| Json(x))?;
+        .map(Json)?;
 
     Ok(resp)
 }
