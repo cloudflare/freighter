@@ -1,6 +1,9 @@
 pub mod common;
 
-use crate::common::{utils::crate_version, MockIndexProvider, ServiceStateBuilder};
+use crate::common::{
+    utils::{crate_version, generate_crate_payload},
+    MockIndexProvider, ServiceStateBuilder,
+};
 
 use axum::http::{Request, StatusCode};
 use freighter_server::api;
@@ -21,34 +24,7 @@ async fn publish_crate() {
         })
         .build();
 
-    let json = serde_json::json!({
-        "name": "example-lib",
-        "vers": "1.0.1",
-        "deps": [],
-        "features": {},
-        "description": null,
-        "documentation": null,
-        "homepage": null,
-        "readme": null,
-        "readme_file": null,
-        "license": null,
-        "license_file": null,
-        "repository": null,
-        "badges": null,
-        "links": null,
-    })
-    .to_string();
-
-    // https://github.com/rust-lang/cargo/blob/20df9e40a4d41dd08478549915588395e55efb4c/crates/crates-io/lib.rs#L259
-    let payload = {
-        let mut payload = Vec::new();
-        payload.extend_from_slice(&(json.len() as u32).to_le_bytes());
-        payload.extend_from_slice(json.as_bytes());
-        let tarball: Vec<u8> = (0..100).collect();
-        payload.extend_from_slice(&(tarball.len() as u32).to_le_bytes());
-        payload.extend_from_slice(&tarball);
-        payload
-    };
+    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100]);
 
     let response = router
         .with_state(state)
@@ -76,34 +52,7 @@ async fn publish_crate_auth_denied() {
         })
         .build();
 
-    let json = serde_json::json!({
-        "name": "example-lib",
-        "vers": "1.0.1",
-        "deps": [],
-        "features": {},
-        "description": null,
-        "documentation": null,
-        "homepage": null,
-        "readme": null,
-        "readme_file": null,
-        "license": null,
-        "license_file": null,
-        "repository": null,
-        "badges": null,
-        "links": null,
-    })
-    .to_string();
-
-    // https://github.com/rust-lang/cargo/blob/20df9e40a4d41dd08478549915588395e55efb4c/crates/crates-io/lib.rs#L259
-    let payload = {
-        let mut payload = Vec::new();
-        payload.extend_from_slice(&(json.len() as u32).to_le_bytes());
-        payload.extend_from_slice(json.as_bytes());
-        let tarball: Vec<u8> = (0..100).collect();
-        payload.extend_from_slice(&(tarball.len() as u32).to_le_bytes());
-        payload.extend_from_slice(&tarball);
-        payload
-    };
+    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100]);
 
     let response = router
         .with_state(state)

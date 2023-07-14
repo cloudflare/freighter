@@ -20,6 +20,7 @@ jobs:
       - clippy
       - rustfmt
       - tests
+      - e2e
     steps:
       - run: exit 0
 
@@ -72,7 +73,7 @@ jobs:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack test --each-feature
+      - run: cargo hack test --each-feature --exclude-features test_e2e
 
   minimal-versions:
     runs-on: ubuntu-latest
@@ -93,3 +94,59 @@ jobs:
           # Update Cargo.lock to minimal version dependencies.
           cargo update -Z direct-minimal-versions
           cargo hack check --all-features --ignore-private
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: freighter
+          POSTGRES_PASSWORD: crates-crates-crates
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      s3:
+        image: adobe/s3mock
+        env:
+          initialBuckets: crates
+          validKmsKeys: "arn:aws:kms:us-east-1:1234567890:key/valid-secret"
+        ports:
+          - 9090:9090
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends postgresql-client
+      - name: Run DB migrations
+        run: |
+          psql -h localhost -f sql/init-index-db.sql
+          psql -h localhost -f sql/init-auth-db.sql
+        env:
+          PGUSER: freighter
+          PGPASSWORD: crates-crates-crates
+      - name: Run E2E tests
+        run: cargo test --features=test_e2e -- e2e
+        env:
+          SERVER_ADDR: "127.0.0.1:3000"
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: freighter
+          POSTGRES_PASSWORD: crates-crates-crates
+          POSTGRES_DBNAME: freighter
+          BUCKET_NAME: crates
+          BUCKET_ENDPOINT: "http://127.0.0.1:9090"
+          BUCKET_ACCESS_KEY_ID: "1234567890"
+          BUCKET_ACCESS_KEY_SECRET: valid-secret

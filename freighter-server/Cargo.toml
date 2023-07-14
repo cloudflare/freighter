@@ -10,6 +10,9 @@ description = "Crate index traits and implementations for the freighter registry
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
+[features]
+test_e2e = []
+
 [dependencies]
 freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
@@ -29,6 +32,8 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 async-trait = { workspace = true }
+deadpool-postgres = { workspace = true }
 hyper = { workspace = true }
+reqwest = { workspace = true }
 tokio = { workspace = true }
 tower = { workspace = true }

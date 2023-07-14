@@ -421,7 +421,7 @@ impl IndexProvider for PgIndexProvider {
                 ],
             )
             .await
-            .context("Failed to insert version")?;
+            .map_err(|_| IndexError::Conflict("Failed to insert version".to_owned()))?;
 
         histogram!(
             "publish_component_duration_seconds", insert_version_timer.elapsed(),
@@ -529,7 +529,7 @@ impl IndexProvider for PgIndexProvider {
             rows.chunks(*per_page)
                 .nth(page.unwrap_or_default())
                 .unwrap_or(&[])
-                .into_iter()
+                .iter()
                 .map(search_row_to_entry)
                 .collect()
         } else {
@@ -546,7 +546,7 @@ fn search_row_to_entry(row: &Row) -> SearchResultsEntry {
     // we should never receive 0 versions from our query
     let max_version = versions
         .iter()
-        .map(|s| Version::parse(&s).unwrap())
+        .map(|s| Version::parse(s).unwrap())
         .max()
         .unwrap();
 
