@@ -2,7 +2,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[cfg_attr(
     feature = "postgresql-backend",
     derive(postgres_types::ToSql, postgres_types::FromSql)
@@ -19,7 +19,7 @@ pub enum DependencyKind {
     Build,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct CrateVersion {
     /// The name of the package.
     ///
@@ -78,7 +78,7 @@ pub struct CrateVersion {
     pub features2: HashMap<String, Vec<String>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Dependency {
     /// Name of the dependency.
     ///

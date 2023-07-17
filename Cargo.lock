@@ -799,17 +799,21 @@ name = "freighter-server"
 version = "0.1.0-rc"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "axum-extra",
  "freighter-auth",
  "freighter-index",
  "freighter-storage",
+ "hyper",
  "metrics",
  "semver",
  "serde",
  "serde_json",
  "sha2",
+ "tokio",
  "tokio-stream",
+ "tower",
  "tower-http",
  "tracing",
 ]

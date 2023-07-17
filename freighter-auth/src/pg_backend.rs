@@ -1,4 +1,4 @@
-use crate::{AuthProvider, AuthResult, ListedOwner};
+use crate::{AuthError, AuthProvider, AuthResult, ListedOwner};
 use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::NoTls;
@@ -31,9 +31,17 @@ impl PgAuthProvider {
             .context("Failed to prepare auth statement")?;
 
         client
-            .query_one(&auth_statement, &[&token, &crate_name])
+            .query(&auth_statement, &[&token, &crate_name])
             .await
-            .context("Failed to auth crate transaction")?;
+            .context("Failed to auth crate action")
+            .map_err(AuthError::ServiceError)
+            .and_then(|r| match r.len() {
+                0 => Err(AuthError::InvalidCredentials),
+                1 => Ok(()),
+                _ => Err(AuthError::ServiceError(anyhow::anyhow!(
+                    "Unexpected number of rows"
+                ))),
+            })?;
 
         Ok(())
     }

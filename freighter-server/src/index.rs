@@ -59,7 +59,7 @@ where
 
     let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
 
-    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(|c| Ok(c)));
+    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
 
     Ok(resp)
 }

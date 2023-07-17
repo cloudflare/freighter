@@ -46,7 +46,7 @@ where
         .pull_crate(&name, &version.to_string())
         .await?;
 
-    Ok(Bytes::from(crate_bytes))
+    Ok(crate_bytes)
 }
 
 async fn handle_downloads_fallback() -> StatusCode {
