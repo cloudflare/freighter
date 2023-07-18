@@ -5,4 +5,3 @@ union all
 select *
 from crates
 where name = $1
-  and registry is null

@@ -10,6 +10,9 @@ description = "Crate index traits and implementations for the freighter registry
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
+[features]
+test_e2e = ["deadpool-postgres", "reqwest"]
+
 [dependencies]
 freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
@@ -18,11 +21,13 @@ freighter-storage = { workspace = true, features = ["s3-backend"] }
 anyhow = { workspace = true }
 axum = { workspace = true, features = ["json", "query", "form", "matched-path"] }
 axum-extra = { workspace = true, features = ["json-lines"] }
+deadpool-postgres = { workspace = true, optional = true }
 metrics = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
+reqwest = { workspace = true, optional = true }
 tokio-stream = { workspace = true }
 tower-http = { workspace = true, features = ["catch-panic", "trace"] }
 tracing = { workspace = true }

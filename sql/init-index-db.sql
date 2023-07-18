@@ -3,12 +3,12 @@ create table crates
 (
     id            integer primary key generated always as identity,
     name          text not null,
-    registry      text,
+    registry      text not null default '',
     description   text,
     documentation text,
     homepage      text,
     repository    text,
-    unique nulls not distinct (name, registry)
+    unique (name, registry)
 );
 
 drop table if exists keywords cascade;
