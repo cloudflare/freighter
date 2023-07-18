@@ -96,11 +96,14 @@ jobs:
           cargo hack check --all-features --ignore-private
 
   e2e:
+    strategy:
+      matrix:
+        postgres_version: [ 14, 15, 16beta2 ]
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:${{ matrix.postgres_version }}
         env:
           POSTGRES_USER: freighter
           POSTGRES_PASSWORD: crates-crates-crates
