@@ -24,6 +24,6 @@ deadpool-postgres = { workspace = true, features = ["serde"] }
 metrics-exporter-prometheus = { workspace = true, features = ["http-listener"] }
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["std", "smallvec", "fmt", "tracing-log", "ansi"] }
