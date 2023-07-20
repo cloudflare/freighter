@@ -29,6 +29,10 @@ pub struct ServiceConfig {
     pub download_endpoint: String,
     pub api_endpoint: String,
     pub metrics_address: SocketAddr,
+    #[serde(default = "default_auth_api_allowments")]
+    pub allow_login: bool,
+    #[serde(default = "default_auth_api_allowments")]
+    pub allow_registration: bool,
 }
 
 pub struct ServiceState<I, S, A> {
@@ -118,4 +122,9 @@ pub async fn login() -> Html<&'static str> {
 
 pub async fn handle_global_fallback() -> StatusCode {
     StatusCode::NOT_FOUND
+}
+
+#[inline(always)]
+fn default_auth_api_allowments() -> bool {
+    true
 }

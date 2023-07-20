@@ -238,9 +238,13 @@ async fn register<I, S, A>(
 where
     A: AuthProvider,
 {
-    let token = state.auth.register(&auth.username, &auth.password).await?;
+    if state.config.allow_registration {
+        let token = state.auth.register(&auth.username, &auth.password).await?;
 
-    Ok(Html(token))
+        Ok(Html(token))
+    } else {
+        Err(StatusCode::UNAUTHORIZED.into())
+    }
 }
 
 async fn login<I, S, A>(
@@ -250,9 +254,13 @@ async fn login<I, S, A>(
 where
     A: AuthProvider,
 {
-    let token = state.auth.login(&auth.username, &auth.password).await?;
+    if state.config.allow_login {
+        let token = state.auth.login(&auth.username, &auth.password).await?;
 
-    Ok(Html(token))
+        Ok(Html(token))
+    } else {
+        Err(StatusCode::UNAUTHORIZED.into())
+    }
 }
 
 async fn search<I, S, A>(
