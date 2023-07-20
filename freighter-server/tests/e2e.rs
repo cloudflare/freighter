@@ -72,6 +72,8 @@ fn server(
         download_endpoint: format!("{}/downloads/{{crate}}/{{version}}", config.server_addr),
         api_endpoint: config.server_addr.to_owned(),
         metrics_address: "127.0.0.1:9999".parse()?,
+        allow_login: true,
+        allow_registration: true,
     };
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
