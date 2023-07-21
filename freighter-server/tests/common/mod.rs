@@ -12,8 +12,8 @@ use async_trait::async_trait;
 use axum::body::Bytes;
 use freighter_auth::{AuthError, AuthProvider, AuthResult, ListedOwner};
 use freighter_index::{
-    CompletedPublication, CrateVersion, IndexError, IndexProvider, IndexResult, ListQuery, Publish,
-    SearchResults, SearchResultsEntry,
+    CompletedPublication, CrateVersion, IndexError, IndexProvider, IndexResult, ListAll,
+    ListAllCrateEntry, ListAllCrateVersion, ListQuery, Publish, SearchResults,
 };
 use freighter_server::{ServiceConfig, ServiceState};
 use freighter_storage::{StorageProvider, StorageResult};
@@ -54,20 +54,24 @@ impl IndexProvider for MockIndexProvider {
         Ok(CompletedPublication { warnings: None })
     }
 
-    async fn list(&self, _pagination: &ListQuery) -> IndexResult<Vec<SearchResultsEntry>> {
-        Ok(self
+    async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
+        let crates = self
             .crates
             .iter()
             .map(|(k, v)| {
-                let max_version = v
+                let versions = v
                     .iter()
-                    .max_by_key(|v| v.vers.clone())
-                    .map(|v| v.vers.clone())
-                    .unwrap();
-                SearchResultsEntry {
+                    .map(|v| ListAllCrateVersion {
+                        version: v.vers.clone(),
+                    })
+                    .collect();
+
+                ListAllCrateEntry {
                     name: k.clone(),
-                    description: format!("Description {k} {max_version}"),
-                    max_version,
+                    description: format!("Description {k}"),
+                    created_at: Default::default(),
+                    updated_at: Default::default(),
+                    versions,
                     homepage: Some("e.com".to_owned()),
                     repository: Some("ssh://git@b.com/a/f.git".to_owned()),
                     documentation: None,
@@ -75,7 +79,9 @@ impl IndexProvider for MockIndexProvider {
                     categories: vec!["a".to_owned(), "x".to_owned()],
                 }
             })
-            .collect())
+            .collect();
+
+        Ok(ListAll { results: crates })
     }
 }
 

@@ -9,8 +9,8 @@ use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_auth::AuthProvider;
 use freighter_index::{
-    AuthForm, CompletedPublication, IndexProvider, ListQuery, Publish, SearchQuery, SearchResults,
-    SearchResultsEntry,
+    AuthForm, CompletedPublication, IndexProvider, ListAll, ListQuery, Publish, SearchQuery,
+    SearchResults,
 };
 use freighter_storage::StorageProvider;
 use semver::Version;
@@ -291,7 +291,7 @@ async fn list<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Query(query): Query<ListQuery>,
-) -> axum::response::Result<Json<Vec<SearchResultsEntry>>>
+) -> axum::response::Result<Json<ListAll>>
 where
     I: IndexProvider,
     A: AuthProvider + Sync,

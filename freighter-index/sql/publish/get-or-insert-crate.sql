@@ -1,7 +1,4 @@
-with ins as (insert into crates (name) values ($1) on conflict do nothing returning *)
-select *
-from ins
-union all
-select *
-from crates
-where name = $1
+insert into crates (name, created_at, updated_at)
+values ($1, current_timestamp, current_timestamp)
+on conflict (name, registry) do update set updated_at = current_timestamp
+returning *;

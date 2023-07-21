@@ -1,20 +1,11 @@
 select crates.name,
        crates.description,
-       crates.documentation,
-       crates.homepage,
-       crates.repository,
-       array_agg(cv.version)      as versions,
-       count(dependency),
-       array_agg(distinct c.name) as categories,
-       array_agg(distinct k.name) as keywords
+       array_agg(cv.version) as versions,
+       count(dependency)
 from crates
          join crate_versions cv on crates.id = cv.crate
          left join dependencies d on crates.id = d.dependency
-         left join crate_categories cc on crates.id = cc.crate
-         join categories c on c.id = cc.category
-         left join crate_keywords ck on crates.id = ck.crate
-         join keywords k on k.id = ck.keyword
-where crates.registry is null
+where crates.registry = ''
   and position($1 in crates.name) > 0
-group by crates.name, crates.description, crates.documentation, crates.homepage, crates.repository
+group by crates.name, crates.description
 having count(cv.version) > 0

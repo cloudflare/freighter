@@ -6,7 +6,7 @@ with ins as (insert into crates (name, registry) values ($1, $2) on conflict do 
           select id
           from crates
           where name = $1
-            and (registry = $2 or registry is null and $2 is null))
+            and (registry = $2 or registry = '' and $2 = ''))
 insert
 into dependencies
 (dependent, dependency, req, features, optional, default_features, target, kind, package)

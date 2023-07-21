@@ -59,5 +59,5 @@ pub trait IndexProvider: Sync {
     /// List crates in the index, optionally specifying pagination.
     ///
     /// If no pagination is provided, all crates should be returned.
-    async fn list(&self, pagination: &ListQuery) -> IndexResult<Vec<SearchResultsEntry>>;
+    async fn list(&self, pagination: &ListQuery) -> IndexResult<ListAll>;
 }

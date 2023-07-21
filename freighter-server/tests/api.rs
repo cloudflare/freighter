@@ -24,7 +24,7 @@ async fn publish_crate() {
         })
         .build();
 
-    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100]);
+    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100], &[]);
 
     let response = router
         .with_state(state)
@@ -52,7 +52,7 @@ async fn publish_crate_auth_denied() {
         })
         .build();
 
-    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100]);
+    let payload = generate_crate_payload("example-lib", "1.0.1", &[1u8; 100], &[]);
 
     let response = router
         .with_state(state)
@@ -107,27 +107,48 @@ async fn list_all_crates() {
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(
         value,
-        serde_json::json!([
-          {
-            "name": "example-lib",
-            "max_version": "1.3.1",
-            "description": "Description example-lib 1.3.1",
-            "homepage": "e.com",
-            "repository": "ssh://git@b.com/a/f.git",
-            "documentation": null,
-            "keywords": [ "example" ],
-            "categories": [ "a", "x" ]
-          },
-          {
-            "name": "freighter",
-            "max_version": "0.1.1",
-            "description": "Description freighter 0.1.1",
-            "homepage": "e.com",
-            "repository": "ssh://git@b.com/a/f.git",
-            "documentation": null,
-            "keywords": [ "example" ],
-            "categories": [ "a", "x" ]
-          }
-        ])
+        serde_json::json!(
+        {
+            "results": [
+                {
+                    "name": "example-lib",
+                    "versions": [
+                        {
+                            "version": "1.3.0",
+                        },
+                        {
+                            "version": "1.3.1",
+                        }
+                    ],
+                    "created_at": "1970-01-01T00:00:00Z",
+                    "updated_at": "1970-01-01T00:00:00Z",
+                    "description": "Description example-lib",
+                    "homepage": "e.com",
+                    "repository": "ssh://git@b.com/a/f.git",
+                    "documentation": null,
+                    "keywords": [ "example" ],
+                    "categories": [ "a", "x" ]
+                },
+                {
+                    "name": "freighter",
+                    "versions": [
+                        {
+                            "version": "0.1.0",
+                        },
+                        {
+                            "version": "0.1.1",
+                        }
+                    ],
+                    "created_at": "1970-01-01T00:00:00Z",
+                    "updated_at": "1970-01-01T00:00:00Z",
+                    "description": "Description freighter",
+                    "homepage": "e.com",
+                    "repository": "ssh://git@b.com/a/f.git",
+                    "documentation": null,
+                    "keywords": [ "example" ],
+                    "categories": [ "a", "x" ]
+                }
+            ]
+        })
     );
 }

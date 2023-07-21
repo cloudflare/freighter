@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -140,6 +141,40 @@ pub struct ListQuery {
     pub page: Option<usize>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ListAll {
+    pub results: Vec<ListAllCrateEntry>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ListAllCrateEntry {
+    /// Name of the crate.
+    pub name: String,
+    /// List of published versions of the crate.
+    pub versions: Vec<ListAllCrateVersion>,
+    /// Textual description of the crate.
+    pub description: String,
+    /// Date and time that this crate was created.
+    pub created_at: DateTime<Utc>,
+    /// Date and time that this crate was last updated.
+    pub updated_at: DateTime<Utc>,
+    /// Optional homepage for the crate.
+    pub homepage: Option<String>,
+    /// Optional repository link.
+    pub repository: Option<String>,
+    /// Optional documentation link.
+    pub documentation: Option<String>,
+    /// List of keywords for the crate.
+    pub keywords: Vec<String>,
+    /// List of categories for the crate.
+    pub categories: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ListAllCrateVersion {
+    pub version: Version,
+}
+
 #[derive(Serialize)]
 pub struct SearchResults {
     /// Array of results.
@@ -161,11 +196,6 @@ pub struct SearchResultsEntry {
     pub max_version: Version,
     /// Textual description of the crate.
     pub description: String,
-    pub homepage: Option<String>,
-    pub repository: Option<String>,
-    pub documentation: Option<String>,
-    pub keywords: Vec<String>,
-    pub categories: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -236,7 +266,7 @@ pub struct Publish {
     pub links: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PublishDependency {
     /// Name of the dependency.
     ///
