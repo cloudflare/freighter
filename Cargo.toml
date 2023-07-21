@@ -21,6 +21,7 @@ axum-extra = "0.7.0"
 aws-credential-types = "0.55.3"
 aws-sdk-s3 = { version = "0.28.0", default-features = false }
 bytes = "1.1.0"
+chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.0", default-features = false }
 deadpool-postgres = "0.10.5"
 futures-util = { version = "0.3.16", default-features = false }

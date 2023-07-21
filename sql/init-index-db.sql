@@ -2,12 +2,14 @@ drop table if exists crates cascade;
 create table crates
 (
     id            integer primary key generated always as identity,
-    name          text not null,
-    registry      text not null default '',
+    name          text        not null,
+    registry      text        not null default '',
     description   text,
     documentation text,
     homepage      text,
     repository    text,
+    created_at    timestamptz,
+    updated_at    timestamptz,
     unique (name, registry)
 );
 

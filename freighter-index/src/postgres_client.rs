@@ -1,6 +1,7 @@
 use crate::{
     CompletedPublication, CrateVersion, Dependency, IndexError, IndexProvider, IndexResult,
-    ListQuery, Publish, SearchResults, SearchResultsEntry, SearchResultsMeta,
+    ListAll, ListAllCrateEntry, ListAllCrateVersion, ListQuery, Publish, SearchResults,
+    SearchResultsEntry, SearchResultsMeta,
 };
 use anyhow::Context;
 use async_trait::async_trait;
@@ -438,7 +439,7 @@ impl IndexProvider for PgIndexProvider {
                     &insert_dependency_statement,
                     &[
                         &dependency.name,
-                        &dependency.registry,
+                        &dependency.registry.as_ref().unwrap_or(&String::new()),
                         &version_id,
                         &dependency.version_req.to_string(),
                         &dependency.features,
@@ -501,7 +502,7 @@ impl IndexProvider for PgIndexProvider {
         Ok(CompletedPublication { warnings: None })
     }
 
-    async fn list(&self, pagination: &ListQuery) -> IndexResult<Vec<SearchResultsEntry>> {
+    async fn list(&self, pagination: &ListQuery) -> IndexResult<ListAll> {
         let client = self.pool.get().await.unwrap();
 
         let statement = client
@@ -519,7 +520,7 @@ impl IndexProvider for PgIndexProvider {
 
         // we can't scale the DB as easily as we can this server, so let's sort in here
         // warning: may be expensive!
-        rows.sort_unstable_by_key(|r| (r.get::<_, i64>("count"), r.get::<_, String>("name")));
+        rows.sort_unstable_by_key(|r| r.get::<_, String>("name"));
 
         let crates = if let ListQuery {
             per_page: Some(per_page),
@@ -530,13 +531,42 @@ impl IndexProvider for PgIndexProvider {
                 .nth(page.unwrap_or_default())
                 .unwrap_or(&[])
                 .iter()
-                .map(search_row_to_entry)
+                .map(list_row_to_entry)
                 .collect()
         } else {
-            rows.iter().map(search_row_to_entry).collect()
+            rows.iter().map(list_row_to_entry).collect()
         };
 
-        Ok(crates)
+        let list_all = ListAll { results: crates };
+
+        Ok(list_all)
+    }
+}
+
+fn list_row_to_entry(row: &Row) -> ListAllCrateEntry {
+    let versions: Vec<String> = row.get("versions");
+
+    // we should never receive 0 versions from our query
+    let versions = versions
+        .iter()
+        .map(|s| ListAllCrateVersion {
+            version: Version::parse(s).unwrap(),
+        })
+        .collect();
+
+    ListAllCrateEntry {
+        name: row.get("name"),
+        versions,
+        description: row.try_get("description").unwrap_or(String::new()),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        homepage: row.get("homepage"),
+        repository: row.get("repository"),
+        documentation: row.get("documentation"),
+        keywords: row.get::<_, Option<Vec<_>>>("keywords").unwrap_or_default(),
+        categories: row
+            .get::<_, Option<Vec<_>>>("categories")
+            .unwrap_or_default(),
     }
 }
 
@@ -554,10 +584,5 @@ fn search_row_to_entry(row: &Row) -> SearchResultsEntry {
         name: row.get("name"),
         max_version,
         description: row.try_get("description").unwrap_or(String::new()),
-        homepage: row.get("homepage"),
-        repository: row.get("repository"),
-        documentation: row.get("documentation"),
-        keywords: row.get("keywords"),
-        categories: row.get("categories"),
     }
 }

@@ -1,5 +1,6 @@
-use freighter_index::CrateVersion;
-use semver::Version;
+use freighter_index::{CrateVersion, PublishDependency};
+use semver::{Version, VersionReq};
+use std::str::FromStr;
 
 pub fn crate_version(name: &str, version: &str) -> CrateVersion {
     CrateVersion {
@@ -15,11 +16,31 @@ pub fn crate_version(name: &str, version: &str) -> CrateVersion {
     }
 }
 
-pub fn generate_crate_payload(name: &str, vers: &str, tarball: &[u8]) -> Vec<u8> {
+pub fn generate_crate_payload(
+    name: &str,
+    vers: &str,
+    tarball: &[u8],
+    deps: &[(&str, &str, Option<&str>)],
+) -> Vec<u8> {
+    let deps: Vec<_> = deps
+        .iter()
+        .map(|(name, req, registry)| PublishDependency {
+            name: name.to_string(),
+            version_req: VersionReq::from_str(req).unwrap(),
+            features: vec![],
+            optional: false,
+            default_features: false,
+            target: None,
+            kind: Default::default(),
+            registry: registry.map(|x| x.to_string()),
+            explicit_name_in_toml: None,
+        })
+        .collect();
+
     let json = serde_json::json!({
         "name": name,
         "vers": vers,
-        "deps": [],
+        "deps": deps,
         "features": {},
         "description": null,
         "documentation": null,

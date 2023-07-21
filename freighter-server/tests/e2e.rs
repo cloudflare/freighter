@@ -8,9 +8,12 @@ use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
 use freighter_auth::pg_backend::PgAuthProvider;
 use freighter_index::postgres_client::PgIndexProvider;
+use freighter_index::ListAll;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
 use hyper::{header::AUTHORIZATION, server::conn::AddrIncoming, Body, StatusCode};
+
+use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::common::utils::generate_crate_payload;
 
@@ -83,10 +86,14 @@ fn server(
 
 #[tokio::test]
 async fn e2e_publish_crate() {
+    let subscriber = tracing_subscriber::fmt().finish();
+    let _guard = subscriber.set_default();
+
     let config = TestServerConfig::from_env();
     let server_addr = config.server_addr.clone();
 
     const CRATE_TO_PUBLISH: &str = "freighter-vegetables";
+    const CRATE_TO_PUBLISH_2: &str = "freighter-fruits";
 
     // 0. Start Freighter
     {
@@ -112,7 +119,16 @@ async fn e2e_publish_crate() {
     let publish_res = client
         .put(format!("http://{server_addr}/api/v1/crates/new"))
         .header(AUTHORIZATION, token.clone())
-        .body(generate_crate_payload(CRATE_TO_PUBLISH, "1.2.3", &tarball))
+        .body(generate_crate_payload(
+            CRATE_TO_PUBLISH,
+            "1.2.3",
+            &tarball,
+            &[(
+                "tokio",
+                "1.0",
+                Some("https://github.com/rust-lang/crates.io-index"),
+            )],
+        ))
         .send()
         .await
         .unwrap();
@@ -123,7 +139,12 @@ async fn e2e_publish_crate() {
     let publish_res = client
         .put(format!("http://{server_addr}/api/v1/crates/new"))
         .header(AUTHORIZATION, token.clone())
-        .body(generate_crate_payload(CRATE_TO_PUBLISH, "1.2.3", &tarball))
+        .body(generate_crate_payload(
+            CRATE_TO_PUBLISH,
+            "1.2.3",
+            &tarball,
+            &[],
+        ))
         .send()
         .await
         .unwrap();
@@ -135,9 +156,10 @@ async fn e2e_publish_crate() {
         .put(format!("http://{server_addr}/api/v1/crates/new"))
         .header(AUTHORIZATION, token.clone())
         .body(generate_crate_payload(
-            CRATE_TO_PUBLISH,
+            CRATE_TO_PUBLISH_2,
             "2.0.0",
             &[2u8; 100],
+            &[(CRATE_TO_PUBLISH, "1.2", None)],
         ))
         .send()
         .await
@@ -155,6 +177,19 @@ async fn e2e_publish_crate() {
         .unwrap();
 
     assert_eq!(crate_res.status(), StatusCode::OK);
+
+    // 6. List crates
+    let list_res = client
+        .get(format!("http://{server_addr}/api/v1/crates/all"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(list_res.status(), StatusCode::OK);
+
+    let json: ListAll = list_res.json().await.unwrap();
+
+    assert_eq!(json.results.len(), 2);
 
     let body = crate_res.bytes().await.unwrap();
     assert_eq!(body, &tarball[..])
