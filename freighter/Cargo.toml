@@ -9,7 +9,6 @@ repository = "https://github.com/cloudflare/freighter"
 description = "Crate index traits and implementations for the freighter registry"
 categories = ["asynchronous", "authentication"]
 keywords = ["registries", "freighter"]
-readme = "../README.md"
 
 [dependencies]
 freighter-auth = { workspace = true, features = ["pg-backend"] }

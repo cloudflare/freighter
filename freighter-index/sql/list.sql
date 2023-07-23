@@ -5,7 +5,7 @@ select c.name,
        c.repository,
        c.created_at,
        c.updated_at,
-       array_agg(cv.version)                                              as versions,
+       array_agg(distinct cv.version)                                     as versions,
        array_agg(distinct cat.name) filter ( where cat.name is not null ) as categories,
        array_agg(distinct k.name) filter ( where k.name is not null )     as keywords
 from crates c
