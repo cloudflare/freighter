@@ -11,6 +11,7 @@ use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;
 use semver::{Version, VersionReq};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
@@ -219,7 +220,15 @@ impl IndexProvider for PgIndexProvider {
 
         // we can't scale the DB as easily as we can this server, so let's sort in here
         // warning: may be expensive!
-        rows.sort_unstable_by_key(|r| (r.get::<_, i64>("count"), r.get::<_, String>("name")));
+        //
+        // sort first by version in descending order, then by name alphabetically
+        rows.sort_unstable_by(|a, b| {
+            match a.get::<_, i64>("count").cmp(&b.get::<_, i64>("count")) {
+                Ordering::Less => Ordering::Greater,
+                Ordering::Equal => a.get::<_, String>("name").cmp(&b.get::<_, String>("name")),
+                Ordering::Greater => Ordering::Less,
+            }
+        });
 
         let total = rows.len();
 
