@@ -1,2 +1,2 @@
 [registries]
-nkcompute = { index = "sparse+https://crates-registry.nkcompute.net/index/" }
+freighter = { index = "sparse+https://127.0.0.1:3000/index/" }

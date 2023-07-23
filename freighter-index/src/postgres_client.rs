@@ -69,11 +69,15 @@ impl IndexProvider for PgIndexProvider {
             )
             .context("Failed to prepare transaction")?;
 
-        match client
-            .query_one(&existential_statement, &[&crate_name])
+        let mut existential_rows = client
+            .query(&existential_statement, &[&crate_name])
             .await
-        {
-            Ok(crate_row) => {
+            .context("Failed to query for crate existence")?;
+
+        assert!(existential_rows.len() < 2);
+
+        match existential_rows.pop() {
+            Some(crate_row) => {
                 let id: i32 = crate_row.get("id");
 
                 // this is a major hotpath
@@ -129,6 +133,8 @@ impl IndexProvider for PgIndexProvider {
                     }
 
                     for deps_row in dependency_rows {
+                        let registry: Option<String> = deps_row.get("registry");
+
                         deps.push(Dependency {
                             name: deps_row.get("name"),
                             req: VersionReq::parse(deps_row.get("req"))
@@ -138,7 +144,7 @@ impl IndexProvider for PgIndexProvider {
                             default_features: deps_row.get("default_features"),
                             target: deps_row.get("target"),
                             kind: deps_row.get("kind"),
-                            registry: deps_row.get("registry"),
+                            registry: registry.filter(|x| !x.is_empty()),
                             package: deps_row.get("package"),
                         });
                     }
@@ -160,8 +166,8 @@ impl IndexProvider for PgIndexProvider {
 
                 Ok(versions)
             }
-            Err(error) => {
-                tracing::warn!(?error, "Returning 404 for crate index");
+            None => {
+                tracing::warn!("Returning 404 for crate index");
                 Err(IndexError::NotFound)
             }
         }
