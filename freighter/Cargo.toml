@@ -1,13 +1,13 @@
 [package]
 name = "freighter"
-version = "0.1.1-rc.1"
+version = "0.1.1-rc.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
 publish = ["freighter"]
 repository = "https://github.com/cloudflare/freighter"
 description = "Crate index traits and implementations for the freighter registry"
-categories = ["asynchronous", "authentication"]
+categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [dependencies]
