@@ -10,11 +10,14 @@ use std::{
 
 use async_trait::async_trait;
 use axum::body::Bytes;
-use freighter_auth::{AuthError, AuthProvider, AuthResult, ListedOwner};
-use freighter_index::{
-    CompletedPublication, CrateVersion, IndexError, IndexProvider, IndexResult, ListAll,
-    ListAllCrateEntry, ListAllCrateVersion, ListQuery, Publish, SearchResults,
+use freighter_api_types::index::request::{ListQuery, Publish};
+use freighter_api_types::index::response::{
+    CompletedPublication, CrateVersion, ListAll, ListAllCrateEntry, ListAllCrateVersion,
+    SearchResults,
 };
+use freighter_api_types::ownership::response::ListedOwner;
+use freighter_auth::{AuthError, AuthProvider, AuthResult};
+use freighter_index::{IndexError, IndexProvider, IndexResult};
 use freighter_server::{ServiceConfig, ServiceState};
 use freighter_storage::{StorageProvider, StorageResult};
 use semver::Version;

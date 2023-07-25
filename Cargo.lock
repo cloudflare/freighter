@@ -805,6 +805,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "freighter-api-types"
+version = "0.1.0-rc"
+dependencies = [
+ "chrono",
+ "postgres-types",
+ "semver",
+ "serde",
+]
+
+[[package]]
 name = "freighter-auth"
 version = "0.1.0-rc.1"
 dependencies = [
@@ -812,11 +822,24 @@ dependencies = [
  "async-trait",
  "axum",
  "deadpool-postgres",
+ "freighter-api-types",
  "rand",
  "serde",
  "thiserror",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "freighter-client"
+version = "0.1.0-rc"
+dependencies = [
+ "anyhow",
+ "freighter-api-types",
+ "reqwest",
+ "semver",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -828,6 +851,7 @@ dependencies = [
  "axum",
  "chrono",
  "deadpool-postgres",
+ "freighter-api-types",
  "futures-util",
  "metrics",
  "postgres-types",
@@ -847,7 +871,9 @@ dependencies = [
  "axum",
  "axum-extra",
  "deadpool-postgres",
+ "freighter-api-types",
  "freighter-auth",
+ "freighter-client",
  "freighter-index",
  "freighter-storage",
  "hyper",

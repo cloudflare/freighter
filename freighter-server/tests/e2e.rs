@@ -1,21 +1,21 @@
 #![cfg(feature = "test_e2e")]
 pub mod common;
 
+use std::collections::HashMap;
 use std::env::var;
 
 use anyhow::{Context, Result};
 use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
+use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_auth::pg_backend::PgAuthProvider;
+use freighter_client::Client;
 use freighter_index::postgres_client::PgIndexProvider;
-use freighter_index::ListAll;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
-use hyper::{header::AUTHORIZATION, server::conn::AddrIncoming, Body, StatusCode};
-
+use hyper::{server::conn::AddrIncoming, Body};
+use semver::{Version, VersionReq};
 use tracing_subscriber::util::SubscriberInitExt;
-
-use crate::common::utils::generate_crate_payload;
 
 #[derive(Clone)]
 struct TestServerConfig {
@@ -101,96 +101,148 @@ async fn e2e_publish_crate() {
         tokio::spawn(server);
     }
 
-    // 1. Create a user to get a publish token.
-    let client = reqwest::Client::new();
+    let mut freighter_client = Client::new(&format!("http://{server_addr}"));
 
-    let token = client
-        .post(format!("http://{server_addr}/api/v1/crates/account"))
-        .form(&[("username", "kargo"), ("password", "krab")])
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
+    // 1. Create a user to get a publish token.
+    freighter_client.register("kargo", "krab").await.unwrap();
 
     // 2. Publish a crate!
     let tarball = [1u8; 100];
-    let publish_res = client
-        .put(format!("http://{server_addr}/api/v1/crates/new"))
-        .header(AUTHORIZATION, token.clone())
-        .body(generate_crate_payload(
-            CRATE_TO_PUBLISH,
-            "1.2.3",
+
+    freighter_client
+        .publish(
+            &Publish {
+                name: CRATE_TO_PUBLISH.to_string(),
+                vers: Version::new(1, 2, 3),
+                deps: vec![PublishDependency {
+                    name: "tokio".to_string(),
+                    version_req: VersionReq::parse("1.0").unwrap(),
+                    features: vec!["net".to_string(), "process".to_string(), "rt".to_string()],
+                    optional: false,
+                    default_features: false,
+                    target: None,
+                    kind: Default::default(),
+                    registry: Some("https://github.com/rust-lang/crates.io-index".to_string()),
+                    explicit_name_in_toml: None,
+                }],
+                features: HashMap::from_iter([("foo".to_string(), vec!["tokio/fs".to_string()])]),
+                authors: vec![],
+                description: None,
+                documentation: None,
+                homepage: None,
+                readme: None,
+                readme_file: None,
+                keywords: vec![],
+                categories: vec![],
+                license: None,
+                license_file: None,
+                repository: None,
+                badges: None,
+                links: None,
+            },
             &tarball,
-            &[(
-                "tokio",
-                "1.0",
-                Some("https://github.com/rust-lang/crates.io-index"),
-            )],
-        ))
-        .send()
+        )
         .await
         .unwrap();
-
-    assert_eq!(publish_res.status(), StatusCode::OK);
 
     // 3. Try and publish it again, expect 409 Conflict.
-    let publish_res = client
-        .put(format!("http://{server_addr}/api/v1/crates/new"))
-        .header(AUTHORIZATION, token.clone())
-        .body(generate_crate_payload(
-            CRATE_TO_PUBLISH,
-            "1.2.3",
+    let publish_res = freighter_client
+        .publish(
+            &Publish {
+                name: CRATE_TO_PUBLISH.to_string(),
+                vers: Version::new(1, 2, 3),
+                deps: vec![PublishDependency {
+                    name: "tokio".to_string(),
+                    version_req: VersionReq::parse("1.0").unwrap(),
+                    features: vec!["net".to_string(), "process".to_string(), "rt".to_string()],
+                    optional: false,
+                    default_features: false,
+                    target: None,
+                    kind: Default::default(),
+                    registry: Some("https://github.com/rust-lang/crates.io-index".to_string()),
+                    explicit_name_in_toml: None,
+                }],
+                features: HashMap::from_iter([("foo".to_string(), vec!["tokio/fs".to_string()])]),
+                authors: vec![],
+                description: None,
+                documentation: None,
+                homepage: None,
+                readme: None,
+                readme_file: None,
+                keywords: vec![],
+                categories: vec![],
+                license: None,
+                license_file: None,
+                repository: None,
+                badges: None,
+                links: None,
+            },
             &tarball,
-            &[],
-        ))
-        .send()
+        )
         .await
-        .unwrap();
+        .unwrap_err();
 
-    assert_eq!(publish_res.status(), StatusCode::CONFLICT);
+    assert!(
+        matches!(publish_res, freighter_client::Error::Conflict),
+        "{:?}",
+        publish_res
+    );
 
     // 4. Publish a newer version
-    let publish_res = client
-        .put(format!("http://{server_addr}/api/v1/crates/new"))
-        .header(AUTHORIZATION, token.clone())
-        .body(generate_crate_payload(
-            CRATE_TO_PUBLISH_2,
-            "2.0.0",
-            &[2u8; 100],
-            &[(CRATE_TO_PUBLISH, "1.2", None)],
-        ))
-        .send()
+    freighter_client
+        .publish(
+            &Publish {
+                name: CRATE_TO_PUBLISH_2.to_string(),
+                vers: Version::new(2, 0, 0),
+                deps: vec![PublishDependency {
+                    name: CRATE_TO_PUBLISH.to_string(),
+                    version_req: VersionReq::parse("1.2").unwrap(),
+                    features: vec!["foo".to_string()],
+                    optional: false,
+                    default_features: false,
+                    target: None,
+                    kind: Default::default(),
+                    registry: None,
+                    explicit_name_in_toml: None,
+                }],
+                features: HashMap::new(),
+                authors: vec![],
+                description: None,
+                documentation: None,
+                homepage: None,
+                readme: None,
+                readme_file: None,
+                keywords: vec![],
+                categories: vec![],
+                license: None,
+                license_file: None,
+                repository: None,
+                badges: None,
+                links: None,
+            },
+            &tarball,
+        )
         .await
         .unwrap();
-
-    assert_eq!(publish_res.status(), StatusCode::OK);
 
     // 5. Fetch our crate
-    let crate_res = client
-        .get(format!(
-            "http://{server_addr}/downloads/{CRATE_TO_PUBLISH}/1.2.3"
-        ))
-        .send()
+    let body = freighter_client
+        .download_crate(CRATE_TO_PUBLISH, &Version::new(1, 2, 3))
         .await
         .unwrap();
-
-    assert_eq!(crate_res.status(), StatusCode::OK);
 
     // 6. List crates
-    let list_res = client
-        .get(format!("http://{server_addr}/api/v1/crates/all"))
-        .send()
+    let json = freighter_client.list(None, None).await.unwrap();
+
+    // 7. Fetch index for crate
+    let index = freighter_client
+        .fetch_index(CRATE_TO_PUBLISH)
         .await
         .unwrap();
 
-    assert_eq!(list_res.status(), StatusCode::OK);
-
-    let json: ListAll = list_res.json().await.unwrap();
+    assert_eq!(index.len(), 1);
 
     assert_eq!(json.results.len(), 2);
 
-    let body = crate_res.bytes().await.unwrap();
     assert_eq!(body, &tarball[..])
 }

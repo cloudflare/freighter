@@ -7,14 +7,15 @@ use std::pin::Pin;
 #[cfg(feature = "postgresql-backend")]
 pub mod postgres_client;
 
-mod api_types;
-
 mod error;
 
 pub type IndexResult<T> = Result<T, IndexError>;
 
-pub use api_types::*;
 pub use error::*;
+use freighter_api_types::index::request::{ListQuery, Publish};
+use freighter_api_types::index::response::{
+    CompletedPublication, CrateVersion, ListAll, SearchResults,
+};
 
 /// A client for talking with a backing index database or storage medium.
 ///

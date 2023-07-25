@@ -1,8 +1,9 @@
-use crate::{AuthError, AuthProvider, AuthResult, ListedOwner};
+use crate::{AuthError, AuthProvider, AuthResult};
 use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::NoTls;
 use deadpool_postgres::{GenericClient, Pool, Runtime};
+use freighter_api_types::ownership::response::ListedOwner;
 use rand::distributions::{Alphanumeric, DistString};
 
 pub struct PgAuthProvider {
