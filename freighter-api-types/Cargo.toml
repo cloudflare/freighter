@@ -1,0 +1,20 @@
+[package]
+name = "freighter-api-types"
+version = "0.1.0-rc"
+edition = "2021"
+
+[features]
+auth = []
+index = ["dep:chrono", "dep:semver"]
+ownership = []
+
+client = ["dep:serde"]
+server = ["dep:serde"]
+
+postgres = ["dep:postgres-types"]
+
+[dependencies]
+chrono = { workspace = true, optional = true, features = ["serde"] }
+postgres-types = { workspace = true, optional = true, features = ["derive", "with-chrono-0_4"] }
+serde = { workspace = true, optional = true, features = ["derive"] }
+semver = { workspace = true, optional = true, features = ["serde"] }

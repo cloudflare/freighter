@@ -1,0 +1,13 @@
+[package]
+name = "freighter-client"
+version = "0.1.0-rc"
+edition = "2021"
+
+[dependencies]
+freighter-api-types = { workspace = true, features = ["auth", "index", "ownership", "client"] }
+
+anyhow = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+semver = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

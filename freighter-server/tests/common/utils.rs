@@ -1,4 +1,5 @@
-use freighter_index::{CrateVersion, PublishDependency};
+use freighter_api_types::index::request::PublishDependency;
+use freighter_api_types::index::response::CrateVersion;
 use semver::{Version, VersionReq};
 use std::str::FromStr;
 

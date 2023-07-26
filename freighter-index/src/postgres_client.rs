@@ -1,12 +1,13 @@
-use crate::{
-    CompletedPublication, CrateVersion, Dependency, IndexError, IndexProvider, IndexResult,
-    ListAll, ListAllCrateEntry, ListAllCrateVersion, ListQuery, Publish, SearchResults,
-    SearchResultsEntry, SearchResultsMeta,
-};
+use crate::{IndexError, IndexProvider, IndexResult};
 use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row, Statement};
 use deadpool_postgres::{Pool, Runtime};
+use freighter_api_types::index::request::{ListQuery, Publish};
+use freighter_api_types::index::response::{
+    CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
+    ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
+};
 use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;

@@ -2,8 +2,9 @@
 //!
 //! This is exactly as insecure as it sounds, and is meant primarily for testing purposes.
 
-use crate::{AuthProvider, AuthResult, ListedOwner};
+use crate::{AuthProvider, AuthResult};
 use async_trait::async_trait;
+use freighter_api_types::ownership::response::ListedOwner;
 use rand::distributions::{Alphanumeric, DistString};
 
 pub struct YesAuthProvider;

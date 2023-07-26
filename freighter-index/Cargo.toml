@@ -11,9 +11,10 @@ categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [features]
-postgresql-backend = ["postgres-types"]
+postgresql-backend = ["postgres-types", "freighter-api-types/postgres"]
 
 [dependencies]
+freighter-api-types = { workspace = true, features = ["index"] }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }

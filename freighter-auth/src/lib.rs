@@ -6,11 +6,10 @@ pub mod yes_backend;
 #[cfg(feature = "pg-backend")]
 pub mod pg_backend;
 
-mod api_types;
 mod error;
 
-pub use api_types::*;
 pub use error::*;
+use freighter_api_types::ownership::response::ListedOwner;
 
 #[async_trait]
 pub trait AuthProvider {

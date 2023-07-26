@@ -11,9 +11,19 @@ categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [features]
-test_e2e = ["deadpool-postgres", "reqwest", "axum/tokio", "axum/http1", "tracing-subscriber", "freighter-auth/pg-backend"]
+test_e2e = [
+    "dep:deadpool-postgres",
+    "dep:reqwest",
+    "axum/tokio",
+    "axum/http1",
+    "dep:tracing-subscriber",
+    "freighter-auth/pg-backend",
+    "dep:freighter-client"
+]
 
 [dependencies]
+freighter-api-types = { workspace = true, features = ["server", "index", "auth"] }
+freighter-client = { workspace = true, optional = true, features = [] }
 freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
@@ -34,6 +44,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true, optional = true, features = ["fmt"] }
 
 [dev-dependencies]
+freighter-api-types = { workspace = true, features = ["client"] }
+
 async-trait = { workspace = true }
 hyper = { workspace = true }
 tokio = { workspace = true }

@@ -1,26 +1,42 @@
+use super::DependencyKind;
 use chrono::{DateTime, Utc};
 use semver::{Version, VersionReq};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "client")]
+use serde::Deserialize;
+#[cfg(feature = "server")]
+use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "postgresql-backend",
-    derive(postgres_types::ToSql, postgres_types::FromSql)
-)]
-#[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "postgresql-backend", postgres(name = "dependency_kind"))]
-pub enum DependencyKind {
-    #[cfg_attr(feature = "postgresql-backend", postgres(name = "normal"))]
-    #[default]
-    Normal,
-    #[cfg_attr(feature = "postgresql-backend", postgres(name = "dev"))]
-    Dev,
-    #[cfg_attr(feature = "postgresql-backend", postgres(name = "build"))]
-    Build,
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+pub struct RegistryConfig {
+    pub dl: String,
+    pub api: String,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Debug)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+pub struct CompletedPublication {
+    /// Optional object of warnings to display to the user.
+    pub warnings: Option<CompletedPublicationWarnings>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+pub struct CompletedPublicationWarnings {
+    /// Array of strings of categories that are invalid and ignored.
+    pub invalid_categories: Vec<String>,
+    /// Array of strings of badge names that are invalid and ignored.
+    pub invalid_badges: Vec<String>,
+    /// Array of strings of arbitrary warnings to display to the user.
+    pub other: Vec<String>,
+}
+
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+#[derive(Clone)]
 pub struct CrateVersion {
     /// The name of the package.
     ///
@@ -79,7 +95,9 @@ pub struct CrateVersion {
     pub features2: HashMap<String, Vec<String>>,
 }
 
-#[derive(Serialize, Clone)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+#[derive(Clone)]
 pub struct Dependency {
     /// Name of the dependency.
     ///
@@ -118,35 +136,14 @@ pub struct Dependency {
     pub package: Option<String>,
 }
 
-#[derive(Deserialize)]
-pub struct AuthForm {
-    pub username: String,
-    pub password: String,
-}
-
-#[derive(Deserialize)]
-pub struct SearchQuery {
-    /// The search query string.
-    pub q: String,
-    /// Number of results, default 10, max 100.
-    pub per_page: Option<usize>,
-}
-
-/// Pagination information for certain operations.
-#[derive(Clone, Deserialize)]
-pub struct ListQuery {
-    /// The number of crates to show in a given page.
-    pub per_page: Option<usize>,
-    /// The page to show.
-    pub page: Option<usize>,
-}
-
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct ListAll {
     pub results: Vec<ListAllCrateEntry>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct ListAllCrateEntry {
     /// Name of the crate.
     pub name: String,
@@ -170,25 +167,29 @@ pub struct ListAllCrateEntry {
     pub categories: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct ListAllCrateVersion {
     pub version: Version,
 }
 
-#[derive(Serialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct SearchResults {
     /// Array of results.
     pub crates: Vec<SearchResultsEntry>,
     pub meta: SearchResultsMeta,
 }
 
-#[derive(Serialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct SearchResultsMeta {
     /// Total number of results available on the server.
     pub total: usize,
 }
 
-#[derive(Serialize)]
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
 pub struct SearchResultsEntry {
     /// Name of the crate.
     pub name: String,
@@ -196,121 +197,4 @@ pub struct SearchResultsEntry {
     pub max_version: Version,
     /// Textual description of the crate.
     pub description: String,
-}
-
-#[derive(Deserialize)]
-pub struct Publish {
-    /// The name of the package.
-    pub name: String,
-    /// The version of the package being published.
-    pub vers: Version,
-    /// Array of direct dependencies of the package.
-    pub deps: Vec<PublishDependency>,
-    /// Set of features defined for the package.
-    ///
-    /// Each feature maps to an array of features or dependencies it enables.
-    /// Cargo does not impose limitations on feature names, but crates.io requires alphanumeric
-    /// ASCII, `_` or `-` characters.
-    pub features: HashMap<String, Vec<String>>,
-    /// List of strings of the authors.
-    ///
-    /// May be empty.
-    #[serde(default)]
-    pub authors: Vec<String>,
-    /// Description field from the manifest.
-    ///
-    /// May be null. crates.io requires at least some content.
-    pub description: Option<String>,
-    /// String of the URL to the website for this package's documentation.
-    ///
-    /// May be null.
-    pub documentation: Option<String>,
-    /// String of the URL to the website for this package's home page.
-    ///
-    /// May be null.
-    pub homepage: Option<String>,
-    /// String of the content of the README file.
-    ///
-    /// May be null.
-    pub readme: Option<String>,
-    /// String of a relative path to a README file in the crate.
-    ///
-    /// May be null.
-    pub readme_file: Option<String>,
-    /// Array of strings of keywords for the package.
-    #[serde(default)]
-    pub keywords: Vec<String>,
-    /// Array of strings of categories for the package.
-    #[serde(default)]
-    pub categories: Vec<String>,
-    /// String of the license for the package.
-    ///
-    /// May be null. crates.io requires either `license` or `license_file` to be set.
-    pub license: Option<String>,
-    /// String of a relative path to a license file in the crate.
-    ///
-    /// May be null.
-    pub license_file: Option<String>,
-    /// String of the URL to the website for the source repository of this package.
-    ///
-    /// May be null.
-    pub repository: Option<String>,
-    /// Optional object of "status" badges.
-    ///
-    /// Each value is an object of arbitrary string to string mappings.
-    /// crates.io has special interpretation of the format of the badges.
-    pub badges: Option<HashMap<String, HashMap<String, String>>>,
-    /// The `links` string value from the package's manifest, or null if not specified.
-    ///
-    /// This field is optional and defaults to null.
-    pub links: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PublishDependency {
-    /// Name of the dependency.
-    ///
-    /// If the dependency is renamed from the original package name, this is the original name.
-    /// The new package name is stored in the [`explicit_name_in_toml`] field.
-    pub name: String,
-    /// The semver requirement for this dependency.
-    pub version_req: VersionReq,
-    /// Array of features (as strings) enabled for this dependency.
-    pub features: Vec<String>,
-    /// Boolean of whether or not this is an optional dependency.
-    pub optional: bool,
-    /// Boolean of whether or not default features are enabled.
-    pub default_features: bool,
-    /// The target platform for the dependency.
-    ///
-    /// Null if not a target dependency. Otherwise, a string such as "cfg(windows)".
-    pub target: Option<String>,
-    /// The dependency kind.
-    ///
-    /// "dev", "build", or "normal".
-    pub kind: DependencyKind,
-    /// The URL of the index of the registry where this dependency is from as a string.
-    ///
-    /// If not specified or null, it is assumed the dependency is in the current registry.
-    pub registry: Option<String>,
-    /// If the dependency is renamed, this is a string of the new package name.
-    ///
-    /// If not specified or null, this dependency is not renamed.
-    pub explicit_name_in_toml: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct CompletedPublication {
-    /// Optional object of warnings to display to the user.
-    pub warnings: Option<CompletedPublicationWarnings>,
-}
-
-#[derive(Serialize)]
-pub struct CompletedPublicationWarnings {
-    /// Array of strings of categories that are invalid and ignored.
-    pub invalid_categories: Vec<String>,
-    /// Array of strings of badge names that are invalid and ignored.
-    pub invalid_badges: Vec<String>,
-    /// Array of strings of arbitrary warnings to display to the user.
-    pub other: Vec<String>,
 }

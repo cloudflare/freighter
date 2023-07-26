@@ -6,9 +6,9 @@ use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
+use freighter_api_types::index::response::{CrateVersion, RegistryConfig};
 use freighter_auth::AuthProvider;
-use freighter_index::{CrateVersion, IndexProvider};
-use serde::{Deserialize, Serialize};
+use freighter_index::IndexProvider;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
@@ -23,12 +23,6 @@ where
         .route("/config.json", get(config))
         .route("/:prefix_1/:prefix_2/:crate_name", get(get_sparse_meta))
         .fallback(handle_index_fallback)
-}
-
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
-struct RegistryConfig {
-    dl: String,
-    api: String,
 }
 
 async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Json<RegistryConfig> {

@@ -7,11 +7,11 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
+use freighter_api_types::auth::request::AuthForm;
+use freighter_api_types::index::request::{ListQuery, Publish, SearchQuery};
+use freighter_api_types::index::response::{CompletedPublication, ListAll, SearchResults};
 use freighter_auth::AuthProvider;
-use freighter_index::{
-    AuthForm, CompletedPublication, IndexProvider, ListAll, ListQuery, Publish, SearchQuery,
-    SearchResults,
-};
+use freighter_index::IndexProvider;
 use freighter_storage::StorageProvider;
 use semver::Version;
 use serde::Deserialize;
