@@ -844,7 +844,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-index"
-version = "0.1.0-rc.2"
+version = "0.1.0-rc"
 dependencies = [
  "anyhow",
  "async-trait",
