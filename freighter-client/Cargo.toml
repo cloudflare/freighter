@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nkennedy@cloudflare.com>"]
 repository = "https://github.com/cloudflare/freighter"
-description = "Crate index traits and implementations for the freighter registry"
+description = "API client for the Freighter Rust crates Registry"
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
