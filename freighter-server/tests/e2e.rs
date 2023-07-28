@@ -101,7 +101,8 @@ async fn e2e_publish_crate() {
         tokio::spawn(server);
     }
 
-    let mut freighter_client = Client::new(&format!("http://{server_addr}")).await;
+    let mut freighter_client =
+        Client::new(&format!("http://{server_addr}/index/config.json")).await;
 
     // 1. Create a user to get a publish token.
     freighter_client.register("kargo", "krab").await.unwrap();
