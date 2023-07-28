@@ -76,6 +76,7 @@ pub struct CrateVersion {
     ///      This is honored in Rust version 1.51 and newer.
     /// * 2: The addition of the `features2` field.
     ///      This is honored in Rust version 1.60 and newer.
+    #[serde(default = "default_v")]
     pub v: u32,
     /// This optional field contains features with new, extended syntax.
     ///
@@ -92,6 +93,7 @@ pub struct CrateVersion {
     /// to include those in the "features" field. Using this is only necessary if the registry
     /// wants to support cargo versions older than 1.19, which in practice is only crates.io since
     /// those older versions do not support other registries.
+    #[serde(default)]
     pub features2: HashMap<String, Vec<String>>,
 }
 
@@ -197,4 +199,8 @@ pub struct SearchResultsEntry {
     pub max_version: Version,
     /// Textual description of the crate.
     pub description: String,
+}
+
+fn default_v() -> u32 {
+    1
 }

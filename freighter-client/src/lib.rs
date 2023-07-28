@@ -63,7 +63,15 @@ impl Client {
 
         let resp = client.get(config_url).send().await.unwrap();
 
-        let config = resp.json().await.unwrap();
+        let mut config: RegistryConfig = resp.json().await.unwrap();
+
+        if config.api.ends_with('/') {
+            config.api.pop();
+        }
+
+        if config.dl.ends_with('/') {
+            config.dl.pop();
+        }
 
         Self {
             http: client,
@@ -74,25 +82,19 @@ impl Client {
     }
 
     pub async fn fetch_index(&self, name: &str) -> Result<Vec<CrateVersion>> {
-        let prefix_1;
-        let prefix_2;
-
-        if name.len() >= 2 {
-            let (prefix_1_tmp, rest) = name.split_at(2);
-            prefix_1 = prefix_1_tmp;
-
-            if rest.len() >= 2 {
-                let (prefix_2_tmp, _) = name.split_at(2);
-                prefix_2 = prefix_2_tmp;
-            } else {
-                prefix_2 = rest;
+        let prefix = match name.len() {
+            0 => panic!("Should not be asked for crate name of len 0"),
+            1 => "1".to_string(),
+            2 => "2".to_string(),
+            3 => format!("3/{}", name.split_at(1).0),
+            _ => {
+                let (prefix_1_tmp, rest) = name.split_at(2);
+                let (prefix_2_tmp, _) = rest.split_at(2);
+                format!("{prefix_1_tmp}/{prefix_2_tmp}")
             }
-        } else {
-            prefix_1 = name;
-            prefix_2 = "";
-        }
+        };
 
-        let url = format!("{}/{prefix_1}/{prefix_2}/{name}", &self.endpoint);
+        let url = format!("{}/{prefix}/{name}", &self.endpoint);
 
         let mut req = self.http.get(url).build().unwrap();
 
