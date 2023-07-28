@@ -1,5 +1,7 @@
 use freighter_api_types::index::request::Publish;
-use freighter_api_types::index::response::{CompletedPublication, CrateVersion, ListAll};
+use freighter_api_types::index::response::{
+    CompletedPublication, CrateVersion, ListAll, RegistryConfig,
+};
 use reqwest::header::{HeaderValue, AUTHORIZATION};
 use reqwest::{Body, Request, StatusCode};
 use semver::Version;
@@ -11,6 +13,7 @@ pub struct Client {
     http: reqwest::Client,
     endpoint: String,
     token: Option<String>,
+    config: RegistryConfig,
 }
 
 #[derive(Error, Debug)]
@@ -48,24 +51,25 @@ impl From<reqwest::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Client {
-    pub fn new(endpoint: &str) -> Self {
+    pub async fn new(endpoint: &str) -> Self {
         let http = reqwest::Client::new();
-        let endpoint = endpoint.to_string();
 
-        Self {
-            http,
-            endpoint,
-            token: None,
-        }
+        Self::from_reqwest(endpoint, http).await
     }
 
-    pub fn from_reqwest(endpoint: &str, client: reqwest::Client) -> Self {
+    pub async fn from_reqwest(endpoint: &str, client: reqwest::Client) -> Self {
         let endpoint = endpoint.to_string();
+        let config_url = format!("{endpoint}/config.json");
+
+        let resp = client.get(config_url).send().await.unwrap();
+
+        let config = resp.json().await.unwrap();
 
         Self {
             http: client,
             endpoint,
             token: None,
+            config,
         }
     }
 
@@ -88,7 +92,7 @@ impl Client {
             prefix_2 = "";
         }
 
-        let url = format!("{}/index/{prefix_1}/{prefix_2}/{name}", &self.endpoint);
+        let url = format!("{}/{prefix_1}/{prefix_2}/{name}", &self.endpoint);
 
         let mut req = self.http.get(url).build().unwrap();
 
@@ -110,7 +114,7 @@ impl Client {
     }
 
     pub async fn download_crate(&self, name: &str, version: &Version) -> Result<Vec<u8>> {
-        let url = format!("{}/downloads/{name}/{version}", self.endpoint);
+        let url = format!("{}/{name}/{version}", self.config.dl);
 
         let mut req = self.http.get(url).build().unwrap();
 
@@ -145,7 +149,7 @@ impl Client {
         // copy tarball to buffer
         buf[tarball_off..].copy_from_slice(tarball);
 
-        let url = format!("{}/{API_PATH}/new", &self.endpoint);
+        let url = format!("{}/{API_PATH}/new", &self.config.api);
 
         let mut req = self.http.put(url).build().unwrap();
 
@@ -163,7 +167,7 @@ impl Client {
     }
 
     pub async fn list(&self, per_page: Option<usize>, page: Option<usize>) -> Result<ListAll> {
-        let url = format!("{}/{API_PATH}/all", self.endpoint);
+        let url = format!("{}/all", self.config.api);
 
         let mut req = self.http.get(url).build().unwrap();
 
@@ -215,7 +219,7 @@ impl Client {
     // }
 
     pub async fn register(&mut self, username: &str, password: &str) -> Result<()> {
-        let url = format!("{}/{API_PATH}/account", self.endpoint);
+        let url = format!("{}/{API_PATH}/account", self.config.api);
 
         let mut req = self
             .http
@@ -238,7 +242,7 @@ impl Client {
     }
 
     pub async fn login(&mut self, username: &str, password: &str) -> Result<()> {
-        let url = format!("{}/{API_PATH}/account/token", self.endpoint);
+        let url = format!("{}/{API_PATH}/account/token", self.config.api);
 
         let mut req = self
             .http
