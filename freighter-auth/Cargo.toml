@@ -9,6 +9,11 @@ description = "Crate index traits and implementations for the freighter registry
 categories = ["asynchronous", "authentication"]
 keywords = ["registries", "freighter"]
 
+[package.metadata.docs.rs]
+all-features = true
+# enable unstable features in the documentation
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 yes-backend = ["dep:rand"]
 pg-backend = ["dep:rand", "dep:deadpool-postgres", "dep:tokio"]
