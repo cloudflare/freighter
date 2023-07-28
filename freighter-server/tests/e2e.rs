@@ -77,7 +77,7 @@ fn server(
             config.server_addr
         ),
         api_endpoint: format!("http://{}", config.server_addr.to_owned()),
-        metrics_address: "http://127.0.0.1:9999".parse()?,
+        metrics_address: "127.0.0.1:9999".parse()?,
         allow_login: true,
         allow_registration: true,
     };
