@@ -149,10 +149,10 @@ impl AuthProvider for MockAuthProvider {
 }
 
 pub struct ServiceStateBuilder {
-    config: ServiceConfig,
-    index: MockIndexProvider,
-    storage: MockStorageProvider,
-    auth: MockAuthProvider,
+    pub config: ServiceConfig,
+    pub index: MockIndexProvider,
+    pub storage: MockStorageProvider,
+    pub auth: MockAuthProvider,
 }
 
 impl Default for ServiceStateBuilder {
@@ -198,5 +198,16 @@ impl ServiceStateBuilder {
             storage: self.storage,
             auth: self.auth,
         })
+    }
+
+    pub fn build_no_arc(
+        self,
+    ) -> ServiceState<MockIndexProvider, MockStorageProvider, MockAuthProvider> {
+        ServiceState {
+            config: self.config,
+            index: self.index,
+            storage: self.storage,
+            auth: self.auth,
+        }
     }
 }
