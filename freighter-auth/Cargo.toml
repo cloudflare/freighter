@@ -1,21 +1,25 @@
 [package]
 name = "freighter-auth"
-version = "0.1.0-rc.1"
+version = "0.1.0-rc"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
-publish = ["freighter"]
+authors = ["Noah Kennedy <nkennedy@cloudflare.com>"]
 repository = "https://github.com/cloudflare/freighter"
 description = "Crate index traits and implementations for the freighter registry"
 categories = ["asynchronous", "authentication"]
 keywords = ["registries", "freighter"]
 
+[package.metadata.docs.rs]
+all-features = true
+# enable unstable features in the documentation
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
-yes-backend = ["rand"]
-pg-backend = ["rand", "deadpool-postgres", "tokio"]
+yes-backend = ["dep:rand"]
+pg-backend = ["dep:rand", "dep:deadpool-postgres", "dep:tokio"]
 
 [dependencies]
-freighter-api-types = {workspace = true, features = ["ownership"]}
+freighter-api-types = { workspace = true, features = ["ownership"] }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }

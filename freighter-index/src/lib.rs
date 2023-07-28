@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use async_trait::async_trait;
 use semver::Version;
 
@@ -5,6 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 #[cfg(feature = "postgresql-backend")]
+#[cfg_attr(docsrs, doc(cfg(feature = "postgresql-backend")))]
 pub mod postgres_client;
 
 mod error;

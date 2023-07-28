@@ -1,17 +1,21 @@
 [package]
 name = "freighter-index"
-version = "0.1.0-rc.2"
+version = "0.1.0-rc"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
-publish = ["freighter"]
+authors = ["Noah Kennedy <nkennedy@cloudflare.com>"]
 repository = "https://github.com/cloudflare/freighter"
 description = "Crate index traits and implementations for the freighter registry"
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
+[package.metadata.docs.rs]
+all-features = true
+# enable unstable features in the documentation
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
-postgresql-backend = ["postgres-types", "freighter-api-types/postgres"]
+postgresql-backend = ["dep:postgres-types", "freighter-api-types/postgres"]
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["index"] }

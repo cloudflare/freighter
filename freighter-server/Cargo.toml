@@ -1,10 +1,9 @@
 [package]
 name = "freighter-server"
-version = "0.1.0-rc.1"
+version = "0.1.0-rc"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-authors = ["Noah Kennedy <nomaxx117@gmail.com>"]
-publish = ["freighter"]
+authors = ["Noah Kennedy <nkennedy@cloudflare.com>"]
 repository = "https://github.com/cloudflare/freighter"
 description = "Crate index traits and implementations for the freighter registry"
 categories = ["asynchronous"]
@@ -23,7 +22,7 @@ test_e2e = [
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["server", "index", "auth"] }
-freighter-client = { workspace = true, optional = true, features = [] }
+freighter-client = { workspace = true, optional = true }
 freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-index = { workspace = true, features = ["postgresql-backend"] }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
