@@ -1,10 +1,13 @@
 use axum::body::Body;
-use axum::extract::MatchedPath;
-use axum::http::{Request, StatusCode};
+use axum::extract::{MatchedPath, Query, State};
+use axum::http::header::AUTHORIZATION;
+use axum::http::{HeaderMap, Request, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
-use axum::Router;
+use axum::{Json, Router};
+use freighter_api_types::index::request::ListQuery;
+use freighter_api_types::index::response::ListAll;
 use freighter_auth::AuthProvider;
 use freighter_index::IndexProvider;
 use freighter_storage::StorageProvider;
@@ -76,6 +79,7 @@ where
         .nest("/index", index::index_router())
         .nest("/api/v1/crates", api::api_router())
         .route("/me", get(login))
+        .route("/all", get(list))
         .with_state(state)
         .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
@@ -118,6 +122,27 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
 
 pub async fn login() -> Html<&'static str> {
     Html(include_str!("../static/login.html"))
+}
+
+async fn list<I, S, A>(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+    Query(query): Query<ListQuery>,
+) -> axum::response::Result<Json<ListAll>>
+where
+    I: IndexProvider,
+    A: AuthProvider + Sync,
+{
+    let token = headers
+        .get(AUTHORIZATION)
+        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+        .transpose()?;
+
+    state.auth.auth_view_full_index(token).await?;
+
+    let search_results = state.index.list(&query).await?;
+
+    Ok(Json(search_results))
 }
 
 pub async fn handle_global_fallback() -> StatusCode {

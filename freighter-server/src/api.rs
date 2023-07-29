@@ -8,8 +8,8 @@ use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
-use freighter_api_types::index::request::{ListQuery, Publish, SearchQuery};
-use freighter_api_types::index::response::{CompletedPublication, ListAll, SearchResults};
+use freighter_api_types::index::request::{Publish, SearchQuery};
+use freighter_api_types::index::response::{CompletedPublication, SearchResults};
 use freighter_auth::AuthProvider;
 use freighter_index::IndexProvider;
 use freighter_storage::StorageProvider;
@@ -40,7 +40,6 @@ where
         .route("/account", post(register))
         .route("/account/token", post(login))
         .route("/", get(search))
-        .route("/all", get(list))
         .fallback(handle_api_fallback)
 }
 
@@ -283,27 +282,6 @@ where
         .index
         .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
         .await?;
-
-    Ok(Json(search_results))
-}
-
-async fn list<I, S, A>(
-    headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
-    Query(query): Query<ListQuery>,
-) -> axum::response::Result<Json<ListAll>>
-where
-    I: IndexProvider,
-    A: AuthProvider + Sync,
-{
-    let token = headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()?;
-
-    state.auth.auth_view_full_index(token).await?;
-
-    let search_results = state.index.list(&query).await?;
 
     Ok(Json(search_results))
 }

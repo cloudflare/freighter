@@ -72,8 +72,8 @@ fn server(
 
     let service = ServiceConfig {
         address: config.server_addr.parse()?,
-        download_endpoint: format!("{}/downloads/{{crate}}/{{version}}", config.server_addr),
-        api_endpoint: config.server_addr.to_owned(),
+        download_endpoint: format!("http://{}/downloads/", config.server_addr),
+        api_endpoint: format!("http://{}", config.server_addr.to_owned()),
         metrics_address: "127.0.0.1:9999".parse()?,
         allow_login: true,
         allow_registration: true,
@@ -101,7 +101,7 @@ async fn e2e_publish_crate() {
         tokio::spawn(server);
     }
 
-    let mut freighter_client = Client::new(&format!("http://{server_addr}"));
+    let mut freighter_client = Client::new(&format!("http://{server_addr}/index")).await;
 
     // 1. Create a user to get a publish token.
     freighter_client.register("kargo", "krab").await.unwrap();

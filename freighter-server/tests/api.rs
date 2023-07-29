@@ -6,7 +6,7 @@ use crate::common::{
 };
 
 use axum::http::{Request, StatusCode};
-use freighter_server::api;
+use freighter_server::{api, router};
 use hyper::{header::AUTHORIZATION, Body};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -72,8 +72,6 @@ async fn publish_crate_auth_denied() {
 
 #[tokio::test]
 async fn list_all_crates() {
-    let router = api::api_router();
-
     let crates = BTreeMap::from([
         (
             "example-lib".to_owned(),
@@ -93,10 +91,11 @@ async fn list_all_crates() {
 
     let state = ServiceStateBuilder::default()
         .index_provider(MockIndexProvider { crates })
-        .build();
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
 
     let response = router
-        .with_state(state)
         .oneshot(Request::builder().uri("/all").body(Body::empty()).unwrap())
         .await
         .unwrap();

@@ -11,8 +11,8 @@ members = [
 ]
 
 [workspace.dependencies]
-freighter-api-types = { path = "freighter-api-types", version = "0.1.0-rc" }
-freighter-client = { path = "freighter-client", version = "0.1.0-rc" }
+freighter-api-types = { path = "freighter-api-types", version = "0.1.0-rc.1" }
+freighter-client = { path = "freighter-client", version = "0.1.0-rc.1" }
 freighter-auth = { path = "freighter-auth", registry = "freighter", version = "0.1.0-rc" }
 freighter-index = { path = "freighter-index", registry = "freighter", version = "0.1.0-rc" }
 freighter-server = { path = "freighter-server", registry = "freighter", version = "0.1.0-rc" }
