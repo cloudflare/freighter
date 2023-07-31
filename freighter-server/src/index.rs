@@ -21,7 +21,7 @@ where
 {
     Router::new()
         .route("/config.json", get(config))
-        .route("/:prefix_1/:prefix_2/:crate_name", get(get_sparse_meta))
+        .route("/*crate_index_path", get(get_sparse_meta))
         .fallback(handle_index_fallback)
 }
 
@@ -36,7 +36,7 @@ async fn config<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Jso
 async fn get_sparse_meta<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
-    Path((_, _, crate_name)): Path<(String, String, String)>,
+    Path(crate_index_path): Path<String>,
 ) -> axum::response::Result<
     JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>,
 >
@@ -44,18 +44,26 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let token = headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()?;
+    let split = crate_index_path.split('/');
 
-    state.auth.auth_index_fetch(token, &crate_name).await?;
+    if let Some(crate_name) = split.last() {
+        let token = headers
+            .get(AUTHORIZATION)
+            .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+            .transpose()?;
 
-    let crate_versions = state.index.get_sparse_entry(&crate_name).await?;
+        state.auth.auth_index_fetch(token, crate_name).await?;
 
-    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
+        let crate_versions = state.index.get_sparse_entry(crate_name).await?;
 
-    Ok(resp)
+        let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
+
+        Ok(resp)
+    } else {
+        tracing::warn!("Received index request with no path");
+
+        Err(StatusCode::BAD_REQUEST.into())
+    }
 }
 
 async fn handle_index_fallback() -> StatusCode {
