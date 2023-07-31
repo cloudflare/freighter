@@ -6,6 +6,7 @@ use crate::common::{
 };
 
 use axum::http::{Request, StatusCode};
+use freighter_api_types::index::response::CrateVersion;
 use freighter_server::{api, router};
 use hyper::{header::AUTHORIZATION, Body};
 use serde_json::Value;
@@ -150,4 +151,226 @@ async fn list_all_crates() {
             ]
         })
     );
+}
+
+#[tokio::test]
+async fn one_char_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/1/a")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("a", value.name);
+}
+
+#[tokio::test]
+async fn two_char_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/2/aa")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("aa", value.name);
+}
+
+#[tokio::test]
+async fn three_char_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/3/a/aaa")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("aaa", value.name);
+}
+
+#[tokio::test]
+async fn four_char_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/aa/aa/aaaa")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("aaaa", value.name);
+}
+
+#[tokio::test]
+async fn hyphen_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/aa/-a/aa-aa")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("aa-aa", value.name);
+}
+
+#[tokio::test]
+async fn underscore_crate_name() {
+    const CRATE_NAMES: &[&str] = &["a", "aa", "aaa", "aaaa", "aa-aa", "aa_aa"];
+
+    let crates = BTreeMap::from_iter(
+        CRATE_NAMES
+            .into_iter()
+            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+    );
+
+    let state = ServiceStateBuilder::default()
+        .index_provider(MockIndexProvider {
+            crates: crates.clone(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/index/aa/_a/aa_aa")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // only one version present, this should deserialize
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let value: CrateVersion = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!("aa_aa", value.name);
 }
