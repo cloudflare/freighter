@@ -57,7 +57,7 @@ jobs:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack clippy --each-feature
+      - run: cargo hack clippy --each-feature --workspace
 
   rustfmt:
     runs-on: ubuntu-latest
@@ -77,7 +77,7 @@ jobs:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack test --each-feature --exclude-features test_e2e
+      - run: cargo hack test --each-feature --exclude-features test_e2e --workspace
 
   minimal-versions:
     runs-on: ubuntu-latest

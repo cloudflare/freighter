@@ -36,7 +36,7 @@ pub struct CompletedPublicationWarnings {
 
 #[cfg_attr(feature = "client", derive(Deserialize))]
 #[cfg_attr(feature = "server", derive(Serialize))]
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct CrateVersion {
     /// The name of the package.
     ///
@@ -99,7 +99,7 @@ pub struct CrateVersion {
 
 #[cfg_attr(feature = "client", derive(Deserialize))]
 #[cfg_attr(feature = "server", derive(Serialize))]
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Dependency {
     /// Name of the dependency.
     ///
@@ -203,4 +203,41 @@ pub struct SearchResultsEntry {
 
 fn default_v() -> u32 {
     1
+}
+
+impl CrateVersion {
+    /// "Normalize" a crate version such that any functionally equivalent versions will be identical.
+    pub fn normalize(&mut self) {
+        self.normalize_features();
+        self.normalize_dependencies();
+    }
+
+    fn normalize_dependencies(&mut self) {
+        for d in self.deps.iter_mut() {
+            d.features.sort();
+        }
+
+        self.deps.sort_by_key(|x| {
+            (
+                x.registry.clone(),
+                x.name.clone(),
+                x.package.clone(),
+                x.req.to_string(),
+                x.kind.clone(),
+                x.target.clone(),
+            )
+        });
+    }
+
+    fn normalize_features(&mut self) {
+        let mut features_2 = HashMap::new();
+
+        std::mem::swap(&mut features_2, &mut self.features2);
+
+        for (k, mut v) in features_2.into_iter() {
+            v.sort();
+
+            self.features.insert(k, v);
+        }
+    }
 }
