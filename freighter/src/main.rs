@@ -5,7 +5,6 @@ use freighter_index::postgres_client::PgIndexProvider;
 use freighter_storage::s3_client::S3StorageProvider;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
-use tokio::signal;
 
 mod cli;
 mod config;
@@ -61,13 +60,19 @@ async fn main() -> anyhow::Result<()> {
         .serve(router.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .context("Freighter server exited with error")
+        .context("Freighter server exited with error")?;
+
+    tracing::info!("Completed graceful shutdown");
+
+    Ok(())
 }
 
 // Based on: https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs
 async fn shutdown_signal() {
     #[cfg(unix)]
     let terminate = async {
+        use tokio::signal;
+
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -79,5 +84,5 @@ async fn shutdown_signal() {
 
     terminate.await;
 
-    println!("SIGTERM received, shutting down...");
+    tracing::info!("SIGTERM received, beginning graceful shutdown");
 }
