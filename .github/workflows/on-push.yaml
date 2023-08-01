@@ -39,6 +39,8 @@ jobs:
 
   check-features:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -57,7 +59,7 @@ jobs:
           toolchain: stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack clippy --each-feature --workspace -- -D warnings
+      - run: cargo clippy --all-features --workspace -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
