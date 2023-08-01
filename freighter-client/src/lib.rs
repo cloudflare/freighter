@@ -271,7 +271,7 @@ impl Client {
     }
 
     pub fn token(&self) -> Option<&str> {
-        self.token.as_ref().map(String::as_str)
+        self.token.as_deref()
     }
 
     fn attach_auth(&self, req: &mut Request) {
