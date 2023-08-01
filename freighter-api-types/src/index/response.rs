@@ -201,6 +201,7 @@ pub struct SearchResultsEntry {
     pub description: String,
 }
 
+#[cfg(feature = "client")]
 fn default_v() -> u32 {
     1
 }
