@@ -9,6 +9,8 @@ COPY freighter-auth/ freighter-auth
 COPY freighter-index/ freighter-index
 COPY freighter-server/ freighter-server
 COPY freighter-storage/ freighter-storage
+COPY freighter-api-types/ freighter-api-types
+COPY freighter-client/ freighter-client
 
 RUN cd freighter \
   && cargo install --path .
