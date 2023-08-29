@@ -8,7 +8,7 @@ use axum_extra::extract::JsonLines;
 use axum_extra::json_lines::AsResponse;
 use freighter_api_types::index::response::{CrateVersion, RegistryConfig};
 use freighter_auth::AuthProvider;
-use freighter_index::IndexProvider;
+use freighter_api_types::index::IndexProvider;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};

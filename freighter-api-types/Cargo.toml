@@ -16,7 +16,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 auth = []
-index = ["dep:chrono", "dep:semver"]
+index = ["dep:chrono", "dep:semver", "dep:axum", "dep:anyhow", "dep:thiserror", "dep:async-trait", "dep:tracing"]
 ownership = []
 
 client = ["dep:serde"]
@@ -25,7 +25,12 @@ server = ["dep:serde"]
 postgres = ["dep:postgres-types"]
 
 [dependencies]
+anyhow = { workspace = true, optional = true }
+async-trait = { workspace = true, optional = true }
+axum = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true, features = ["serde"] }
 postgres-types = { workspace = true, optional = true, features = ["derive", "with-chrono-0_4"] }
 serde = { workspace = true, optional = true, features = ["derive"] }
 semver = { workspace = true, optional = true, features = ["serde"] }
+thiserror = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }

@@ -11,7 +11,7 @@ use freighter_api_types::auth::request::AuthForm;
 use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults};
 use freighter_auth::AuthProvider;
-use freighter_index::IndexProvider;
+use freighter_api_types::index::IndexProvider;
 use freighter_storage::StorageProvider;
 use semver::Version;
 use serde::Deserialize;

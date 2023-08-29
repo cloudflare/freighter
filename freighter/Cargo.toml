@@ -11,7 +11,7 @@ keywords = ["registries", "freighter"]
 
 [dependencies]
 freighter-auth = { workspace = true, features = ["pg-backend"] }
-freighter-index = { workspace = true, features = ["postgresql-backend"] }
+freighter-pg-index = { workspace = true, optional = true }
 freighter-server = { workspace = true }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
 
@@ -25,3 +25,8 @@ serde_yaml = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["std", "smallvec", "fmt", "tracing-log", "ansi"] }
+
+[features]
+default = ["postgresql-index-backend"]
+postgresql-index-backend = ["dep:freighter-pg-index"]
+

@@ -12,6 +12,7 @@ keywords = ["registries", "freighter"]
 [features]
 test_e2e = [
     "dep:deadpool-postgres",
+    "dep:freighter-pg-index",
     "dep:reqwest",
     "axum/tokio",
     "axum/http1",
@@ -24,8 +25,8 @@ test_e2e = [
 freighter-api-types = { workspace = true, features = ["server", "index", "auth"] }
 freighter-client = { workspace = true, optional = true }
 freighter-auth = { workspace = true, features = ["yes-backend"] }
-freighter-index = { workspace = true, features = ["postgresql-backend"] }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
+freighter-pg-index = { workspace = true, optional = true }
 
 anyhow = { workspace = true }
 axum = { workspace = true, features = ["json", "query", "form", "matched-path"] }
