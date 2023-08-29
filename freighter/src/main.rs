@@ -1,7 +1,8 @@
 use anyhow::Context;
 use clap::Parser;
 use freighter_auth::pg_backend::PgAuthProvider;
-use freighter_index::postgres_client::PgIndexProvider;
+#[cfg(feature = "postgresql-index-backend")]
+use freighter_pg_index::PgIndexProvider;
 use freighter_storage::s3_client::S3StorageProvider;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
@@ -41,8 +42,10 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = service.address;
 
-    let index_client =
-        PgIndexProvider::new(index_db).context("Failed to construct index client")?;
+    #[cfg(feature = "postgresql-index-backend")]
+    let index_client = PgIndexProvider::new(index_db)
+        .context("Failed to construct index client")?;
+
     let storage_client = S3StorageProvider::new(
         &store.name,
         &store.endpoint_url,

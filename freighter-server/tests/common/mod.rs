@@ -17,7 +17,7 @@ use freighter_api_types::index::response::{
 };
 use freighter_api_types::ownership::response::ListedOwner;
 use freighter_auth::{AuthError, AuthProvider, AuthResult};
-use freighter_index::{IndexError, IndexProvider, IndexResult};
+use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_server::{ServiceConfig, ServiceState};
 use freighter_storage::{StorageProvider, StorageResult};
 use semver::Version;

@@ -1,24 +1,24 @@
 [package]
-name = "freighter-index"
+name = "freighter-pg-index"
 version = "0.1.0-rc"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Noah Kennedy <nkennedy@cloudflare.com>"]
 repository = "https://github.com/cloudflare/freighter"
-description = "Crate index traits and implementations for the freighter registry"
+description = "Postgres index implementation for the freighter registry"
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
+
+[lib]
+path = "src/postgres_client.rs"
 
 [package.metadata.docs.rs]
 all-features = true
 # enable unstable features in the documentation
 rustdoc-args = ["--cfg", "docsrs"]
 
-[features]
-postgresql-backend = ["dep:postgres-types", "freighter-api-types/postgres"]
-
 [dependencies]
-freighter-api-types = { workspace = true, features = ["index"] }
+freighter-api-types = { workspace = true, features = ["index", "postgres"] }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
@@ -26,7 +26,7 @@ chrono = { workspace = true, features = ["serde"] }
 deadpool-postgres = { workspace = true }
 futures-util = { workspace = true }
 metrics = { workspace = true }
-postgres-types = { workspace = true, features = ["derive", "with-chrono-0_4"], optional = true }
+postgres-types = { workspace = true, features = ["derive", "with-chrono-0_4"] }
 semver = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }

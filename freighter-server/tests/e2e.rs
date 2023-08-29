@@ -10,7 +10,7 @@ use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_auth::pg_backend::PgAuthProvider;
 use freighter_client::Client;
-use freighter_index::postgres_client::PgIndexProvider;
+use freighter_pg_index::PgIndexProvider;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
 use hyper::{server::conn::AddrIncoming, Body};

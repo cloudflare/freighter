@@ -6,7 +6,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::Router;
 use freighter_auth::AuthProvider;
-use freighter_index::IndexProvider;
+use freighter_api_types::index::IndexProvider;
 use freighter_storage::StorageProvider;
 use semver::Version;
 use std::sync::Arc;

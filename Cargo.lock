@@ -793,7 +793,7 @@ dependencies = [
  "clap",
  "deadpool-postgres",
  "freighter-auth",
- "freighter-index",
+ "freighter-pg-index",
  "freighter-server",
  "freighter-storage",
  "metrics-exporter-prometheus",
@@ -808,10 +808,15 @@ dependencies = [
 name = "freighter-api-types"
 version = "0.1.0-rc.2"
 dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
  "chrono",
  "postgres-types",
  "semver",
  "serde",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -843,7 +848,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "freighter-index"
+name = "freighter-pg-index"
 version = "0.1.0-rc"
 dependencies = [
  "anyhow",
@@ -874,7 +879,7 @@ dependencies = [
  "freighter-api-types",
  "freighter-auth",
  "freighter-client",
- "freighter-index",
+ "freighter-pg-index",
  "freighter-storage",
  "hyper",
  "metrics",
