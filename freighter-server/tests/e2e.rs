@@ -7,12 +7,12 @@ use std::env::var;
 use anyhow::{Context, Result};
 use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
-use freighter_api_types::index::IndexProvider;
 use freighter_api_types::index::request::{Publish, PublishDependency};
+use freighter_api_types::index::IndexProvider;
 use freighter_auth::pg_backend::PgAuthProvider;
 use freighter_client::Client;
-use freighter_pg_index::PgIndexProvider;
 use freighter_fs_index::FsIndexProvider;
+use freighter_pg_index::PgIndexProvider;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
 use hyper::{server::conn::AddrIncoming, Body};
@@ -106,7 +106,10 @@ async fn e2e_publish_crate_fs() {
     }).unwrap(), config).await;
 }
 
-async fn e2e_publish_crate_in_index(index_client: impl IndexProvider + Send + Sync + 'static, config: TestServerConfig) {
+async fn e2e_publish_crate_in_index(
+    index_client: impl IndexProvider + Send + Sync + 'static,
+    config: TestServerConfig,
+) {
     static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
     let _throttle = ONE_AT_A_TIME.lock().await;
 
