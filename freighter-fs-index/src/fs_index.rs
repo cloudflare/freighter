@@ -7,10 +7,8 @@ use freighter_api_types::index::response::{
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use semver::Version;
 use serde::Deserialize;
-use std::ffi::OsStr;
 use std::future::Future;
-use std::{io, debug_assert_eq};
-use std::os::unix::ffi::OsStrExt;
+use std::io;
 use std::path::{PathBuf, Path};
 use std::pin::Pin;
 use std::time::SystemTime;
@@ -80,14 +78,14 @@ impl FsIndexProvider {
         match lc_crate_name.len() {
             4.. => {
                 let (prefix1, prefix2) = lc_crate_name.as_bytes()[..4].split_at(2);
-                path.push(OsStr::from_bytes(prefix1));
-                path.push(OsStr::from_bytes(prefix2));
+                path.push(bytes_as_path(prefix1));
+                path.push(bytes_as_path(prefix2));
             },
             1 => path.push("1"),
             2 => path.push("2"),
             3 => {
                 path.push("3");
-                path.push(OsStr::from_bytes(&lc_crate_name.as_bytes()[..1]));
+                path.push(bytes_as_path(&lc_crate_name.as_bytes()[..1]));
             },
             _ => return None,
         };
@@ -240,4 +238,16 @@ impl IndexProvider for FsIndexProvider {
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
         Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
     }
+}
+
+#[cfg(unix)]
+fn bytes_as_path(b: &[u8]) -> &Path {
+    use std::os::unix::ffi::OsStrExt;
+    use std::ffi::OsStr;
+    OsStr::from_bytes(b).as_ref()
+}
+
+#[cfg(not(unix))]
+fn bytes_as_path(b: &[u8]) -> &Path {
+    std::str::from_utf8(b).unwrap().as_ref()
 }
