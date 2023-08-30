@@ -37,6 +37,7 @@ pub struct S3StorageProvider {
 impl S3StorageProvider {
     /// Construct a new client, returning an error if the information could not be used to
     /// communicate with a valid bucket.
+    #[must_use]
     pub fn new(
         bucket_name: &str,
         endpoint_url: &str,

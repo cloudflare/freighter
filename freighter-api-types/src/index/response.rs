@@ -214,17 +214,17 @@ impl CrateVersion {
     }
 
     fn normalize_dependencies(&mut self) {
-        for d in self.deps.iter_mut() {
+        for d in &mut self.deps {
             d.features.sort();
         }
 
-        self.deps.sort_by_key(|x| {
+        self.deps.sort_by_cached_key(|x| {
             (
                 x.registry.clone(),
                 x.name.clone(),
                 x.package.clone(),
                 x.req.to_string(),
-                x.kind.clone(),
+                x.kind,
                 x.target.clone(),
             )
         });
@@ -235,7 +235,7 @@ impl CrateVersion {
 
         std::mem::swap(&mut features_2, &mut self.features2);
 
-        for (k, mut v) in features_2.into_iter() {
+        for (k, mut v) in features_2 {
             v.sort();
 
             self.features.insert(k, v);

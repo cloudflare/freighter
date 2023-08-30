@@ -270,6 +270,7 @@ impl Client {
         self.token = Some(token);
     }
 
+    #[must_use]
     pub fn token(&self) -> Option<&str> {
         self.token.as_deref()
     }
