@@ -54,8 +54,9 @@ impl IndexProvider for MockIndexProvider {
         &self,
         _version: &Publish,
         _checksum: &str,
-        _end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
+        end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
+        end_step.await?;
         Ok(CompletedPublication { warnings: None })
     }
 
@@ -104,7 +105,7 @@ impl StorageProvider for MockStorageProvider {
         _version: &str,
         _crate_bytes: &[u8],
     ) -> StorageResult<()> {
-        unimplemented!()
+        Ok(())
     }
 }
 

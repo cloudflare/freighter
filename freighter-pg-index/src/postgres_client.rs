@@ -256,7 +256,7 @@ impl IndexProvider for PgIndexProvider {
         &self,
         version: &Publish,
         checksum: &str,
-        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
+        end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         let startup_timer = Instant::now();
 

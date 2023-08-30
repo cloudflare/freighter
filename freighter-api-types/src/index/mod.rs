@@ -118,7 +118,7 @@ pub trait IndexProvider: Sync {
         &self,
         version: &Publish,
         checksum: &str,
-        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
+        end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication>;
     /// List crates in the index, optionally specifying pagination.
     ///

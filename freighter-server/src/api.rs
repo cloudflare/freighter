@@ -91,26 +91,33 @@ where
 
     let hash = format!("{:x}", Sha256::digest(&crate_bytes));
 
-    let name = json.name.clone();
     let version = json.vers.to_string();
     let storage = state.storage.clone();
+    let mut stored_crate = false;
 
-    let resp = state
-        .index
-        .publish(
-            &json,
-            &hash,
-            Box::pin(async move {
-                storage
-                    .put_crate(&name, &version, &crate_bytes)
-                    .await
-                    .context("Failed to store crate in storage medium")
-            }),
-        )
-        .await
-        .map(Json)?;
+    let res = {
+        let end_step = std::pin::pin!(async {
+            storage
+                .put_crate(&json.name, &version, &crate_bytes)
+                .await
+                .context("Failed to store the crate in a storage medium")?;
+            stored_crate = true;
+            drop(crate_bytes); // free mem ASAP
+            Ok(())
+        });
+        state.index.publish(&json, &hash, end_step).await
+    };
 
-    Ok(resp)
+    match res {
+        Ok(res) => {
+            // publish() is never allowed to proceed without the end_step succeeding.
+            assert!(stored_crate);
+            Ok(Json(res))
+        }
+        Err(e) => {
+            Err(e.into())
+        }
+    }
 }
 
 async fn yank<I, S, A>(

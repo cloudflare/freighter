@@ -166,7 +166,7 @@ impl IndexProvider for FsIndexProvider {
         &self,
         p: &Publish,
         checksum: &str,
-        end_step: Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>,
+        end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         let release = CrateVersion {
             name: p.name.clone(),
