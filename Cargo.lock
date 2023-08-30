@@ -856,6 +856,7 @@ version = "0.1.0-rc"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chrono",
  "freighter-api-types",
  "semver",
  "serde",
