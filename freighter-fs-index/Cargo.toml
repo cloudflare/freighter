@@ -9,9 +9,6 @@ description = "Filesystem-based index implementation for the freighter registry"
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
-[lib]
-path = "src/fs_index.rs"
-
 [dependencies]
 freighter-api-types = { workspace = true, features = ["index"] }
 anyhow = { workspace = true }

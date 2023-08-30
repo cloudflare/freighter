@@ -9,9 +9,6 @@ description = "Postgres index implementation for the freighter registry"
 categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
-[lib]
-path = "src/postgres_client.rs"
-
 [package.metadata.docs.rs]
 all-features = true
 # enable unstable features in the documentation
