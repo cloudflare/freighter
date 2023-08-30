@@ -60,12 +60,16 @@ service:
   api_endpoint: "127.0.0.1:3000"
   metrics_address: "127.0.0.1:3001"
 
+# for postgres backend
 index_db: &db
   dbname: "freighter"
   user: "freighter"
   password: "crates-crates-crates"
   host: "localhost"
   port: 5432
+
+# for filesystem backend
+index_path: "/var/lib/freighter/index"
 
 auth_db: *db
 

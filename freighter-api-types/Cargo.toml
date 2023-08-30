@@ -16,7 +16,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 auth = []
-index = ["dep:chrono", "dep:semver", "dep:axum", "dep:anyhow", "dep:thiserror", "dep:async-trait", "dep:tracing"]
+index = ["dep:chrono", "dep:semver", "dep:axum", "dep:anyhow", "dep:thiserror", "dep:async-trait", "dep:tracing", "dep:serde"]
 ownership = []
 
 client = ["dep:serde"]

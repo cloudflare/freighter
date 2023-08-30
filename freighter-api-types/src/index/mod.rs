@@ -17,7 +17,7 @@ pub use error::*;
 
 pub type IndexResult<T> = Result<T, IndexError>;
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[cfg_attr(
     any(feature = "server", feature = "client"),
     derive(Serialize, Deserialize),

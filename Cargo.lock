@@ -790,9 +790,11 @@ version = "0.1.1-rc.4"
 dependencies = [
  "anyhow",
  "axum",
+ "cfg-if",
  "clap",
  "deadpool-postgres",
  "freighter-auth",
+ "freighter-fs-index",
  "freighter-pg-index",
  "freighter-server",
  "freighter-storage",
@@ -845,6 +847,20 @@ dependencies = [
  "semver",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "freighter-fs-index"
+version = "0.1.0-rc"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "freighter-api-types",
+ "semver",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
 ]
 
 [[package]]
