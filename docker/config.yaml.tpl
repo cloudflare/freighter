@@ -11,6 +11,8 @@ index_db: &db
   host: "$POSTGRES_HOST"
   port: $POSTGRES_PORT
 
+index_path: /var/lib/freighter/index
+
 auth_db: *db
 
 store:

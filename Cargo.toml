@@ -6,15 +6,18 @@ members = [
     "freighter-auth",
     "freighter-client",
     "freighter-pg-index",
+    "freighter-fs-index",
     "freighter-server",
     "freighter-storage",
 ]
+default-members = ["freighter"]
 
 [workspace.dependencies]
 freighter-api-types = { path = "freighter-api-types", version = "=0.1.0-rc.2" }
 freighter-client = { path = "freighter-client", version = "=0.1.0-rc.2" }
 freighter-auth = { path = "freighter-auth", registry = "freighter", version = "0.1.0-rc" }
 freighter-pg-index = { path = "freighter-pg-index", registry = "freighter", version = "0.1.0-rc" }
+freighter-fs-index = { path = "freighter-fs-index", registry = "freighter", version = "0.1.0-rc" }
 freighter-server = { path = "freighter-server", registry = "freighter", version = "0.1.0-rc" }
 freighter-storage = { path = "freighter-storage", registry = "freighter", version = "0.1.0-rc" }
 
@@ -47,6 +50,7 @@ tower = { version = "0.4", default-features = false }
 tower-http = "0.4.0"
 tracing = "0.1.21"
 tracing-subscriber = { version = "0.3.0", default-features = false }
+tempfile = "3.7.0"
 
 [profile.release]
 debug = true

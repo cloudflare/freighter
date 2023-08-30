@@ -1,9 +1,9 @@
 use super::DependencyKind;
 use chrono::{DateTime, Utc};
 use semver::{Version, VersionReq};
-#[cfg(feature = "client")]
+#[cfg(any(feature = "index", feature = "client"))]
 use serde::Deserialize;
-#[cfg(feature = "server")]
+#[cfg(any(feature = "index", feature = "server"))]
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -34,8 +34,8 @@ pub struct CompletedPublicationWarnings {
     pub other: Vec<String>,
 }
 
-#[cfg_attr(feature = "client", derive(Deserialize))]
-#[cfg_attr(feature = "server", derive(Serialize))]
+#[cfg_attr(any(feature = "index", feature = "client"), derive(Deserialize))]
+#[cfg_attr(any(feature = "index", feature = "server"), derive(Serialize))]
 #[derive(Clone, Eq, PartialEq)]
 pub struct CrateVersion {
     /// The name of the package.
@@ -97,8 +97,8 @@ pub struct CrateVersion {
     pub features2: HashMap<String, Vec<String>>,
 }
 
-#[cfg_attr(feature = "client", derive(Deserialize))]
-#[cfg_attr(feature = "server", derive(Serialize))]
+#[cfg_attr(any(feature = "index", feature = "client"), derive(Deserialize))]
+#[cfg_attr(any(feature = "index", feature = "server"), derive(Serialize))]
 #[derive(Clone, Eq, PartialEq)]
 pub struct Dependency {
     /// Name of the dependency.

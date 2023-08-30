@@ -1,8 +1,15 @@
 use anyhow::Context;
 use clap::Parser;
 use freighter_auth::pg_backend::PgAuthProvider;
-#[cfg(feature = "postgresql-index-backend")]
-use freighter_pg_index::PgIndexProvider;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "filesystem-index-backend")] {
+        use freighter_fs_index::FsIndexProvider;
+    } else if #[cfg(feature = "postgresql-index-backend")] {
+        use freighter_pg_index::PgIndexProvider;
+    } else {
+        compile_error!("Use cargo features to select an index backend");
+    }
+}
 use freighter_storage::s3_client::S3StorageProvider;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
@@ -22,9 +29,11 @@ async fn main() -> anyhow::Result<()> {
     )
     .context("Failed to deserialize config file, please make sure its in the right format")?;
 
+    #[allow(unused)]
     let config::Config {
         service,
         index_db,
+        index_path,
         auth_db,
         store,
     } = config;
@@ -42,9 +51,15 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = service.address;
 
-    #[cfg(feature = "postgresql-index-backend")]
-    let index_client = PgIndexProvider::new(index_db)
-        .context("Failed to construct index client")?;
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "filesystem-index-backend")] {
+            let index_client = FsIndexProvider::new(index_path.context("index_path config required")?)
+                .context("Failed to construct index client")?;
+        } else if #[cfg(feature = "postgresql-index-backend")] {
+            let index_client = PgIndexProvider::new(index_db.context("index_db config required")?)
+                .context("Failed to construct index client")?;
+        }
+    }
 
     let storage_client = S3StorageProvider::new(
         &store.name,
