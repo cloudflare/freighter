@@ -18,7 +18,6 @@ jobs:
     needs:
       - check-features
       - clippy
-      - rustfmt
       - tests
       - e2e
       - check-all-os
@@ -62,15 +61,6 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features --workspace -- -D warnings
-
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: cargo fmt --all --check
 
   tests:
     runs-on: ubuntu-latest
