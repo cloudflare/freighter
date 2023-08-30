@@ -28,7 +28,7 @@ impl FsIndexProvider {
         let root = config.index_path;
         std::fs::create_dir_all(&root)
             .with_context(|| format!("Index root at {}", root.display()))
-            .map_err(|e| IndexError::ServiceError(e.into()))?;
+            .map_err(IndexError::ServiceError)?;
         Ok(Self {
             root,
             meta_file_locks: Default::default(),

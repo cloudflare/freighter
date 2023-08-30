@@ -371,7 +371,7 @@ impl IndexProvider for PgIndexProvider {
 
         let add_to_keycat_timer = Instant::now();
 
-        for k in version.keywords.iter() {
+        for k in &version.keywords {
             if !crate_keywords.contains(k) {
                 let keyword_id: i32 = transaction
                     .query_one(&insert_keyword_statement, &[k])
@@ -386,7 +386,7 @@ impl IndexProvider for PgIndexProvider {
             }
         }
 
-        for c in version.categories.iter() {
+        for c in &version.categories {
             if !crate_categories.contains(c) {
                 let category_id: i32 = transaction
                     .query_one(&insert_category_statement, &[c])
@@ -410,7 +410,7 @@ impl IndexProvider for PgIndexProvider {
 
         let prune_keycat_timer = Instant::now();
 
-        for k in crate_keywords.iter() {
+        for k in &crate_keywords {
             if !version.keywords.contains(k) {
                 transaction
                     .query(&remove_crate_keyword_statement, &[&crate_id, k])
@@ -419,7 +419,7 @@ impl IndexProvider for PgIndexProvider {
             }
         }
 
-        for c in crate_categories.iter() {
+        for c in &crate_categories {
             if !version.categories.contains(c) {
                 transaction
                     .query(&remove_crate_category_statement, &[&crate_id, c])
@@ -458,7 +458,7 @@ impl IndexProvider for PgIndexProvider {
 
         let version_id: i32 = insert_version_row.get("id");
 
-        for dependency in version.deps.iter() {
+        for dependency in &version.deps {
             transaction
                 .query_one(
                     &insert_dependency_statement,
@@ -486,7 +486,7 @@ impl IndexProvider for PgIndexProvider {
 
         let insert_features_timer = Instant::now();
 
-        for feature in version.features.iter() {
+        for feature in &version.features {
             transaction
                 .query_one(
                     &insert_features_statement,

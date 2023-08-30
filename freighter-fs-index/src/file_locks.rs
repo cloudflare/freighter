@@ -133,7 +133,7 @@ fn deserialize_data(json_lines: &[u8]) -> IndexResult<Vec<CrateVersion>> {
     json_lines
         .split(|&c| c == b'\n')
         .filter(|line| !line.is_empty())
-        .map(|line| serde_json::from_slice::<CrateVersion>(line))
+        .map(serde_json::from_slice::<CrateVersion>)
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| IndexError::ServiceError(e.into()))
 }
