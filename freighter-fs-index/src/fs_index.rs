@@ -94,7 +94,11 @@ impl FsIndexProvider {
     }
 
     /// Assumes all files are crates
-    fn list_crates_in_subdir<'a, 'b: 'a>(&'b self, path: &Path, out: &'a mut Vec<ListAllCrateEntry>) -> Pin<Box<dyn Future<Output=IndexResult<()>> + Send + Sync + 'a>> {
+    fn list_crates_in_subdir<'a, 'b: 'a>(
+        &'b self,
+        path: &Path,
+        out: &'a mut Vec<ListAllCrateEntry>,
+    ) -> Pin<Box<dyn Future<Output = IndexResult<()>> + Send + Sync + 'a>> {
         let dir = std::fs::read_dir(path);
         Box::pin(async move {
             for entry in dir.map_err(|e| IndexError::ServiceError(e.into()))? {
@@ -230,9 +234,7 @@ impl IndexProvider for FsIndexProvider {
             self.list_crates_in_subdir(&path, &mut results).await?;
         }
 
-        Ok(ListAll {
-            results,
-        })
+        Ok(ListAll { results })
     }
 
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
@@ -242,8 +244,8 @@ impl IndexProvider for FsIndexProvider {
 
 #[cfg(unix)]
 fn bytes_as_path(b: &[u8]) -> &Path {
-    use std::os::unix::ffi::OsStrExt;
     use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
     OsStr::from_bytes(b).as_ref()
 }
 

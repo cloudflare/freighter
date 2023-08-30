@@ -2,12 +2,12 @@ use anyhow::Context;
 use async_trait::async_trait;
 use deadpool_postgres::tokio_postgres::{IsolationLevel, NoTls, Row, Statement};
 use deadpool_postgres::{Pool, Runtime};
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
     ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
+use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;

@@ -1,7 +1,7 @@
-use std::future::Future;
-use std::pin::Pin;
 use async_trait::async_trait;
 use semver::Version;
+use std::future::Future;
+use std::pin::Pin;
 
 use request::{ListQuery, Publish, PublishDependency};
 use response::{CompletedPublication, CrateVersion, ListAll, SearchResults};
@@ -76,7 +76,6 @@ impl From<response::CrateVersion> for request::Publish {
         }
     }
 }
-
 
 /// A client for talking with a backing index database or storage medium.
 ///
