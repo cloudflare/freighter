@@ -3,9 +3,9 @@ use clap::Parser;
 use freighter_auth::pg_backend::PgAuthProvider;
 cfg_if::cfg_if! {
     if #[cfg(feature = "filesystem-index-backend")] {
-        use freighter_fs_index::FsIndexProvider;
+        use freighter_fs_index::FsIndexProvider as SelectedIndexProvider;
     } else if #[cfg(feature = "postgresql-index-backend")] {
-        use freighter_pg_index::PgIndexProvider;
+        use freighter_pg_index::PgIndexProvider as SelectedIndexProvider;
     } else {
         compile_error!("Use cargo features to select an index backend");
     }
@@ -23,17 +23,15 @@ async fn main() -> anyhow::Result<()> {
 
     let args = cli::FreighterArgs::parse();
 
-    let config: config::Config = serde_yaml::from_str(
+    let config: config::Config<SelectedIndexProvider> = serde_yaml::from_str(
         &read_to_string(args.config)
             .context("Failed to read config file from disk, is it present?")?,
     )
     .context("Failed to deserialize config file, please make sure its in the right format")?;
 
-    #[allow(unused)]
     let config::Config {
         service,
-        index_db,
-        index_path,
+        index_config,
         auth_db,
         store,
     } = config;
@@ -51,15 +49,8 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = service.address;
 
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "filesystem-index-backend")] {
-            let index_client = FsIndexProvider::new(index_path.context("index_path config required")?)
-                .context("Failed to construct index client")?;
-        } else if #[cfg(feature = "postgresql-index-backend")] {
-            let index_client = PgIndexProvider::new(index_db.context("index_db config required")?)
-                .context("Failed to construct index client")?;
-        }
-    }
+    let index_client = SelectedIndexProvider::new(index_config)
+        .context("Failed to construct index client")?;
 
     let storage_client = S3StorageProvider::new(
         &store.name,

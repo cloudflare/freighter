@@ -12,6 +12,7 @@ use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;
 use semver::{Version, VersionReq};
+use serde::Deserialize;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::future::Future;
@@ -23,8 +24,9 @@ pub struct PgIndexProvider {
 }
 
 impl PgIndexProvider {
-    pub fn new(config: deadpool_postgres::Config) -> IndexResult<Self> {
+    pub fn new(config: Config) -> IndexResult<Self> {
         let pool = config
+            .index_db
             .create_pool(Some(Runtime::Tokio1), NoTls)
             .context("Failed to create db pool")?;
 
@@ -56,8 +58,15 @@ impl PgIndexProvider {
     }
 }
 
+#[derive(Deserialize)]
+pub struct Config {
+    pub index_db: deadpool_postgres::Config,
+}
+
 #[async_trait]
 impl IndexProvider for PgIndexProvider {
+    type Config = Config;
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         let client = self.pool.get().await.unwrap();
 

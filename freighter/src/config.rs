@@ -1,12 +1,12 @@
-use std::path::PathBuf;
+use freighter_api_types::index::IndexProvider;
 use freighter_server::ServiceConfig;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct Config {
+pub struct Config<I: IndexProvider> {
     pub service: ServiceConfig,
-    pub index_db: Option<deadpool_postgres::Config>,
-    pub index_path: Option<PathBuf>,
+    #[serde(flatten)]
+    pub index_config: I::Config,
     pub auth_db: deadpool_postgres::Config,
     pub store: StoreConfig,
 }
