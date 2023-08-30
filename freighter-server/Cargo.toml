@@ -19,7 +19,9 @@ test_e2e = [
     "axum/http1",
     "dep:tracing-subscriber",
     "freighter-auth/pg-backend",
-    "dep:freighter-client"
+    "dep:freighter-client",
+    "dep:tempfile",
+    "dep:rand",
 ]
 
 [dependencies]
@@ -29,6 +31,8 @@ freighter-auth = { workspace = true, features = ["yes-backend"] }
 freighter-storage = { workspace = true, features = ["s3-backend"] }
 freighter-pg-index = { workspace = true, optional = true }
 freighter-fs-index = { workspace = true, optional = true }
+tempfile = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
 
 anyhow = { workspace = true }
 axum = { workspace = true, features = ["json", "query", "form", "matched-path"] }
@@ -50,7 +54,6 @@ freighter-api-types = { workspace = true, features = ["client"] }
 
 async-trait = { workspace = true }
 hyper = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "macros"] }
 tower = { workspace = true }
-tempfile = { workspace = true }
-rand = { workspace = true }
+
