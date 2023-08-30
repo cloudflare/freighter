@@ -29,6 +29,8 @@ pub struct MockIndexProvider {
 
 #[async_trait]
 impl IndexProvider for MockIndexProvider {
+    type Config = ();
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         if let Some(versions) = self.crates.get(crate_name).cloned() {
             Ok(versions)

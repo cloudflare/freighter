@@ -6,6 +6,7 @@ use freighter_api_types::index::response::{
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use semver::Version;
+use serde::Deserialize;
 use std::ffi::OsStr;
 use std::future::Future;
 use std::io;
@@ -22,8 +23,8 @@ pub struct FsIndexProvider {
 }
 
 impl FsIndexProvider {
-    pub fn new(root: impl Into<PathBuf>) -> IndexResult<Self> {
-        let root = root.into();
+    pub fn new(config: Config) -> IndexResult<Self> {
+        let root = config.index_path;
         std::fs::create_dir_all(&root)
             .with_context(|| format!("Index root at {}", root.display()))
             .map_err(|e| IndexError::ServiceError(e.into()))?;
@@ -86,8 +87,15 @@ impl FsIndexProvider {
     }
 }
 
+#[derive(Deserialize)]
+pub struct Config {
+    pub index_path: PathBuf,
+}
+
 #[async_trait]
 impl IndexProvider for FsIndexProvider {
+    type Config = Config;
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         self.access_crate(crate_name)?.shared().await.deserialized()
     }

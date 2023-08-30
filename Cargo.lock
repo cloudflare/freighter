@@ -793,6 +793,7 @@ dependencies = [
  "cfg-if",
  "clap",
  "deadpool-postgres",
+ "freighter-api-types",
  "freighter-auth",
  "freighter-fs-index",
  "freighter-pg-index",

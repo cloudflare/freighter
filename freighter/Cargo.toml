@@ -11,6 +11,7 @@ keywords = ["registries", "freighter"]
 
 [dependencies]
 freighter-auth = { workspace = true, features = ["pg-backend"] }
+freighter-api-types = { workspace = true, features = ["index"] }
 freighter-pg-index = { workspace = true, optional = true }
 freighter-fs-index = { workspace = true, optional = true }
 freighter-server = { workspace = true }

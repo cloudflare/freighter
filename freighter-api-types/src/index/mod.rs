@@ -88,6 +88,8 @@ impl From<response::CrateVersion> for request::Publish {
 /// User actions should be authenticated before an operation is performed.
 #[async_trait]
 pub trait IndexProvider: Sync {
+    type Config;
+
     /// Get the sparse index entry for a crate.
     ///
     /// If successful, a [`CrateVersion`] api object will be returned.

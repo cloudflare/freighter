@@ -58,8 +58,11 @@ impl TestServerConfig {
 fn server(
     config: &TestServerConfig,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router<(), Body>>>> {
-    let index_client =
-        PgIndexProvider::new(config.db.clone()).context("Failed to construct index client")?;
+    type ProviderConfig = <PgIndexProvider as freighter_api_types::index::IndexProvider>::Config;
+    let index_client = PgIndexProvider::new(ProviderConfig {
+        index_db: config.db.clone(),
+    })
+    .context("Failed to construct index client")?;
     let storage_client = S3StorageProvider::new(
         &config.bucket_name,
         &config.bucket_endpoint_url,
