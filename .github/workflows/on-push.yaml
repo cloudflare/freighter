@@ -141,7 +141,7 @@ jobs:
           PGUSER: freighter
           PGPASSWORD: crates-crates-crates
       - name: Run E2E tests
-        run: cargo test --features=test_e2e -- --nocapture e2e
+        run: cargo test -p freighter-server --features=test_e2e -- --nocapture e2e
         env:
           SERVER_ADDR: "127.0.0.1:3000"
           POSTGRES_HOST: localhost
