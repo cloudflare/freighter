@@ -6,7 +6,7 @@ use semver::Version;
 use request::{ListQuery, Publish, PublishDependency};
 use response::{CompletedPublication, CrateVersion, ListAll, SearchResults};
 
-#[cfg(any(feature = "client", feature = "server"))]
+#[cfg(any(feature = "index", feature = "server", feature = "client"))]
 use serde::{Deserialize, Serialize};
 
 pub mod request;
@@ -19,7 +19,7 @@ pub type IndexResult<T> = Result<T, IndexError>;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[cfg_attr(
-    any(feature = "server", feature = "client"),
+    any(feature = "index", feature = "server", feature = "client"),
     derive(Serialize, Deserialize),
     serde(rename_all = "lowercase")
 )]
