@@ -7,10 +7,12 @@ use std::env::var;
 use anyhow::{Context, Result};
 use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
+use freighter_api_types::index::IndexProvider;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_auth::pg_backend::PgAuthProvider;
 use freighter_client::Client;
 use freighter_pg_index::PgIndexProvider;
+use freighter_fs_index::FsIndexProvider;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
 use hyper::{server::conn::AddrIncoming, Body};
@@ -57,12 +59,8 @@ impl TestServerConfig {
 
 fn server(
     config: &TestServerConfig,
+    index_client: impl IndexProvider + Send + Sync + 'static,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router<(), Body>>>> {
-    type ProviderConfig = <PgIndexProvider as freighter_api_types::index::IndexProvider>::Config;
-    let index_client = PgIndexProvider::new(ProviderConfig {
-        index_db: config.db.clone(),
-    })
-    .context("Failed to construct index client")?;
     let storage_client = S3StorageProvider::new(
         &config.bucket_name,
         &config.bucket_endpoint_url,
@@ -88,26 +86,48 @@ fn server(
 }
 
 #[tokio::test]
-async fn e2e_publish_crate() {
+async fn e2e_publish_crate_pg() {
+    let config = TestServerConfig::from_env();
+
+    type ProviderConfig = <PgIndexProvider as IndexProvider>::Config;
+    e2e_publish_crate_in_index(PgIndexProvider::new(ProviderConfig {
+        index_db: config.db.clone(),
+    }).unwrap(), config).await;
+}
+
+#[tokio::test]
+async fn e2e_publish_crate_fs() {
+    let config = TestServerConfig::from_env();
+    let dir = tempfile::tempdir().unwrap();
+
+    type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
+    e2e_publish_crate_in_index(FsIndexProvider::new(ProviderConfig {
+        index_path: dir.path().into(),
+    }).unwrap(), config).await;
+}
+
+async fn e2e_publish_crate_in_index(index_client: impl IndexProvider + Send + Sync + 'static, config: TestServerConfig) {
+    static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _throttle = ONE_AT_A_TIME.lock().await;
+
     let subscriber = tracing_subscriber::fmt().finish();
     let _guard = subscriber.set_default();
 
-    let config = TestServerConfig::from_env();
     let server_addr = config.server_addr.clone();
 
-    const CRATE_TO_PUBLISH: &str = "freighter-vegetables";
-    const CRATE_TO_PUBLISH_2: &str = "freighter-fruits";
+    use rand::distributions::{Alphanumeric, DistString};
+    let test_unique_str = Alphanumeric.sample_string(&mut rand::thread_rng(), 12);
+
+    let crate_to_publish = format!("freighter-vegetables-{test_unique_str}");
+    let crate_to_publish_2 = format!("freighter-fruits-{test_unique_str}");
 
     // 0. Start Freighter
-    {
-        let server = server(&config).unwrap();
-        tokio::spawn(server);
-    }
+    let server_spawned = tokio::spawn(server(&config, index_client).unwrap());
 
     let mut freighter_client = Client::new(&format!("http://{server_addr}/index")).await;
 
     // 1. Create a user to get a publish token.
-    freighter_client.register("kargo", "krab").await.unwrap();
+    freighter_client.register(&format!("kargo-{test_unique_str}"), "krab").await.unwrap();
 
     // 2. Publish a crate!
     let tarball = [1u8; 100];
@@ -115,7 +135,7 @@ async fn e2e_publish_crate() {
     freighter_client
         .publish(
             &Publish {
-                name: CRATE_TO_PUBLISH.to_string(),
+                name: crate_to_publish.clone(),
                 vers: Version::new(1, 2, 3),
                 deps: vec![PublishDependency {
                     name: "tokio".to_string(),
@@ -152,7 +172,7 @@ async fn e2e_publish_crate() {
     let publish_res = freighter_client
         .publish(
             &Publish {
-                name: CRATE_TO_PUBLISH.to_string(),
+                name: crate_to_publish.clone(),
                 vers: Version::new(1, 2, 3),
                 deps: vec![PublishDependency {
                     name: "tokio".to_string(),
@@ -195,10 +215,10 @@ async fn e2e_publish_crate() {
     freighter_client
         .publish(
             &Publish {
-                name: CRATE_TO_PUBLISH_2.to_string(),
+                name: crate_to_publish_2.clone(),
                 vers: Version::new(2, 0, 0),
                 deps: vec![PublishDependency {
-                    name: CRATE_TO_PUBLISH.to_string(),
+                    name: crate_to_publish.clone(),
                     version_req: VersionReq::parse("1.2").unwrap(),
                     features: vec!["foo".to_string()],
                     optional: false,
@@ -230,7 +250,7 @@ async fn e2e_publish_crate() {
 
     // 5. Fetch our crate
     let body = freighter_client
-        .download_crate(CRATE_TO_PUBLISH, &Version::new(1, 2, 3))
+        .download_crate(&crate_to_publish, &Version::new(1, 2, 3))
         .await
         .unwrap();
 
@@ -239,13 +259,17 @@ async fn e2e_publish_crate() {
 
     // 7. Fetch index for crate
     let index = freighter_client
-        .fetch_index(CRATE_TO_PUBLISH)
+        .fetch_index(&crate_to_publish)
         .await
         .unwrap();
 
     assert_eq!(index.len(), 1);
 
     assert_eq!(json.results.len(), 2);
+    assert!(json.results.iter().any(|r| r.name == crate_to_publish));
+    assert!(json.results.iter().any(|r| r.name == crate_to_publish_2));
 
-    assert_eq!(body, &tarball[..])
+    assert_eq!(body, &tarball[..]);
+
+    server_spawned.abort();
 }

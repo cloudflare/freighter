@@ -2,17 +2,18 @@ use anyhow::Context;
 use async_trait::async_trait;
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
-    CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults,
+    CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults, ListAllCrateEntry, ListAllCrateVersion,
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use semver::Version;
 use serde::Deserialize;
 use std::ffi::OsStr;
 use std::future::Future;
-use std::io;
+use std::{io, debug_assert_eq};
 use std::os::unix::ffi::OsStrExt;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::pin::Pin;
+use std::time::SystemTime;
 
 mod file_locks;
 use file_locks::{CrateMetaPath, FileLocks};
@@ -32,6 +33,14 @@ impl FsIndexProvider {
             root,
             meta_file_locks: Default::default(),
         })
+    }
+
+    fn access_crate_at_path(&self, path: PathBuf) -> IndexResult<CrateMetaPath<'_>> {
+        let name = path.file_name().and_then(|f| f.to_str())
+            .ok_or(IndexError::CrateNameNotAllowed)?
+            .to_string();
+        debug_assert_eq!(name, name.to_ascii_lowercase());
+        Ok(CrateMetaPath::new(path, name, &self.meta_file_locks))
     }
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
@@ -84,6 +93,42 @@ impl FsIndexProvider {
         };
         path.push(lc_crate_name);
         Some(path)
+    }
+
+    /// Assumes all files are crates
+    fn list_crates_in_subdir<'a, 'b: 'a>(&'b self, path: &Path, out: &'a mut Vec<ListAllCrateEntry>) -> Pin<Box<dyn Future<Output=IndexResult<()>> + Send + Sync + 'a>> {
+        let dir = std::fs::read_dir(path);
+        Box::pin(async move {
+            for entry in dir.map_err(|e| IndexError::ServiceError(e.into()))? {
+                let Ok(entry) = entry else { continue };
+                let Ok(metadata) = entry.metadata() else { continue };
+                let path = entry.path();
+                if metadata.is_dir() {
+                    self.list_crates_in_subdir(&path, out).await?;
+                } else if metadata.is_file() {
+                    let mut releases = self.access_crate_at_path(path)?.shared().await.deserialized()?;
+                    let mut versions = Vec::with_capacity(releases.len());
+                    let Some(most_recent) = releases.pop() else { continue };
+                    versions.extend(releases.into_iter().map(|r| ListAllCrateVersion { version: r.vers })
+                        .chain(Some(ListAllCrateVersion { version: most_recent.vers })));
+                    let created_at = metadata.created().unwrap_or_else(|_| SystemTime::now());
+                    let updated_at = metadata.modified().unwrap_or(created_at);
+                    out.push(ListAllCrateEntry {
+                        versions,
+                        name: most_recent.name,
+                        description: String::new(),
+                        created_at: created_at.into(),
+                        updated_at: updated_at.into(),
+                        homepage: None,
+                        repository: None,
+                        documentation: None,
+                        keywords: Vec::new(),
+                        categories: Vec::new(),
+                    });
+                }
+            }
+            Ok(())
+        })
     }
 }
 
@@ -175,7 +220,21 @@ impl IndexProvider for FsIndexProvider {
     }
 
     async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
-        Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
+        let mut results = Vec::new();
+
+        // top level of the index can have config and other stuff
+        for entry in std::fs::read_dir(&self.root).map_err(|e| IndexError::ServiceError(e.into()))? {
+            let Ok(entry) = entry else { continue };
+            let path = entry.path();
+            let Some(file_name) = path.file_name().and_then(|f| f.to_str()) else { continue };
+            if file_name.len() > 2 || file_name.starts_with('.') { continue; }
+
+            self.list_crates_in_subdir(&path, &mut results).await?;
+        }
+
+        Ok(ListAll {
+            results,
+        })
     }
 
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
