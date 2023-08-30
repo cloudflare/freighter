@@ -108,6 +108,20 @@ impl StorageProvider for S3StorageProvider {
 
         Ok(())
     }
+
+    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
+        let path = construct_path(name, version);
+
+        self.client
+            .delete_object()
+            .bucket(self.bucket_name.clone())
+            .key(path)
+            .send()
+            .await
+            .context("Failed to delete a crate from a bucket")?;
+
+        Ok(())
+    }
 }
 
 #[inline(always)]

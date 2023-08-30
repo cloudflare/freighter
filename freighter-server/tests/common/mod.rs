@@ -107,6 +107,9 @@ impl StorageProvider for MockStorageProvider {
     ) -> StorageResult<()> {
         Ok(())
     }
+    async fn delete_crate(&self, _name: &str, _version: &str) -> StorageResult<()> {
+        Ok(())
+    }
 }
 
 #[derive(Default)]

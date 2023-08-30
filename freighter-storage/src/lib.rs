@@ -15,4 +15,6 @@ pub use error::*;
 pub trait StorageProvider {
     async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes>;
     async fn put_crate(&self, name: &str, version: &str, crate_bytes: &[u8]) -> StorageResult<()>;
+    /// Called to undo a put after a failed index transaction
+    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()>;
 }

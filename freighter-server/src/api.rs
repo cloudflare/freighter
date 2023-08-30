@@ -115,6 +115,9 @@ where
             Ok(Json(res))
         }
         Err(e) => {
+            if stored_crate {
+                let _ = storage.delete_crate(&json.name, &version).await;
+            }
             Err(e.into())
         }
     }
