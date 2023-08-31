@@ -5,6 +5,8 @@ use deadpool_postgres::tokio_postgres::NoTls;
 use deadpool_postgres::{GenericClient, Pool, Runtime};
 use freighter_api_types::ownership::response::ListedOwner;
 use rand::distributions::{Alphanumeric, DistString};
+use serde::Deserialize;
+
 const TOKEN_LENGTH: usize = 32;
 
 pub struct PgAuthProvider {
@@ -12,8 +14,9 @@ pub struct PgAuthProvider {
 }
 
 impl PgAuthProvider {
-    pub fn new(config: deadpool_postgres::Config) -> AuthResult<Self> {
+    pub fn new(config: Config) -> AuthResult<Self> {
         let pool = config
+            .auth_db
             .create_pool(Some(Runtime::Tokio1), NoTls)
             .context("Failed to create auth db pool")?;
 
@@ -174,8 +177,15 @@ impl PgAuthProvider {
     }
 }
 
+#[derive(Deserialize, Clone)]
+pub struct Config {
+    pub auth_db: deadpool_postgres::Config,
+}
+
 #[async_trait]
 impl AuthProvider for PgAuthProvider {
+    type Config = Config;
+
     async fn register(&self, username: &str, password: &str) -> AuthResult<String> {
         let mut client = self
             .pool

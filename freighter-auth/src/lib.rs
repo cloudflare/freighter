@@ -24,6 +24,8 @@ use freighter_api_types::ownership::response::ListedOwner;
 
 #[async_trait]
 pub trait AuthProvider {
+    type Config;
+
     /// Register a new user, returning a token if successful.
     async fn register(&self, username: &str, password: &str) -> AuthResult<String>;
     /// Retrieve a token for an existing user if the credentials match.
