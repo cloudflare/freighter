@@ -10,6 +10,8 @@ pub enum AuthError {
     Unauthorized,
     #[error("The credentials supplied were invalid")]
     InvalidCredentials,
+    #[error("The requested crate does not exist")]
+    CrateNotFound,
     #[error("Encountered uncategorized error")]
     ServiceError(#[from] anyhow::Error),
 }
@@ -17,7 +19,8 @@ pub enum AuthError {
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         match self {
-            AuthError::Unauthorized => StatusCode::UNAUTHORIZED.into_response(),
+            AuthError::Unauthorized => StatusCode::FORBIDDEN.into_response(),
+            AuthError::CrateNotFound => StatusCode::NOT_FOUND.into_response(),
             AuthError::InvalidCredentials => StatusCode::UNAUTHORIZED.into_response(),
             AuthError::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in auth operation");

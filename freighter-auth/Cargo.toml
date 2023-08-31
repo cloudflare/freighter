@@ -15,8 +15,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-yes-backend = ["dep:rand"]
-pg-backend = ["dep:rand", "dep:deadpool-postgres", "dep:tokio"]
+default = ["fs-backend"]
+yes-backend = []
+pg-backend = ["dep:deadpool-postgres", "dep:tokio"]
+fs-backend = ["dep:sha2", "dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["ownership"] }
@@ -25,8 +27,17 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
 deadpool-postgres = { workspace = true, optional = true }
-rand = { workspace = true, optional = true }
+rand = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"], optional = true }
 tracing = { workspace = true }
+sha2 = { workspace = true, optional = true }
+hmac = { workspace = true, optional = true }
+tempfile = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+parking_lot = { version = "0.12.1", optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
