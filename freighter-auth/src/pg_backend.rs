@@ -5,6 +5,7 @@ use deadpool_postgres::tokio_postgres::NoTls;
 use deadpool_postgres::{GenericClient, Pool, Runtime};
 use freighter_api_types::ownership::response::ListedOwner;
 use rand::distributions::{Alphanumeric, DistString};
+const TOKEN_LENGTH: usize = 32;
 
 pub struct PgAuthProvider {
     pool: Pool,
@@ -20,6 +21,10 @@ impl PgAuthProvider {
     }
 
     async fn auth_crate_action(&self, token: &str, crate_name: &str) -> AuthResult<()> {
+        if token.len() != TOKEN_LENGTH {
+            return Err(AuthError::InvalidCredentials);
+        }
+
         let client = self
             .pool
             .get()
@@ -37,7 +42,7 @@ impl PgAuthProvider {
             .context("Failed to auth crate action")
             .map_err(AuthError::ServiceError)
             .and_then(|r| match r.len() {
-                0 => Err(AuthError::InvalidCredentials),
+                0 => Err(AuthError::Unauthorized),
                 1 => Ok(()),
                 _ => Err(AuthError::ServiceError(anyhow::anyhow!(
                     "Unexpected number of rows"
@@ -144,6 +149,10 @@ impl PgAuthProvider {
     }
 
     async fn get_user_for_token(&self, token: &str) -> AuthResult<String> {
+        if token.len() != TOKEN_LENGTH {
+            return Err(AuthError::InvalidCredentials);
+        }
+
         let client = self
             .pool
             .get()
@@ -192,7 +201,7 @@ impl AuthProvider for PgAuthProvider {
             .await
             .context("Failed to register user")?;
 
-        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), TOKEN_LENGTH);
 
         transaction
             .query_one(&login_statement, &[&username, &password, &token])
@@ -219,7 +228,7 @@ impl AuthProvider for PgAuthProvider {
             .await
             .context("Failed to prepare login statement")?;
 
-        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), TOKEN_LENGTH);
 
         client
             .query_one(&login_statement, &[&username, &password, &token])
