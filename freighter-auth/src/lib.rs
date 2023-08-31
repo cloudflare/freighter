@@ -10,6 +10,13 @@ pub mod yes_backend;
 #[cfg_attr(docsrs, doc(cfg(feature = "pg-backend")))]
 pub mod pg_backend;
 
+#[cfg(feature = "fs-backend")]
+#[cfg_attr(docsrs, doc(cfg(feature = "fs-backend")))]
+pub mod fs_backend;
+
+#[cfg(feature = "fs-backend")]
+mod base64_serde;
+
 mod error;
 
 pub use error::*;

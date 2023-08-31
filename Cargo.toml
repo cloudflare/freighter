@@ -28,6 +28,7 @@ axum-extra = "0.7.0"
 aws-credential-types = "0.55.3"
 aws-sdk-s3 = { version = "0.28.0", default-features = false }
 bytes = "1.1.0"
+base64 = "0.21"
 chrono = { version = "0.4.26", default-features = false }
 clap = { version = "4.0", default-features = false }
 deadpool-postgres = "0.10.5"
@@ -36,13 +37,14 @@ hyper = { version = "0.14", default-features = false }
 metrics = "0.21.0"
 metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
 postgres-types = "0.2.1"
-rand = "0.8.4"
+rand = { version = "0.8.4", features = ["min_const_gen"] }
 reqwest = { version = "0.11.2", default-features = false }
 semver = "1.0.0"
 serde = "1.0.139"
 serde_json = "1.0.71"
 serde_yaml = "0.9.0"
 sha2 = "0.10.0"
+hmac = "0.12.1" # must share digest with sha2
 thiserror = "1.0.2"
 tokio = "1.32.0"
 tokio-stream = { version = "0.1.9", default-features = false }
