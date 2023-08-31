@@ -10,7 +10,7 @@ categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [dependencies]
-freighter-auth = { workspace = true, features = ["pg-backend"] }
+freighter-auth = { workspace = true }
 freighter-api-types = { workspace = true, features = ["index"] }
 freighter-pg-index = { workspace = true, optional = true }
 freighter-fs-index = { workspace = true, optional = true }
@@ -30,7 +30,9 @@ tracing-subscriber = { workspace = true, features = ["std", "smallvec", "fmt", "
 cfg-if = "1.0.0"
 
 [features]
-default = ["postgresql-index-backend"]
+default = ["postgresql-index-backend", "postgresql-auth-backend"]
 postgresql-index-backend = ["dep:freighter-pg-index"]
 filesystem-index-backend = ["dep:freighter-fs-index"]
 
+postgresql-auth-backend = ["freighter-auth/pg-backend"]
+filesystem-auth-backend = ["freighter-auth/fs-backend"]

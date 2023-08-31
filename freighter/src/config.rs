@@ -1,13 +1,15 @@
 use freighter_api_types::index::IndexProvider;
+use freighter_auth::AuthProvider;
 use freighter_server::ServiceConfig;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct Config<I: IndexProvider> {
+pub struct Config<I: IndexProvider, A: AuthProvider> {
     pub service: ServiceConfig,
     #[serde(flatten)]
     pub index_config: I::Config,
-    pub auth_db: deadpool_postgres::Config,
+    #[serde(flatten)]
+    pub auth_config: A::Config,
     pub store: StoreConfig,
 }
 

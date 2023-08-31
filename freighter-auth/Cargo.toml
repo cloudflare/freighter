@@ -15,7 +15,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["fs-backend"]
+default = ["pg-backend"]
 yes-backend = []
 pg-backend = ["dep:deadpool-postgres", "dep:tokio"]
 fs-backend = ["dep:sha2", "dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]

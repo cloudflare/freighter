@@ -11,6 +11,8 @@ pub struct YesAuthProvider;
 
 #[async_trait]
 impl AuthProvider for YesAuthProvider {
+    type Config = ();
+
     async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
         let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
 

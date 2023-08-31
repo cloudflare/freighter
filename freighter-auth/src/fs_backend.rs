@@ -30,15 +30,15 @@ pub struct FsAuthProvider {
 }
 
 impl FsAuthProvider {
-    pub fn new(root: &Path, pepper: [u8; 18]) -> AuthResult<Self> {
-        std::fs::create_dir_all(root)
-            .with_context(|| format!("Auth root at {}", root.display()))
+    pub fn new(config: Config) -> AuthResult<Self> {
+        std::fs::create_dir_all(&config.auth_path)
+            .with_context(|| format!("Auth root at {}", config.auth_path.display()))
             .map_err(AuthError::ServiceError)?;
-        let owners_file_path = root.join("owners.json");
+        let owners_file_path = config.auth_path.join("owners.json");
         Ok(Self {
+            pepper: config.auth_tokens_pepper,
             owners_file_path,
             owners: RwLock::default(),
-            pepper,
         })
     }
 
@@ -120,8 +120,16 @@ impl FsAuthProvider {
     }
 }
 
+#[derive(Deserialize, Clone)]
+pub struct Config {
+    pub auth_path: PathBuf,
+    #[serde(with = "base64_serde")]
+    pub auth_tokens_pepper: [u8; 18],
+}
+
 #[async_trait]
 impl AuthProvider for FsAuthProvider {
+    type Config = Config;
     async fn register(&self, username: &str, _passwords_are_not_supported: &str) -> AuthResult<String> {
         let owners = &mut *self.owners_mut()?;
         let bare_token = self.random_token()?;
@@ -255,7 +263,7 @@ impl fmt::Debug for HashedToken {
 #[tokio::test]
 async fn test_fs_tokens() {
     let dir = tempfile::tempdir().unwrap();
-    let auth = FsAuthProvider::new(dir.path(), [123; 18]).unwrap();
+    let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
     let user1 = auth.register("user1", "").await.unwrap();
     let user2 = auth.register("user2", "").await.unwrap();
     assert_ne!(user1, user2);
@@ -270,7 +278,7 @@ async fn test_fs_tokens() {
     auth.publish(&user2, "crate1").await.unwrap();
 
     // reload
-    let auth = FsAuthProvider::new(dir.path(), [123; 18]).unwrap();
+    let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
 
     assert!(matches!(auth.remove_owners(&user1, &["user1"], "bad_crate").await, Err(AuthError::CrateNotFound)));
     assert!(matches!(auth.auth_yank(&user1, "bad_crate").await, Err(AuthError::CrateNotFound)));
@@ -281,7 +289,7 @@ async fn test_fs_tokens() {
     assert!(matches!(auth.remove_owners(&user1, &["user1"], "crate1").await, Err(AuthError::Unauthorized)));
 
     // change pepper to invalidate all tokens
-    let auth = FsAuthProvider::new(dir.path(), [1; 18]).unwrap();
+    let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [99; 18] }).unwrap();
     assert!(matches!(auth.auth_yank(&user2, "crate1").await, Err(AuthError::InvalidCredentials)));
     assert!(matches!(auth.publish(&user2, "crate1").await, Err(AuthError::InvalidCredentials)));
     assert!(matches!(auth.publish(&user1, "crate1").await, Err(AuthError::InvalidCredentials)));

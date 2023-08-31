@@ -119,6 +119,8 @@ pub struct MockAuthProvider {
 
 #[async_trait]
 impl AuthProvider for MockAuthProvider {
+    type Config = ();
+
     async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
         unimplemented!()
     }

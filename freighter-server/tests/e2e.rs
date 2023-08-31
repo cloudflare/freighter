@@ -9,6 +9,7 @@ use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_api_types::index::IndexProvider;
+use freighter_auth::AuthProvider;
 use freighter_auth::pg_backend::PgAuthProvider;
 use freighter_client::Client;
 use freighter_fs_index::FsIndexProvider;
@@ -68,8 +69,9 @@ fn server(
         &config.bucket_access_key_id,
         &config.bucket_access_key_secret,
     );
-    let auth_client =
-        PgAuthProvider::new(config.db.clone()).context("Failed to initialize auth client")?;
+    type AuthConfig = <PgAuthProvider as AuthProvider>::Config;
+    let auth_config = AuthConfig { auth_db: config.db.clone() };
+    let auth_client = PgAuthProvider::new(auth_config).context("Failed to initialize auth client")?;
 
     let service = ServiceConfig {
         address: config.server_addr.parse()?,
