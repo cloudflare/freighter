@@ -54,7 +54,7 @@ impl FsAuthProvider {
         out.push_str(TOKEN_PREFIX);
         base64_serde::encode(bare_token, &mut out);
         debug_assert!(out.starts_with(TOKEN_PREFIX) && out.len() > bare_token.len());
-        debug_assert_eq!(self.token_from_str(&out).expect(&out), self.hash_token(&bare_token));
+        debug_assert_eq!(self.token_from_str(&out).expect(&out), self.hash_token(bare_token));
         out
     }
 
@@ -107,6 +107,8 @@ impl FsAuthProvider {
         })
     }
 
+    #[allow(unknown_lints)]
+    #[allow(clippy::needless_pass_by_ref_mut)]
     fn sync_owners(&self, owners: &mut Owners) -> AuthResult<()> {
         fn inner(path: &Path, owners: &Owners) -> io::Result<()> {
             let parent = path.parent().ok_or(io::ErrorKind::InvalidInput)?;
@@ -135,7 +137,7 @@ impl AuthProvider for FsAuthProvider {
         let bare_token = self.random_token()?;
         let hashed_token = self.hash_token(&bare_token);
         let token_str = self.token_to_str(&bare_token);
-        owners.register(username.into(), &hashed_token)?;
+        owners.register(username, &hashed_token)?;
         self.sync_owners(owners)?;
         Ok(token_str)
     }
@@ -159,7 +161,7 @@ impl AuthProvider for FsAuthProvider {
         let owners = &mut *self.owners_mut()?;
         owners.ensure_authorized_for_crate(&hashed_token, crate_name)?;
         let crate_owners = owners.crate_owners.get_mut(crate_name).ok_or(AuthError::CrateNotFound)?;
-        crate_owners.extend(users.into_iter().map(|&login| login.into()));
+        crate_owners.extend(users.iter().map(|&login| login.into()));
         self.sync_owners(owners)?;
         Ok(())
     }
@@ -230,12 +232,12 @@ impl Owners {
     }
 
     pub fn login_for_token(&self, token: &HashedToken) -> AuthResult<&str> {
-        self.token_owners.get(&token).map(|x| &**x).ok_or(AuthError::InvalidCredentials)
+        self.token_owners.get(token).map(|x| &**x).ok_or(AuthError::InvalidCredentials)
     }
 
     pub fn ensure_authorized_for_crate(&self, hashed_token: &HashedToken, crate_name: &str) -> AuthResult<()> {
         let owners = self.crate_owners.get(crate_name).ok_or(AuthError::CrateNotFound)?;
-        let login = self.login_for_token(&hashed_token)?;
+        let login = self.login_for_token(hashed_token)?;
         if owners.contains(login) {
             Ok(())
         } else {
