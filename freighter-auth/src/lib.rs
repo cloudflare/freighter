@@ -6,6 +6,8 @@ use async_trait::async_trait;
 #[cfg_attr(docsrs, doc(cfg(feature = "yes-backend")))]
 pub mod yes_backend;
 
+pub mod no_backend;
+
 #[cfg(feature = "pg-backend")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pg-backend")))]
 pub mod pg_backend;
