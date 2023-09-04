@@ -16,7 +16,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "postgresql-auth-backend")] {
         use freighter_auth::pg_backend::PgAuthProvider as SelectedAuthProvider;
     } else {
-        compile_error!("Use cargo features to select an auth backend");
+        use freighter_auth::no_backend::NoAuthProvider as SelectedAuthProvider;
     }
 }
 use freighter_storage::s3_client::S3StorageProvider;

@@ -582,7 +582,7 @@ fn list_row_to_entry(row: &Row) -> ListAllCrateEntry {
     ListAllCrateEntry {
         name: row.get("name"),
         versions,
-        description: row.try_get("description").unwrap_or(String::new()),
+        description: row.try_get("description").unwrap_or_default(),
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
         homepage: row.get("homepage"),
@@ -608,6 +608,6 @@ fn search_row_to_entry(row: &Row) -> SearchResultsEntry {
     SearchResultsEntry {
         name: row.get("name"),
         max_version,
-        description: row.try_get("description").unwrap_or(String::new()),
+        description: row.try_get("description").unwrap_or_default(),
     }
 }

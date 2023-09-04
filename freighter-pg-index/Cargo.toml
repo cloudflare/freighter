@@ -19,13 +19,13 @@ freighter-api-types = { workspace = true, features = ["index", "postgres"] }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
-chrono = { workspace = true, features = ["serde"] }
-deadpool-postgres = { workspace = true, features = ["serde"] }
+chrono = { workspace = true }
+deadpool-postgres = { workspace = true }
 futures-util = { workspace = true }
 metrics = { workspace = true }
 postgres-types = { workspace = true, features = ["derive", "with-chrono-0_4"] }
-semver = { workspace = true, features = ["serde"] }
-serde = { workspace = true, features = ["derive"] }
+semver = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true }
 tracing = { workspace = true }

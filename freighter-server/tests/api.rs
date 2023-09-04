@@ -68,7 +68,7 @@ async fn publish_crate_auth_denied() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }
 
 #[tokio::test]
@@ -159,7 +159,7 @@ async fn one_char_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
@@ -196,7 +196,7 @@ async fn two_char_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
@@ -233,7 +233,7 @@ async fn three_char_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
@@ -270,7 +270,7 @@ async fn four_char_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
@@ -307,7 +307,7 @@ async fn hyphen_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
@@ -344,7 +344,7 @@ async fn underscore_crate_name() {
 
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
-            .into_iter()
+            .iter()
             .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
     );
 

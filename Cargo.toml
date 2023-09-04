@@ -24,34 +24,34 @@ freighter-storage = { path = "freighter-storage", registry = "freighter", versio
 anyhow = "1.0.14"
 async-trait = "0.1.68"
 axum = { version = "0.6.9", default-features = false }
-axum-extra = "0.7.0"
+axum-extra = { version = "0.7.0", features = ["json-lines"] }
 aws-credential-types = "0.55.3"
 aws-sdk-s3 = { version = "0.28.0", default-features = false }
 bytes = "1.1.0"
 base64 = "0.21"
-chrono = { version = "0.4.26", default-features = false }
+chrono = { version = "0.4.26", default-features = false, features = ["std", "serde"] }
 clap = { version = "4.0", default-features = false }
-deadpool-postgres = "0.10.5"
+deadpool-postgres = { version = "0.10.5", features = ["serde"] }
 futures-util = { version = "0.3.16", default-features = false }
 hyper = { version = "0.14", default-features = false }
 metrics = "0.21.0"
-metrics-exporter-prometheus = { version = "0.12.1", default-features = false }
+metrics-exporter-prometheus = { version = "0.12.1", default-features = false, features = ["http-listener"] }
 postgres-types = "0.2.1"
 rand = { version = "0.8.4", features = ["min_const_gen"] }
-reqwest = { version = "0.11.2", default-features = false }
-semver = "1.0.0"
-serde = "1.0.139"
+reqwest = { version = "0.11.2", default-features = false, features = ["json"] }
+semver = { version = "1.0.0", features = ["serde"] }
+serde = { version = "1.0.139", features = ["derive"] }
 serde_json = "1.0.71"
 serde_yaml = "0.9.0"
 sha2 = "0.10.0"
 hmac = "0.12.1" # must share digest with sha2
 thiserror = "1.0.2"
-tokio = "1.32.0"
+tokio = { version = "1.32.0", features = ["rt-multi-thread", "macros", "signal", "sync"] }
 tokio-stream = { version = "0.1.9", default-features = false }
 tower = { version = "0.4", default-features = false }
 tower-http = "0.4.0"
 tracing = "0.1.21"
-tracing-subscriber = { version = "0.3.0", default-features = false }
+tracing-subscriber = { version = "0.3.0", default-features = false, features = ["std", "fmt"] }
 tempfile = "3.7.0"
 
 [profile.release]
