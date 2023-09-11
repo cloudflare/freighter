@@ -18,7 +18,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["pg-backend"]
 yes-backend = []
 pg-backend = ["dep:deadpool-postgres", "dep:tokio"]
-fs-backend = ["dep:sha2", "dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]
+fs-backend = ["dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["ownership"] }
@@ -33,7 +33,7 @@ serde_json = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }
 tracing = { workspace = true }
-sha2 = { workspace = true, optional = true }
+sha2 = { workspace = true }
 hmac = { workspace = true, optional = true }
 tempfile = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }

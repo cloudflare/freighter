@@ -145,6 +145,7 @@ impl AuthProvider for FsAuthProvider {
         let token_str = self.token_to_str(&bare_token);
         owners.register(username, &hashed_token)?;
         self.sync_owners(owners)?;
+        tracing::info!("Registered {username}");
         Ok(token_str)
     }
 
@@ -178,7 +179,7 @@ impl AuthProvider for FsAuthProvider {
                 crate_owners.remove(login);
             } else {
                 self.sync_owners(owners)?;
-                return Err(AuthError::Unauthorized); // Can't remove all owners
+                return Err(AuthError::Forbidden); // Can't remove all owners
             }
         }
         self.sync_owners(owners)?;
@@ -239,7 +240,7 @@ impl Owners {
         }
 
         if self.owner_tokens.contains_key(login) {
-            return Err(AuthError::Unauthorized)
+            return Err(AuthError::Forbidden)
         }
         self.owner_tokens.insert(login.into(), token.clone());
         self.token_owners.insert(token.clone(), login.into());
@@ -256,7 +257,7 @@ impl Owners {
         if owners.contains(login) {
             Ok(())
         } else {
-            Err(AuthError::Unauthorized)
+            Err(AuthError::Forbidden)
         }
     }
 }
@@ -288,7 +289,7 @@ async fn test_fs_tokens() {
     assert!(matches!(auth.auth_yank("badtoken", "crate1").await, Err(AuthError::InvalidCredentials)));
     assert!(matches!(auth.publish("badtoken", "crate1").await, Err(AuthError::InvalidCredentials)));
     auth.publish(&user1, "crate1").await.unwrap();
-    assert!(matches!(auth.publish(&user2, "crate1").await, Err(AuthError::Unauthorized)));
+    assert!(matches!(auth.publish(&user2, "crate1").await, Err(AuthError::Forbidden)));
     auth.auth_yank(&user1, "crate1").await.unwrap();
     auth.add_owners(&user1, &["user2"], "crate1").await.unwrap();
     auth.auth_yank(&user2, "crate1").await.unwrap();
@@ -300,10 +301,10 @@ async fn test_fs_tokens() {
     assert!(matches!(auth.remove_owners(&user1, &["user1"], "bad_crate").await, Err(AuthError::CrateNotFound)));
     assert!(matches!(auth.auth_yank(&user1, "bad_crate").await, Err(AuthError::CrateNotFound)));
     auth.remove_owners(&user2, &["user1"], "crate1").await.unwrap();
-    assert!(matches!(auth.publish(&user1, "crate1").await, Err(AuthError::Unauthorized)));
+    assert!(matches!(auth.publish(&user1, "crate1").await, Err(AuthError::Forbidden)));
     auth.publish(&user2, "crate1").await.unwrap();
-    assert!(matches!(auth.remove_owners(&user1, &["user2"], "crate1").await, Err(AuthError::Unauthorized)));
-    assert!(matches!(auth.remove_owners(&user1, &["user1"], "crate1").await, Err(AuthError::Unauthorized)));
+    assert!(matches!(auth.remove_owners(&user1, &["user2"], "crate1").await, Err(AuthError::Forbidden)));
+    assert!(matches!(auth.remove_owners(&user1, &["user1"], "crate1").await, Err(AuthError::Forbidden)));
 
     // change pepper to invalidate all tokens
     let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [99; 18] }).unwrap();

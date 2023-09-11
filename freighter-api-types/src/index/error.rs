@@ -16,19 +16,20 @@ pub enum IndexError {
 
 impl IntoResponse for IndexError {
     fn into_response(self) -> Response {
-        match self {
+        let code = match &self {
             IndexError::Conflict(s) => {
                 tracing::error!("Encountered conflict in index operation: {s}");
 
-                StatusCode::CONFLICT.into_response()
+                StatusCode::CONFLICT
             }
-            IndexError::NotFound => StatusCode::NOT_FOUND.into_response(),
-            IndexError::CrateNameNotAllowed => StatusCode::BAD_REQUEST.into_response(),
+            IndexError::NotFound => StatusCode::NOT_FOUND,
+            IndexError::CrateNameNotAllowed => StatusCode::BAD_REQUEST,
             IndexError::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in index operation");
 
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-        }
+        };
+        (code, self.to_string()).into_response()
     }
 }
