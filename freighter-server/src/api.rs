@@ -38,7 +38,6 @@ where
         .route("/:crate_name/owners", delete(remove_owners))
         .route("/:crate_name/owners", put(add_owners))
         .route("/account", post(register))
-        .route("/account/token", post(login))
         .route("/", get(search))
         .fallback(handle_api_fallback)
 }
@@ -248,23 +247,7 @@ where
     A: AuthProvider,
 {
     if state.config.allow_registration {
-        let token = state.auth.register(&auth.username, &auth.password).await?;
-
-        Ok(Html(token))
-    } else {
-        Err(StatusCode::UNAUTHORIZED.into())
-    }
-}
-
-async fn login<I, S, A>(
-    State(state): State<Arc<ServiceState<I, S, A>>>,
-    Form(auth): Form<AuthForm>,
-) -> axum::response::Result<Html<String>>
-where
-    A: AuthProvider,
-{
-    if state.config.allow_login {
-        let token = state.auth.login(&auth.username, &auth.password).await?;
+        let token = state.auth.register(&auth.username).await?;
 
         Ok(Html(token))
     } else {

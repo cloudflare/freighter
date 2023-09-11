@@ -186,7 +186,7 @@ pub struct Config {
 impl AuthProvider for PgAuthProvider {
     type Config = Config;
 
-    async fn register(&self, username: &str, password: &str) -> AuthResult<String> {
+    async fn register(&self, username: &str) -> AuthResult<String> {
         let mut client = self
             .pool
             .get()
@@ -207,14 +207,14 @@ impl AuthProvider for PgAuthProvider {
         .context("Failed to prepare statements for registering user")?;
 
         transaction
-            .query_one(&register_statement, &[&username, &password])
+            .query_one(&register_statement, &[&username])
             .await
             .context("Failed to register user")?;
 
         let token = Alphanumeric.sample_string(&mut rand::thread_rng(), TOKEN_LENGTH);
 
         transaction
-            .query_one(&login_statement, &[&username, &password, &token])
+            .query_one(&login_statement, &[&username, &token])
             .await
             .context("Failed to login user after registering")?;
 
@@ -222,28 +222,6 @@ impl AuthProvider for PgAuthProvider {
             .commit()
             .await
             .context("Failed to commit registration transaction")?;
-
-        Ok(token)
-    }
-
-    async fn login(&self, username: &str, password: &str) -> AuthResult<String> {
-        let client = self
-            .pool
-            .get()
-            .await
-            .context("Failed to get auth db client from pool")?;
-
-        let login_statement = client
-            .prepare_cached(include_str!("../sql/login.sql"))
-            .await
-            .context("Failed to prepare login statement")?;
-
-        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), TOKEN_LENGTH);
-
-        client
-            .query_one(&login_statement, &[&username, &password, &token])
-            .await
-            .context("Failed to login user")?;
 
         Ok(token)
     }

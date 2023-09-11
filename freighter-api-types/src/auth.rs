@@ -3,6 +3,5 @@ pub mod request {
     #[cfg_attr(feature = "server", derive(serde::Deserialize))]
     pub struct AuthForm {
         pub username: String,
-        pub password: String,
     }
 }

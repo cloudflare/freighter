@@ -13,14 +13,10 @@ pub struct YesAuthProvider;
 impl AuthProvider for YesAuthProvider {
     type Config = ();
 
-    async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
+    async fn register(&self, _username: &str) -> AuthResult<String> {
         let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
 
         Ok(token)
-    }
-
-    async fn login(&self, username: &str, password: &str) -> AuthResult<String> {
-        self.register(username, password).await
     }
 
     async fn list_owners(&self, _token: &str, _crate_name: &str) -> AuthResult<Vec<ListedOwner>> {

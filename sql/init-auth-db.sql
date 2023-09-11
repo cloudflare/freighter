@@ -2,12 +2,10 @@ create extension if not exists pgcrypto;
 
 drop table if exists freighter_users cascade;
 
--- bf hash of password
 create table freighter_users
 (
     id            integer primary key generated always as identity,
-    username      text not null unique,
-    password_hash text not null
+    username      text not null unique
 );
 
 drop table if exists freighter_tokens cascade;

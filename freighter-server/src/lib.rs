@@ -33,8 +33,6 @@ pub struct ServiceConfig {
     pub api_endpoint: String,
     pub metrics_address: SocketAddr,
     #[serde(default = "default_auth_api_allowments")]
-    pub allow_login: bool,
-    #[serde(default = "default_auth_api_allowments")]
     pub allow_registration: bool,
 }
 
@@ -78,7 +76,7 @@ where
         .nest("/downloads", downloads::downloads_router())
         .nest("/index", index::index_router())
         .nest("/api/v1/crates", api::api_router())
-        .route("/me", get(login))
+        .route("/me", get(register))
         .route("/all", get(list))
         .with_state(state)
         .fallback(handle_global_fallback)
@@ -120,8 +118,8 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
     response
 }
 
-pub async fn login() -> Html<&'static str> {
-    Html(include_str!("../static/login.html"))
+pub async fn register() -> Html<&'static str> {
+    Html(include_str!("../static/register.html"))
 }
 
 async fn list<I, S, A>(
