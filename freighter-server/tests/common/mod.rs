@@ -148,6 +148,22 @@ impl AuthProvider for MockAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         unimplemented!()
     }
+
+    async fn auth_view_full_index(&self, token: &str) -> AuthResult<()> {
+        if self.valid_tokens.contains(token) {
+            Ok(())
+        } else {
+            Err(AuthError::Forbidden)
+        }
+    }
+
+    async fn auth_config(&self, token: &str) -> AuthResult<()> {
+        if self.valid_tokens.contains(token) {
+            Ok(())
+        } else {
+            Err(AuthError::Forbidden)
+        }
+    }
 }
 
 pub struct ServiceStateBuilder {
@@ -188,6 +204,11 @@ impl ServiceStateBuilder {
 
     pub fn auth_provider(mut self, provider: MockAuthProvider) -> Self {
         self.auth = provider;
+        self
+    }
+
+    pub fn auth_required(mut self, req: bool) -> Self {
+        self.config.auth_required = req;
         self
     }
 
