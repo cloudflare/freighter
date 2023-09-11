@@ -121,10 +121,7 @@ pub struct MockAuthProvider {
 impl AuthProvider for MockAuthProvider {
     type Config = ();
 
-    async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
-        unimplemented!()
-    }
-    async fn login(&self, _username: &str, _password: &str) -> AuthResult<String> {
+    async fn register(&self, _username: &str) -> AuthResult<String> {
         unimplemented!()
     }
     async fn list_owners(&self, _token: &str, _crate_name: &str) -> AuthResult<Vec<ListedOwner>> {
@@ -171,7 +168,6 @@ impl Default for ServiceStateBuilder {
                 download_endpoint: "localhost:4000".to_owned(),
                 api_endpoint: "localhost:5000".to_owned(),
                 metrics_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3001),
-                allow_login: true,
                 allow_registration: true,
             },
             index: Default::default(),

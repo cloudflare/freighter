@@ -78,7 +78,6 @@ fn server(
         download_endpoint: format!("http://{}/downloads/", config.server_addr),
         api_endpoint: format!("http://{}", config.server_addr.to_owned()),
         metrics_address: "127.0.0.1:9999".parse()?,
-        allow_login: true,
         allow_registration: true,
     };
 
@@ -132,7 +131,7 @@ async fn e2e_publish_crate_in_index(
     let mut freighter_client = Client::new(&format!("http://{server_addr}/index")).await;
 
     // 1. Create a user to get a publish token.
-    freighter_client.register(&format!("kargo-{test_unique_str}"), "krab").await.unwrap();
+    freighter_client.register(&format!("kargo-{test_unique_str}")).await.unwrap();
 
     // 2. Publish a crate!
     let tarball = [1u8; 100];

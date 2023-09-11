@@ -220,36 +220,13 @@ impl Client {
     //     todo!()
     // }
 
-    pub async fn register(&mut self, username: &str, password: &str) -> Result<()> {
+    pub async fn register(&mut self, username: &str) -> Result<()> {
         let url = format!("{}/{API_PATH}/account", self.config.api);
 
         let mut req = self
             .http
             .post(url)
-            .form(&[("username", username), ("password", password)])
-            .build()
-            .unwrap();
-
-        self.attach_auth(&mut req);
-
-        let resp = self.http.execute(req).await?;
-
-        resp.error_for_status_ref()?;
-
-        let text = resp.text().await?;
-
-        self.token = Some(text);
-
-        Ok(())
-    }
-
-    pub async fn login(&mut self, username: &str, password: &str) -> Result<()> {
-        let url = format!("{}/{API_PATH}/account/token", self.config.api);
-
-        let mut req = self
-            .http
-            .post(url)
-            .form(&[("username", username), ("password", password)])
+            .form(&[("username", username)])
             .build()
             .unwrap();
 

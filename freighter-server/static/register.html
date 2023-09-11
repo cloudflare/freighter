@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<title>Register</title>
+<h1>Register</h1>
+<form action="/api/v1/crates/account" method="post">
+    <div class="container">
+        <p>The username will be used for assigning create owners.</p>
+        <label><b>Username</b>
+        <input type="text" name="username" required> </label>
+
+        <p>Be careful: the token will be displayed <strong>only once</strong>.</p>
+        <button type="submit">Generate the token</button>
+    </div>
+</form>

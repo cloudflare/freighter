@@ -21,11 +21,7 @@ impl NoAuthProvider {
 impl AuthProvider for NoAuthProvider {
     type Config = ();
 
-    async fn register(&self, _username: &str, _password: &str) -> AuthResult<String> {
-        nope()
-    }
-
-    async fn login(&self, _username: &str, _password: &str) -> AuthResult<String> {
+    async fn register(&self, _username: &str) -> AuthResult<String> {
         nope()
     }
 

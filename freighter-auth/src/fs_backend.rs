@@ -132,7 +132,7 @@ pub struct Config {
 #[async_trait]
 impl AuthProvider for FsAuthProvider {
     type Config = Config;
-    async fn register(&self, username: &str, _passwords_are_not_supported: &str) -> AuthResult<String> {
+    async fn register(&self, username: &str) -> AuthResult<String> {
         let owners = &mut *self.owners_mut()?;
         let bare_token = self.random_token()?;
         let hashed_token = self.hash_token(&bare_token);
@@ -140,10 +140,6 @@ impl AuthProvider for FsAuthProvider {
         owners.register(username, &hashed_token)?;
         self.sync_owners(owners)?;
         Ok(token_str)
-    }
-
-    async fn login(&self, _not_supported: &str, _passwords_are_not_supported: &str) -> AuthResult<String> {
-        return Err(AuthError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
     }
 
     async fn list_owners(&self, _owner_list_is_public: &str, crate_name: &str) -> AuthResult<Vec<ListedOwner>> {
@@ -266,8 +262,8 @@ impl fmt::Debug for HashedToken {
 async fn test_fs_tokens() {
     let dir = tempfile::tempdir().unwrap();
     let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
-    let user1 = auth.register("user1", "").await.unwrap();
-    let user2 = auth.register("user2", "").await.unwrap();
+    let user1 = auth.register("user1").await.unwrap();
+    let user2 = auth.register("user2").await.unwrap();
     assert_ne!(user1, user2);
     assert!(matches!(auth.auth_yank(&user1, "crate1").await, Err(AuthError::CrateNotFound)));
     assert!(matches!(auth.auth_yank("badtoken", "crate1").await, Err(AuthError::InvalidCredentials)));

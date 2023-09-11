@@ -29,9 +29,7 @@ pub trait AuthProvider {
     type Config;
 
     /// Register a new user, returning a token if successful.
-    async fn register(&self, username: &str, password: &str) -> AuthResult<String>;
-    /// Retrieve a token for an existing user if the credentials match.
-    async fn login(&self, username: &str, password: &str) -> AuthResult<String>;
+    async fn register(&self, username: &str) -> AuthResult<String>;
 
     /// List the owners of a crate.
     async fn list_owners(&self, token: &str, crate_name: &str) -> AuthResult<Vec<ListedOwner>>;

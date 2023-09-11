@@ -1,3 +1,3 @@
-insert into freighter_users (username, password_hash)
-values ($1, crypt($2, gen_salt('bf')))
+insert into freighter_users (username)
+values ($1)
 returning id;
