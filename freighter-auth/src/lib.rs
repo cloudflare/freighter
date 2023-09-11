@@ -43,10 +43,9 @@ pub trait AuthProvider {
     /// If the crate has never been published before to the registry, the user should be given
     /// ownership of the new crate.
     async fn publish(&self, token: &str, crate_name: &str) -> AuthResult<()>;
-    /// Verify that a user has permission to yank versions of a crate.
+
+    /// Verify that a user has permission to yank or unyank versions of a crate.
     async fn auth_yank(&self, token: &str, crate_name: &str) -> AuthResult<()>;
-    /// Verify that a user has permission to unyank versions of a crate.
-    async fn auth_unyank(&self, token: &str, crate_name: &str) -> AuthResult<()>;
 
     /// Verify that a user is allowed to look at the index entry for a given crate.
     ///

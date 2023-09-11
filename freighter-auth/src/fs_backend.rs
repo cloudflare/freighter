@@ -197,10 +197,6 @@ impl AuthProvider for FsAuthProvider {
         let hashed_token = self.token_from_str(token_str)?;
         self.owners()?.ensure_authorized_for_crate(&hashed_token, crate_name).map(drop)
     }
-
-    async fn auth_unyank(&self, token_str: &str, crate_name: &str) -> AuthResult<()> {
-        self.auth_yank(token_str, crate_name).await
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -270,9 +266,9 @@ async fn test_fs_tokens() {
     assert!(matches!(auth.publish("badtoken", "crate1").await, Err(AuthError::InvalidCredentials)));
     auth.publish(&user1, "crate1").await.unwrap();
     assert!(matches!(auth.publish(&user2, "crate1").await, Err(AuthError::Unauthorized)));
-    auth.auth_unyank(&user1, "crate1").await.unwrap();
+    auth.auth_yank(&user1, "crate1").await.unwrap();
     auth.add_owners(&user1, &["user2"], "crate1").await.unwrap();
-    auth.auth_unyank(&user2, "crate1").await.unwrap();
+    auth.auth_yank(&user2, "crate1").await.unwrap();
     auth.publish(&user2, "crate1").await.unwrap();
 
     // reload
