@@ -1,5 +1,4 @@
 use crate::token_from_headers;
-use crate::token_from_headers_opt;
 use crate::ServiceState;
 use anyhow::Context;
 use axum::body::Bytes;
@@ -241,9 +240,10 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let token = token_from_headers_opt(&headers)?;
-
-    state.auth.auth_view_full_index(token).await?;
+    if state.config.auth_required {
+        let token = token_from_headers(&headers)?;
+        state.auth.auth_view_full_index(token).await?;
+    }
 
     let search_results = state
         .index

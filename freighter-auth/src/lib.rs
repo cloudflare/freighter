@@ -49,33 +49,36 @@ pub trait AuthProvider {
 
     /// Verify that a user is allowed to look at the index entry for a given crate.
     ///
-    /// A default implementation is provided which allows access categorically.
     /// This is currently only meaningful for registries which rely on experimental cargo features
     /// to auth any access to the registry.
-    async fn auth_index_fetch(&self, token: Option<&str>, crate_name: &str) -> AuthResult<()> {
+    async fn auth_index_fetch(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         let _ = (token, crate_name);
-        Ok(())
+        Err(AuthError::Unauthorized)
     }
 
     /// Verify that a user is allowed to download a given crate.
     ///
-    /// A default implementation is provided which allows access categorically.
     /// This is currently only meaningful for registries which rely on experimental cargo features
     /// to auth any access to the registry.
-    async fn auth_crate_download(&self, token: Option<&str>, crate_name: &str) -> AuthResult<()> {
+    async fn auth_crate_download(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         let _ = (token, crate_name);
-        Ok(())
+        Err(AuthError::Unauthorized)
     }
 
     /// Verify that a user is allowed to view the full index.
     ///
     /// This is used for both searching the index and listing all crates.
     ///
-    /// A default implementation is provided which allows access.
     /// This is currently only meaningful for registries which rely on experimental cargo features
     /// to auth any access to the registry.
-    async fn auth_view_full_index(&self, token: Option<&str>) -> AuthResult<()> {
+    async fn auth_view_full_index(&self, token: &str) -> AuthResult<()> {
         let _ = token;
-        Ok(())
+        Err(AuthError::Unauthorized)
+    }
+
+    /// Fetch of config.json. Called only if the server is configured to do so.
+    async fn auth_config(&self, token: &str) -> AuthResult<()> {
+        let _ = token;
+        Err(AuthError::Unauthorized)
     }
 }

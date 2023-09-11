@@ -9,9 +9,11 @@ use std::collections::HashMap;
 
 #[cfg_attr(feature = "client", derive(Deserialize))]
 #[cfg_attr(feature = "server", derive(Serialize))]
+#[cfg_attr(any(feature = "client", feature = "server"), serde(rename_all = "kebab-case"))]
 pub struct RegistryConfig {
     pub dl: String,
     pub api: String,
+    pub auth_required: bool,
 }
 
 #[derive(Debug)]

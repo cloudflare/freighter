@@ -166,6 +166,7 @@ impl Default for ServiceStateBuilder {
                 api_endpoint: "localhost:5000".to_owned(),
                 metrics_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3001),
                 allow_registration: true,
+                auth_required: false,
             },
             index: Default::default(),
             storage: Default::default(),

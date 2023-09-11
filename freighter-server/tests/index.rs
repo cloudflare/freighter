@@ -34,7 +34,7 @@ async fn index_config_endpoint() {
     assert_eq!(
         body,
         &format!(
-            r#"{{"dl":"{}","api":"{}"}}"#,
+            r#"{{"dl":"{}","api":"{}","auth-required":false}}"#,
             state.config.download_endpoint, state.config.api_endpoint
         )
     );

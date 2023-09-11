@@ -44,4 +44,16 @@ impl AuthProvider for NoAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         nope()
     }
+
+    async fn auth_index_fetch(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
+        nope()
+    }
+
+    async fn auth_crate_download(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
+        nope()
+    }
+
+    async fn auth_view_full_index(&self, _token: &str) -> AuthResult<()> {
+        nope()
+    }
 }

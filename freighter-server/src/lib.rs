@@ -32,8 +32,13 @@ pub struct ServiceConfig {
     pub download_endpoint: String,
     pub api_endpoint: String,
     pub metrics_address: SocketAddr,
-    #[serde(default = "default_auth_api_allowments")]
+    #[serde(default = "default_true")]
     pub allow_registration: bool,
+
+    /// Use auth for all requests to the registry, including config and index.
+    /// Currently requires `-Z registry-auth` nightly feature.
+    #[serde(default = "default_true")]
+    pub auth_required: bool,
 }
 
 pub struct ServiceState<I, S, A> {
@@ -131,9 +136,10 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let token = token_from_headers_opt(&headers)?;
-
-    state.auth.auth_view_full_index(token).await?;
+    if state.config.auth_required {
+        let token = token_from_headers(&headers)?;
+        state.auth.auth_view_full_index(token).await?;
+    }
 
     let search_results = state.index.list(&query).await?;
 
@@ -145,7 +151,7 @@ pub async fn handle_global_fallback() -> StatusCode {
 }
 
 #[inline(always)]
-fn default_auth_api_allowments() -> bool {
+fn default_true() -> bool {
     true
 }
 
