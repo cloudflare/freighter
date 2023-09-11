@@ -3,6 +3,7 @@ service:
   download_endpoint: "$DOWNLOAD_ENDPOINT"
   api_endpoint: "$API_ENDPOINT"
   metrics_address: "$METRICS_ADDR"
+  auth_required: false
 
 index_db: &db
   dbname: "$POSTGRES_DBNAME"

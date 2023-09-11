@@ -43,4 +43,20 @@ impl AuthProvider for YesAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         Ok(())
     }
+
+    async fn auth_config(&self, _token: &str) -> AuthResult<()> {
+        Ok(())
+    }
+
+    async fn auth_index_fetch(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
+        Ok(())
+    }
+
+    async fn auth_crate_download(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
+        Ok(())
+    }
+
+    async fn auth_view_full_index(&self, _token: &str) -> AuthResult<()> {
+        Ok(())
+    }
 }

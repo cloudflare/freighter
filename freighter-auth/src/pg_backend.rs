@@ -261,4 +261,24 @@ impl AuthProvider for PgAuthProvider {
     async fn auth_yank(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         self.auth_crate_action(token, crate_name).await
     }
+
+    async fn auth_config(&self, token: &str) -> AuthResult<()> {
+        let _ = self.get_user_for_token(token).await?;
+        Ok(())
+    }
+
+    async fn auth_index_fetch(&self, token: &str, _all_users_can_read_crates: &str) -> AuthResult<()> {
+        let _ = self.get_user_for_token(token).await?;
+        Ok(())
+    }
+
+    async fn auth_crate_download(&self, token: &str, _all_users_can_read_crates: &str) -> AuthResult<()> {
+        let _ = self.get_user_for_token(token).await?;
+        Ok(())
+    }
+
+    async fn auth_view_full_index(&self, token: &str) -> AuthResult<()> {
+        let _ = self.get_user_for_token(token).await?;
+        Ok(())
+    }
 }

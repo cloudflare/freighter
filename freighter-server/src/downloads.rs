@@ -1,4 +1,4 @@
-use crate::{token_from_headers_opt, ServiceState};
+use crate::{token_from_headers, ServiceState};
 use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -31,9 +31,10 @@ where
     S: StorageProvider,
     A: AuthProvider + Sync,
 {
-    let token = token_from_headers_opt(&headers)?;
-
-    state.auth.auth_crate_download(token, &name).await?;
+    if state.config.auth_required {
+        let token = token_from_headers(&headers)?;
+        state.auth.auth_crate_download(token, &name).await?;
+    }
 
     let _is_yanked = state.index.confirm_existence(&name, &version).await?;
 

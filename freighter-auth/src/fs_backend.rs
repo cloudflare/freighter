@@ -120,6 +120,12 @@ impl FsAuthProvider {
         inner(&self.owners_file_path, owners)
             .context("saving owners").map_err(AuthError::ServiceError)
     }
+
+    fn ensure_valid_token(&self, token_str: &str) -> AuthResult<()> {
+        let hashed_token = self.token_from_str(token_str)?;
+        self.owners()?.login_for_token(&hashed_token)?;
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -196,6 +202,23 @@ impl AuthProvider for FsAuthProvider {
     async fn auth_yank(&self, token_str: &str, crate_name: &str) -> AuthResult<()> {
         let hashed_token = self.token_from_str(token_str)?;
         self.owners()?.ensure_authorized_for_crate(&hashed_token, crate_name).map(drop)
+    }
+
+    /// Fetch of config.json.
+    async fn auth_config(&self, token_str: &str) -> AuthResult<()> {
+        self.ensure_valid_token(token_str)
+    }
+
+    async fn auth_index_fetch(&self, token_str: &str, _all_users_can_read_crates: &str) -> AuthResult<()> {
+        self.ensure_valid_token(token_str)
+    }
+
+    async fn auth_crate_download(&self, token_str: &str, _all_users_can_read_crates: &str) -> AuthResult<()> {
+        self.ensure_valid_token(token_str)
+    }
+
+    async fn auth_view_full_index(&self, token_str: &str) -> AuthResult<()> {
+        self.ensure_valid_token(token_str)
     }
 }
 
