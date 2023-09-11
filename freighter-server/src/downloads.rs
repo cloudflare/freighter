@@ -1,7 +1,6 @@
-use crate::ServiceState;
+use crate::{token_from_headers_opt, ServiceState};
 use axum::body::Bytes;
 use axum::extract::{Path, State};
-use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::Router;
@@ -32,10 +31,7 @@ where
     S: StorageProvider,
     A: AuthProvider + Sync,
 {
-    let token = headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()?;
+    let token = token_from_headers_opt(&headers)?;
 
     state.auth.auth_crate_download(token, &name).await?;
 

@@ -1,8 +1,9 @@
+use crate::token_from_headers;
+use crate::token_from_headers_opt;
 use crate::ServiceState;
 use anyhow::Context;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
-use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::Html;
 use axum::routing::{delete, get, post, put};
@@ -80,11 +81,7 @@ where
 
     let json: Publish = serde_json::from_slice(&json_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state.auth.publish(auth, &json.name).await?;
 
@@ -131,11 +128,7 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -153,11 +146,7 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -174,11 +163,7 @@ async fn list_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state.auth.list_owners(auth, &name).await?;
 
@@ -194,11 +179,7 @@ async fn add_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state
         .auth
@@ -221,11 +202,7 @@ async fn remove_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::BAD_REQUEST)?
-        .to_str()
-        .or(Err(StatusCode::BAD_REQUEST))?;
+    let auth = token_from_headers(&headers)?;
 
     state
         .auth
@@ -264,10 +241,7 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let token = headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()?;
+    let token = token_from_headers_opt(&headers)?;
 
     state.auth.auth_view_full_index(token).await?;
 
