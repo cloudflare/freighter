@@ -1,6 +1,6 @@
+use crate::token_from_headers_opt;
 use crate::ServiceState;
 use axum::extract::{Path, State};
-use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -44,26 +44,19 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let split = crate_index_path.split('/');
-
-    if let Some(crate_name) = split.last() {
-        let token = headers
-            .get(AUTHORIZATION)
-            .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-            .transpose()?;
-
-        state.auth.auth_index_fetch(token, crate_name).await?;
-
-        let crate_versions = state.index.get_sparse_entry(crate_name).await?;
-
-        let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
-
-        Ok(resp)
-    } else {
+    let Some((_, crate_name)) = crate_index_path.rsplit_once('/') else {
         tracing::warn!("Received index request with no path");
+        return Err(StatusCode::BAD_REQUEST.into());
+    };
 
-        Err(StatusCode::BAD_REQUEST.into())
-    }
+    let token = token_from_headers_opt(&headers)?;
+    state.auth.auth_index_fetch(token, crate_name).await?;
+
+    let crate_versions = state.index.get_sparse_entry(crate_name).await?;
+
+    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
+
+    Ok(resp)
 }
 
 async fn handle_index_fallback() -> StatusCode {

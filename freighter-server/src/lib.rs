@@ -131,10 +131,7 @@ where
     I: IndexProvider,
     A: AuthProvider + Sync,
 {
-    let token = headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()?;
+    let token = token_from_headers_opt(&headers)?;
 
     state.auth.auth_view_full_index(token).await?;
 
@@ -150,4 +147,19 @@ pub async fn handle_global_fallback() -> StatusCode {
 #[inline(always)]
 fn default_auth_api_allowments() -> bool {
     true
+}
+
+fn token_from_headers(headers: &HeaderMap) -> Result<&str, StatusCode> {
+    headers
+        .get(AUTHORIZATION)
+        .ok_or(StatusCode::UNAUTHORIZED)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)
+}
+
+fn token_from_headers_opt(headers: &HeaderMap) -> Result<Option<&str>, StatusCode> {
+    headers
+        .get(AUTHORIZATION)
+        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
+        .transpose()
 }
