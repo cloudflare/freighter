@@ -14,12 +14,13 @@ pub enum StorageError {
 
 impl IntoResponse for StorageError {
     fn into_response(self) -> Response {
-        match self {
-            StorageError::NotFound => StatusCode::NOT_FOUND.into_response(),
+        let code = match &self {
+            StorageError::NotFound => StatusCode::NOT_FOUND,
             StorageError::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in storage operation");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-        }
+        };
+        (code, self.to_string()).into_response()
     }
 }

@@ -142,7 +142,7 @@ impl AuthProvider for MockAuthProvider {
         if self.valid_tokens.contains(token) {
             Ok(())
         } else {
-            Err(AuthError::Unauthorized)
+            Err(AuthError::Forbidden)
         }
     }
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
