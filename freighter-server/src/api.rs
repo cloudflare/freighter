@@ -159,7 +159,7 @@ where
         .to_str()
         .or(Err(StatusCode::BAD_REQUEST))?;
 
-    state.auth.auth_unyank(auth, &name).await?;
+    state.auth.auth_yank(auth, &name).await?;
 
     state.index.unyank_crate(&name, &version).await?;
 

@@ -43,8 +43,4 @@ impl AuthProvider for YesAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         Ok(())
     }
-
-    async fn auth_unyank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
-        Ok(())
-    }
 }

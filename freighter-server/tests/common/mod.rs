@@ -148,9 +148,6 @@ impl AuthProvider for MockAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         unimplemented!()
     }
-    async fn auth_unyank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
-        unimplemented!()
-    }
 }
 
 pub struct ServiceStateBuilder {

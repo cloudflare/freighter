@@ -44,8 +44,4 @@ impl AuthProvider for NoAuthProvider {
     async fn auth_yank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
         nope()
     }
-
-    async fn auth_unyank(&self, _token: &str, _crate_name: &str) -> AuthResult<()> {
-        nope()
-    }
 }

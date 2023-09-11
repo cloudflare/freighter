@@ -261,8 +261,4 @@ impl AuthProvider for PgAuthProvider {
     async fn auth_yank(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         self.auth_crate_action(token, crate_name).await
     }
-
-    async fn auth_unyank(&self, token: &str, crate_name: &str) -> AuthResult<()> {
-        self.auth_crate_action(token, crate_name).await
-    }
 }
