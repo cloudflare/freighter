@@ -14,6 +14,7 @@ pub struct Client {
     endpoint: String,
     token: Option<String>,
     config: RegistryConfig,
+    auth_required: bool,
 }
 
 #[derive(Error, Debug)]
@@ -51,17 +52,27 @@ impl From<reqwest::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Client {
-    pub async fn new(endpoint: &str) -> Self {
+    pub async fn new(endpoint: &str, token: Option<String>) -> Self {
         let http = reqwest::Client::new();
 
-        Self::from_reqwest(endpoint, http).await
+        Self::from_reqwest(endpoint, token, http).await
     }
 
-    pub async fn from_reqwest(endpoint: &str, client: reqwest::Client) -> Self {
+    pub async fn from_reqwest(endpoint: &str, token: Option<String>, client: reqwest::Client) -> Self {
         let endpoint = endpoint.to_string();
         let config_url = format!("{endpoint}/config.json");
 
-        let resp = client.get(config_url).send().await.unwrap();
+        let mut auth_required = false;
+        let mut resp = client.get(&config_url).send().await.unwrap();
+
+        if resp.status() == StatusCode::UNAUTHORIZED {
+            let token = token.as_ref().expect("registry requires auth, no token given");
+            auth_required = true;
+            resp = client.get(&config_url)
+                .header(AUTHORIZATION, HeaderValue::from_str(token).unwrap())
+                .send().await.unwrap();
+        }
+        assert_eq!(resp.status(), StatusCode::OK);
 
         let mut config: RegistryConfig = resp.json().await.unwrap();
 
@@ -76,8 +87,9 @@ impl Client {
         Self {
             http: client,
             endpoint,
-            token: None,
+            token,
             config,
+            auth_required,
         }
     }
 
@@ -98,7 +110,9 @@ impl Client {
 
         let mut req = self.http.get(url).build().unwrap();
 
-        self.attach_auth(&mut req);
+        if self.auth_required {
+            self.attach_auth(&mut req);
+        }
 
         let resp = self.http.execute(req).await?;
 
@@ -120,7 +134,9 @@ impl Client {
 
         let mut req = self.http.get(url).build().unwrap();
 
-        self.attach_auth(&mut req);
+        if self.auth_required {
+            self.attach_auth(&mut req);
+        }
 
         let resp = self.http.execute(req).await?;
 
@@ -173,7 +189,9 @@ impl Client {
 
         let mut req = self.http.get(url).build().unwrap();
 
-        self.attach_auth(&mut req);
+        if self.auth_required {
+            self.attach_auth(&mut req);
+        }
 
         {
             let mut query_pairs = req.url_mut().query_pairs_mut();

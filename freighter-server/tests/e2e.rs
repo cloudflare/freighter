@@ -4,7 +4,7 @@ pub mod common;
 use std::collections::HashMap;
 use std::env::var;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
@@ -28,6 +28,7 @@ struct TestServerConfig {
     bucket_endpoint_url: String,
     bucket_access_key_id: String,
     bucket_access_key_secret: String,
+    auth_required: bool,
 }
 
 impl TestServerConfig {
@@ -54,6 +55,7 @@ impl TestServerConfig {
             bucket_access_key_id: var("BUCKET_ACCESS_KEY_ID").unwrap_or("1234567890".to_owned()),
             bucket_access_key_secret: var("BUCKET_ACCESS_KEY_SECRET")
                 .unwrap_or("valid-secret".to_owned()),
+            auth_required: false,
         }
     }
 }
@@ -61,6 +63,7 @@ impl TestServerConfig {
 fn server(
     config: &TestServerConfig,
     index_client: impl IndexProvider + Send + Sync + 'static,
+    auth_client: impl AuthProvider + Send + Sync + 'static,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router<(), Body>>>> {
     let storage_client = S3StorageProvider::new(
         &config.bucket_name,
@@ -69,9 +72,6 @@ fn server(
         &config.bucket_access_key_id,
         &config.bucket_access_key_secret,
     );
-    type AuthConfig = <PgAuthProvider as AuthProvider>::Config;
-    let auth_config = AuthConfig { auth_db: config.db.clone() };
-    let auth_client = PgAuthProvider::new(auth_config).context("Failed to initialize auth client")?;
 
     let service = ServiceConfig {
         address: config.server_addr.parse()?,
@@ -79,6 +79,7 @@ fn server(
         api_endpoint: format!("http://{}", config.server_addr.to_owned()),
         metrics_address: "127.0.0.1:9999".parse()?,
         allow_registration: true,
+        auth_required: config.auth_required,
     };
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
@@ -107,6 +108,18 @@ async fn e2e_publish_crate_fs() {
     }).unwrap(), config).await;
 }
 
+#[tokio::test]
+async fn e2e_publish_crate_fs_auth_required() {
+    let mut config = TestServerConfig::from_env();
+    config.auth_required = true;
+    let dir = tempfile::tempdir().unwrap();
+
+    type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
+    e2e_publish_crate_in_index(FsIndexProvider::new(ProviderConfig {
+        index_path: dir.path().into(),
+    }).unwrap(), config).await;
+}
+
 async fn e2e_publish_crate_in_index(
     index_client: impl IndexProvider + Send + Sync + 'static,
     config: TestServerConfig,
@@ -124,14 +137,27 @@ async fn e2e_publish_crate_in_index(
 
     let crate_to_publish = format!("freighter-vegetables-{test_unique_str}");
     let crate_to_publish_2 = format!("freighter-fruits-{test_unique_str}");
+    let client_username = format!("kargo-{test_unique_str}");
+
+    type AuthConfig = <PgAuthProvider as AuthProvider>::Config;
+    let auth_config = AuthConfig { auth_db: config.db.clone() };
+    let auth_client = PgAuthProvider::new(auth_config).expect("Failed to initialize auth client");
+
+    let default_token  = if config.auth_required {
+        Some(auth_client.register(&client_username).await.unwrap())
+    } else {
+        None
+    };
 
     // 0. Start Freighter
-    let server_spawned = tokio::spawn(server(&config, index_client).unwrap());
+    let server_spawned = tokio::spawn(server(&config, index_client, auth_client).unwrap());
 
-    let mut freighter_client = Client::new(&format!("http://{server_addr}/index")).await;
+    let mut freighter_client = Client::new(&format!("http://{server_addr}/index"), default_token).await;
 
-    // 1. Create a user to get a publish token.
-    freighter_client.register(&format!("kargo-{test_unique_str}")).await.unwrap();
+    if !config.auth_required {
+        // 1. Create a user to get a publish token.
+        freighter_client.register(&client_username).await.unwrap();
+    }
 
     // 2. Publish a crate!
     let tarball = [1u8; 100];

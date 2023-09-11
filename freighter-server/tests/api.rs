@@ -72,6 +72,48 @@ async fn publish_crate_auth_denied() {
 }
 
 #[tokio::test]
+async fn index_auth() {
+    let state = ServiceStateBuilder::default()
+        .auth_required(true)
+        .index_provider(MockIndexProvider {
+            crates: [(
+                "example-lib".to_owned(),
+                ["1.3.0", "1.3.1"]
+                    .iter()
+                    .map(|version| crate_version("example-lib", version))
+                    .collect::<Vec<_>>(),
+            )]
+            .into_iter()
+            .collect(),
+        })
+        .auth_provider(common::MockAuthProvider {
+            valid_tokens: ["hunter2".into()].into(),
+        })
+        .build_no_arc();
+
+    let router = router(state.config, state.index, state.storage, state.auth);
+
+    let response = router
+        .clone()
+        .oneshot(Request::builder().uri("/all").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/all")
+                .header(AUTHORIZATION, "hunter2")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
 async fn list_all_crates() {
     let crates = BTreeMap::from([
         (
