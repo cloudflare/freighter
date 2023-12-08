@@ -84,16 +84,16 @@ where
 
     state.auth.publish(auth, &json.name).await?;
 
-    let hash = format!("{:x}", Sha256::digest(&crate_bytes));
-
     let version = json.vers.to_string();
     let storage = state.storage.clone();
     let mut stored_crate = false;
 
     let res = {
+        let sha256 = Sha256::digest(&crate_bytes);
+        let hash = format!("{sha256:x}");
         let end_step = std::pin::pin!(async {
             storage
-                .put_crate(&json.name, &version, crate_bytes)
+                .put_crate(&json.name, &version, crate_bytes, sha256.into())
                 .await
                 .context("Failed to store the crate in a storage medium")?;
             stored_crate = true;
