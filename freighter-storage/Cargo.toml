@@ -14,15 +14,13 @@ all-features = true
 # enable unstable features in the documentation
 rustdoc-args = ["--cfg", "docsrs"]
 
-[features]
-s3-backend = ["dep:aws-credential-types", "dep:aws-sdk-s3"]
-
 [dependencies]
+freighter-api-types = { workspace = true, features = ["storage"] }
 anyhow = { workspace = true }
 axum = { workspace = true }
 async-trait = { workspace = true }
-aws-credential-types = { workspace = true, optional = true, features = ["hardcoded-credentials"] }
-aws-sdk-s3 = { workspace = true, optional = true }
+aws-credential-types = { workspace = true, features = ["hardcoded-credentials"] }
+aws-sdk-s3 = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
 thiserror = { workspace = true }

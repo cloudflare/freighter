@@ -887,6 +887,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
+ "bytes",
  "chrono",
  "postgres-types",
  "semver",
@@ -1007,6 +1008,7 @@ dependencies = [
  "axum",
  "base64",
  "bytes",
+ "freighter-api-types",
  "thiserror",
  "tracing",
 ]

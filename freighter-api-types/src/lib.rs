@@ -11,3 +11,7 @@ pub mod auth;
 #[cfg(feature = "ownership")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ownership")))]
 pub mod ownership;
+
+#[cfg(feature = "storage")]
+#[cfg_attr(docsrs, doc(cfg(feature = "storage")))]
+pub mod storage;
