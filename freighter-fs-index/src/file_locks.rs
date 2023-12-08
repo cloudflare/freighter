@@ -18,33 +18,55 @@ use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 ///
 /// Strong `Arc` is held by current user of the path, so it's easier to clean up the hashmap
 /// after last use of each lock.
-pub(crate) type FileLocks = Mutex<HashMap<String, Weak<AsyncRwLock<PathBuf>>>>;
+pub(crate) struct AccessLocks<T> {
+    locks: Mutex<HashMap<String, Weak<AsyncRwLock<T>>>>
+}
+
+impl<T> AccessLocks<T> {
+    pub fn new() -> Self {
+        Self { locks: Mutex::default() }
+    }
+
+    pub fn rwlock_for_key(&self, key: &str, object: T) -> Arc<AsyncRwLock<T>> {
+        match self.locks.lock().unwrap().entry(key.to_owned()) {
+            Entry::Occupied(mut e) => if let Some(existing) = e.get().upgrade() {
+                existing
+            } else {
+                let new_lock = Arc::new(AsyncRwLock::new(object));
+                *e.get_mut() = Arc::downgrade(&new_lock);
+                new_lock
+            },
+            Entry::Vacant(e) => {
+                let new_lock = Arc::new(AsyncRwLock::new(object));
+                e.insert(Arc::downgrade(&new_lock));
+                new_lock
+            },
+        }
+    }
+
+    pub fn on_unlocked(&self, key: &str) {
+        let mut locks = self.locks.lock().unwrap();
+        // Can drop the entry in the shared hashtable after the last user is dropped
+        if let Some(entry) = locks.get_mut(key) {
+            if Weak::strong_count(entry) == 0 {
+                locks.remove(key);
+            }
+        }
+    }
+}
 
 /// A filesystem path that can be locked for access
 pub(crate) struct CrateMetaPath<'a> {
     path: Option<Arc<AsyncRwLock<PathBuf>>>,
     key: String,
-    locks: &'a FileLocks,
+    locks: &'a AccessLocks<PathBuf>,
 }
 
 impl<'a> CrateMetaPath<'a> {
-    pub fn new(file_path: PathBuf, key: String, locks: &'a FileLocks) -> Self {
-        let locked_path = match locks.lock().unwrap().entry(key.clone()) {
-            Entry::Occupied(mut e) => if let Some(existing) = e.get().upgrade() {
-                existing
-            } else {
-                let new_lock = Arc::new(AsyncRwLock::new(file_path));
-                *e.get_mut() = Arc::downgrade(&new_lock);
-                new_lock
-            },
-            Entry::Vacant(e) => {
-                let new_lock = Arc::new(AsyncRwLock::new(file_path));
-                e.insert(Arc::downgrade(&new_lock));
-                new_lock
-            },
-        };
+    pub fn new(locks: &'a AccessLocks<PathBuf>, key: String, file_path: PathBuf) -> Self {
+        let lockable_path = locks.rwlock_for_key(&key, file_path);
         Self {
-            path: Some(locked_path),
+            path: Some(lockable_path),
             key,
             locks,
         }
@@ -66,13 +88,7 @@ impl<'a> CrateMetaPath<'a> {
 impl Drop for CrateMetaPath<'_> {
     fn drop(&mut self) {
         let _ = self.path.take(); // drop refcount
-        let mut locks = self.locks.lock().unwrap();
-        // Can drop the entry in the shared hashtable after the last user is dropped
-        if let Some(entry) = locks.get_mut(&self.key) {
-            if Weak::strong_count(entry) == 0 {
-                locks.remove(&self.key);
-            }
-        }
+        self.locks.on_unlocked(&self.key);
     }
 }
 

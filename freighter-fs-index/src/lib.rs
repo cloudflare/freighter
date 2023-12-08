@@ -14,10 +14,10 @@ use std::pin::Pin;
 use std::time::SystemTime;
 
 mod file_locks;
-use file_locks::{CrateMetaPath, FileLocks};
+use file_locks::{CrateMetaPath, AccessLocks};
 
 pub struct FsIndexProvider {
-    meta_file_locks: FileLocks,
+    meta_file_locks: AccessLocks<PathBuf>,
     root: PathBuf,
 }
 
@@ -29,7 +29,7 @@ impl FsIndexProvider {
             .map_err(IndexError::ServiceError)?;
         Ok(Self {
             root,
-            meta_file_locks: Default::default(),
+            meta_file_locks: AccessLocks::new(),
         })
     }
 
@@ -38,13 +38,13 @@ impl FsIndexProvider {
             .ok_or(IndexError::CrateNameNotAllowed)?
             .to_string();
         debug_assert_eq!(name, name.to_ascii_lowercase());
-        Ok(CrateMetaPath::new(path, name, &self.meta_file_locks))
+        Ok(CrateMetaPath::new(&self.meta_file_locks, name, path))
     }
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
         let lowercase_name = crate_name.to_ascii_lowercase();
         let meta_file_path = self.crate_meta_file_path(&lowercase_name).ok_or(IndexError::CrateNameNotAllowed)?;
-        Ok(CrateMetaPath::new(meta_file_path, lowercase_name, &self.meta_file_locks))
+        Ok(CrateMetaPath::new(&self.meta_file_locks, lowercase_name, meta_file_path))
     }
 
     async fn yank_inner(&self, crate_name: &str, version: &Version, yank: bool) -> IndexResult<()> {

@@ -59,7 +59,7 @@ impl From<response::CrateVersion> for request::Publish {
                 })
                 .collect(),
             features: value.features,
-            /// Note: We do not carry over authors since its not in index
+            // Note: We do not carry over authors since its not in index
             authors: Vec::new(),
             description: None,
             documentation: None,
