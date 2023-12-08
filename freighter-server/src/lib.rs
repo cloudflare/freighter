@@ -10,7 +10,7 @@ use freighter_api_types::index::request::ListQuery;
 use freighter_api_types::index::response::ListAll;
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::AuthProvider;
-use freighter_storage::StorageProvider;
+use freighter_api_types::storage::StorageProvider;
 use metrics::{histogram, increment_counter};
 use serde::Deserialize;
 use std::net::SocketAddr;

@@ -28,7 +28,7 @@ test_e2e = [
 freighter-api-types = { workspace = true, features = ["server", "index", "auth"] }
 freighter-client = { workspace = true, optional = true }
 freighter-auth = { workspace = true, features = ["yes-backend"] }
-freighter-storage = { workspace = true, features = ["s3-backend"] }
+freighter-storage = { workspace = true }
 freighter-pg-index = { workspace = true, optional = true }
 freighter-fs-index = { workspace = true, optional = true }
 tempfile = { workspace = true, optional = true }

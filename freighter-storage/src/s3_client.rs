@@ -16,7 +16,6 @@
 //! It is perfectly possible to perform both streaming uploads and streaming downloads, however
 //! doing so has been left to the future.
 
-use crate::{StorageError, StorageProvider, StorageResult, Metadata};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
@@ -24,6 +23,7 @@ use aws_sdk_s3::config::{AppName, Config, Region, BehaviorVersion};
 use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::primitives::ByteStream;
 use bytes::Bytes;
+use freighter_api_types::storage::{StorageError, StorageProvider, StorageResult, Metadata};
 use std::collections::HashMap;
 
 /// Storage client for working with S3-compatible APIs.

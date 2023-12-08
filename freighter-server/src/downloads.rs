@@ -6,7 +6,7 @@ use axum::routing::get;
 use axum::Router;
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::AuthProvider;
-use freighter_storage::StorageProvider;
+use freighter_api_types::storage::StorageProvider;
 use semver::Version;
 use std::sync::Arc;
 

@@ -12,7 +12,7 @@ use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults};
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::AuthProvider;
-use freighter_storage::StorageProvider;
+use freighter_api_types::storage::StorageProvider;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
