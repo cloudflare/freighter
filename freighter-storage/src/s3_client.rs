@@ -20,7 +20,7 @@ use crate::{StorageError, StorageProvider, StorageResult};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
-use aws_sdk_s3::config::{AppName, Config, Region};
+use aws_sdk_s3::config::{AppName, Config, Region, BehaviorVersion};
 use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::primitives::ByteStream;
 use bytes::Bytes;
@@ -46,6 +46,7 @@ impl S3StorageProvider {
         secret_key: &str,
     ) -> Self {
         let config = Config::builder()
+            .behavior_version(BehaviorVersion::v2023_11_09())
             .region(Region::new(region.to_string()))
             .endpoint_url(endpoint_url)
             .credentials_provider(Credentials::from_keys(access_key, secret_key, None))

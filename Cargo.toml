@@ -25,13 +25,13 @@ anyhow = "1.0.14"
 async-trait = "0.1.68"
 axum = { version = "0.6.9", default-features = false }
 axum-extra = { version = "0.7.0", features = ["json-lines"] }
-aws-credential-types = "0.55.3"
-aws-sdk-s3 = { version = "0.28.0", default-features = false }
+aws-credential-types = "1.0.3"
+aws-sdk-s3 = "1.5.0"
 bytes = "1.1.0"
 base64 = "0.21"
 chrono = { version = "0.4.26", default-features = false, features = ["std", "serde"] }
 clap = { version = "4.0", default-features = false }
-deadpool-postgres = { version = "0.10.5", features = ["serde"] }
+deadpool-postgres = { version = "0.11.0", features = ["serde"] }
 futures-util = { version = "0.3.16", default-features = false }
 hyper = { version = "0.14", default-features = false }
 metrics = "0.21.0"

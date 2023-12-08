@@ -22,7 +22,7 @@ anyhow = { workspace = true }
 axum = { workspace = true }
 async-trait = { workspace = true }
 aws-credential-types = { workspace = true, optional = true, features = ["hardcoded-credentials"] }
-aws-sdk-s3 = { workspace = true, optional = true, features = ["rt-tokio", "native-tls"] }
+aws-sdk-s3 = { workspace = true, optional = true }
 bytes = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
