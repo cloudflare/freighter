@@ -51,12 +51,12 @@ impl FsIndexProvider {
         let lock = self.access_crate(crate_name)?;
         let meta = lock.exclusive().await;
 
-        let mut releases = meta.deserialized()?;
+        let mut releases = meta.deserialized().await?;
         let release = releases.iter_mut()
             .rfind(|v| &v.vers == version)
             .ok_or(IndexError::NotFound)?;
         release.yanked = yank;
-        meta.replace(&releases)
+        meta.replace(&releases).await
     }
 
     fn is_valid_crate_file_name_char(c: u8) -> bool {
@@ -108,7 +108,7 @@ impl FsIndexProvider {
                 if metadata.is_dir() {
                     self.list_crates_in_subdir(&path, out).await?;
                 } else if metadata.is_file() {
-                    let mut releases = self.access_crate_at_path(path)?.shared().await.deserialized()?;
+                    let mut releases = self.access_crate_at_path(path)?.shared().await.deserialized().await?;
                     let mut versions = Vec::with_capacity(releases.len());
                     let Some(most_recent) = releases.pop() else { continue };
                     versions.extend(releases.into_iter().map(|r| ListAllCrateVersion { version: r.vers })
@@ -144,12 +144,12 @@ impl IndexProvider for FsIndexProvider {
     type Config = Config;
 
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
-        self.access_crate(crate_name)?.shared().await.deserialized()
+        self.access_crate(crate_name)?.shared().await.deserialized().await
     }
 
     async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
         self.access_crate(crate_name)?.shared().await
-            .deserialized()?
+            .deserialized().await?
             .iter()
             .rfind(|e| &e.vers == version)
             .map(|e| e.yanked)
@@ -206,7 +206,7 @@ impl IndexProvider for FsIndexProvider {
         let lock = self.access_crate(&release.name)?;
         let meta = lock.exclusive().await;
 
-        match meta.deserialized() {
+        match meta.deserialized().await {
             Ok(existing_releases) => {
                 if existing_releases.iter().any(|v| v.vers == release.vers) {
                     return Err(IndexError::Conflict(format!("{}-{} aleady exists", p.name, p.vers)));
@@ -217,7 +217,7 @@ impl IndexProvider for FsIndexProvider {
         };
 
         end_step.await?;
-        meta.create_or_append(&release)?;
+        meta.create_or_append(&release).await?;
         Ok(CompletedPublication { warnings: None })
     }
 

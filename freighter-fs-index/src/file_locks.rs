@@ -97,27 +97,27 @@ pub(crate) struct LockedMetaFile<Guard> {
 }
 
 impl LockedMetaFile<RwLockReadGuard<'_, PathBuf>> {
-    pub fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(&self.path)?)
+    pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
+        deserialize_data(&read_from_path(&self.path).await?)
     }
 }
 
 impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
-    pub fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(&self.path)?)
+    pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
+        deserialize_data(&read_from_path(&self.path).await?)
     }
 
-    pub fn replace(&self, data: &[CrateVersion]) -> IndexResult<()> {
-        self.replace_file(&serialize_data(data)?)
+    pub async fn replace(&self, data: &[CrateVersion]) -> IndexResult<()> {
+        self.replace_file(&serialize_data(data)?).await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 
-    pub fn create_or_append(&self, version: &CrateVersion) -> IndexResult<()> {
-        self.create_or_append_file(&serialize_data(std::slice::from_ref(version))?)
+    pub async fn create_or_append(&self, version: &CrateVersion) -> IndexResult<()> {
+        self.create_or_append_file(&serialize_data(std::slice::from_ref(version))?).await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 
-    fn create_or_append_file(&self, data: &[u8]) -> io::Result<()> {
+    async fn create_or_append_file(&self, data: &[u8]) -> io::Result<()> {
         let path = &*self.path;
         let parent = path.parent().unwrap();
         if !parent.exists() {
@@ -128,7 +128,7 @@ impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
         file.write_all(data)
     }
 
-    fn replace_file(&self, data: &[u8]) -> io::Result<()> {
+    async fn replace_file(&self, data: &[u8]) -> io::Result<()> {
         let path = &*self.path;
         let parent = path.parent().ok_or(io::ErrorKind::InvalidInput)?;
         let mut tmp = NamedTempFile::new_in(parent)?;
@@ -138,7 +138,7 @@ impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
     }
 }
 
-fn read_from_path(path: &Path) -> IndexResult<Vec<u8>> {
+async fn read_from_path(path: &Path) -> IndexResult<Vec<u8>> {
     std::fs::read(path).map_err(|e| match e.kind() {
         io::ErrorKind::NotFound => IndexError::NotFound,
         _ => IndexError::ServiceError(e.into()),
