@@ -99,14 +99,16 @@ impl StorageProvider for MockStorageProvider {
     async fn pull_crate(&self, _name: &str, _version: &str) -> StorageResult<Bytes> {
         unimplemented!()
     }
+
     async fn put_crate(
         &self,
         _name: &str,
         _version: &str,
-        _crate_bytes: &[u8],
+        _crate_bytes: Bytes,
     ) -> StorageResult<()> {
         Ok(())
     }
+
     async fn delete_crate(&self, _name: &str, _version: &str) -> StorageResult<()> {
         Ok(())
     }

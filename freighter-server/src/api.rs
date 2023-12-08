@@ -93,11 +93,10 @@ where
     let res = {
         let end_step = std::pin::pin!(async {
             storage
-                .put_crate(&json.name, &version, &crate_bytes)
+                .put_crate(&json.name, &version, crate_bytes)
                 .await
                 .context("Failed to store the crate in a storage medium")?;
             stored_crate = true;
-            drop(crate_bytes); // free mem ASAP
             Ok(())
         });
         state.index.publish(&json, &hash, end_step).await

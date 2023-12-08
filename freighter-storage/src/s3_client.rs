@@ -61,13 +61,8 @@ impl S3StorageProvider {
             bucket_name,
         }
     }
-}
 
-#[async_trait]
-impl StorageProvider for S3StorageProvider {
-    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes> {
-        let path = construct_path(name, version);
-
+    async fn pull_object(&self, path: String) -> StorageResult<Bytes> {
         let resp = self
             .client
             .get_object()
@@ -83,45 +78,57 @@ impl StorageProvider for S3StorageProvider {
             }
         }
 
-        let data = resp.context("Failed to retrieve crate")?;
+        let data = resp.context("Storage response error")?;
 
         let crate_bytes = data
             .body
             .collect()
             .await
-            .context("Failed to retrieve body of crate")?
+            .context("Error while retrieving body")?
             .into_bytes();
 
         Ok(crate_bytes)
     }
 
-    async fn put_crate(&self, name: &str, version: &str, crate_bytes: &[u8]) -> StorageResult<()> {
-        let path = construct_path(name, version);
-
+    async fn put_object(&self, path: String, file_bytes: ByteStream) -> StorageResult<()> {
         self.client
             .put_object()
             .bucket(self.bucket_name.clone())
             .key(path)
-            .body(ByteStream::from(crate_bytes.to_vec()))
+            .body(file_bytes)
             .send()
             .await
-            .context("Failed to put crate in bucket")?;
-
+            .context("Failed to put file")?;
         Ok(())
     }
 
-    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
-        let path = construct_path(name, version);
-
+    async fn delete_object(&self, path: String) -> StorageResult<()> {
         self.client
             .delete_object()
             .bucket(self.bucket_name.clone())
             .key(path)
             .send()
             .await
-            .context("Failed to delete a crate from a bucket")?;
-
+            .context("Failed to delete file")?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl StorageProvider for S3StorageProvider {
+    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes> {
+        let path = construct_path(name, version);
+        self.pull_object(path).await
+    }
+
+    async fn put_crate(&self, name: &str, version: &str, crate_bytes: Bytes) -> StorageResult<()> {
+        let path = construct_path(name, version);
+        self.put_object(path, crate_bytes.into()).await
+    }
+
+    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
+        let path = construct_path(name, version);
+        self.delete_object(path).await
     }
 }
 
