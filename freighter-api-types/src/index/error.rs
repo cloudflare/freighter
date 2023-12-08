@@ -1,10 +1,8 @@
+#[cfg(feature = "storage")]
+use crate::storage::StorageError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use thiserror::Error;
-#[cfg(feature = "storage")]
-use crate::storage::StorageError;
-
-
 
 #[derive(Error, Debug)]
 pub enum IndexError {
