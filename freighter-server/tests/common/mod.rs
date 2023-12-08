@@ -105,6 +105,7 @@ impl StorageProvider for MockStorageProvider {
         _name: &str,
         _version: &str,
         _crate_bytes: Bytes,
+        _sha256: [u8; 32],
     ) -> StorageResult<()> {
         Ok(())
     }

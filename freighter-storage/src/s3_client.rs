@@ -16,7 +16,7 @@
 //! It is perfectly possible to perform both streaming uploads and streaming downloads, however
 //! doing so has been left to the future.
 
-use crate::{StorageError, StorageProvider, StorageResult};
+use crate::{StorageError, StorageProvider, StorageResult, Metadata};
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
@@ -24,6 +24,7 @@ use aws_sdk_s3::config::{AppName, Config, Region, BehaviorVersion};
 use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::primitives::ByteStream;
 use bytes::Bytes;
+use std::collections::HashMap;
 
 /// Storage client for working with S3-compatible APIs.
 ///
@@ -90,13 +91,32 @@ impl S3StorageProvider {
         Ok(crate_bytes)
     }
 
-    async fn put_object(&self, path: String, file_bytes: ByteStream) -> StorageResult<()> {
-        self.client
+    async fn put_object(&self, path: String, file_bytes: ByteStream, meta: Metadata) -> StorageResult<()> {
+        let mut obj = self.client
             .put_object()
             .bucket(self.bucket_name.clone())
             .key(path)
-            .body(file_bytes)
-            .send()
+            .body(file_bytes);
+        if let Some(len) = meta.content_length {
+            obj = obj.content_length(len as _);
+        }
+        if let Some(ty) = meta.content_type {
+            obj = obj.content_type(ty);
+        }
+        if let Some(ty) = meta.content_encoding {
+            obj = obj.content_encoding(ty);
+        }
+        if let Some(cc) = meta.cache_control {
+            obj = obj.cache_control(cc);
+        }
+        if let Some(sha) = meta.sha256 {
+            use base64::{engine, Engine as _};
+            obj = obj.checksum_sha256(engine::general_purpose::STANDARD_NO_PAD.encode(sha));
+        }
+        for (k, v) in meta.kv {
+            obj = obj.metadata(k, v);
+        }
+        obj.send()
             .await
             .context("Failed to put file")?;
         Ok(())
@@ -121,9 +141,17 @@ impl StorageProvider for S3StorageProvider {
         self.pull_object(path).await
     }
 
-    async fn put_crate(&self, name: &str, version: &str, crate_bytes: Bytes) -> StorageResult<()> {
+    async fn put_crate(&self, name: &str, version: &str, crate_bytes: Bytes, sha256: [u8; 32]) -> StorageResult<()> {
+        let len = crate_bytes.len();
         let path = construct_path(name, version);
-        self.put_object(path, crate_bytes.into()).await
+        self.put_object(path, crate_bytes.into(), Metadata {
+            content_type: Some("application/x-tar"),
+            content_length: Some(len),
+            cache_control: Some("public,immutable".into()),
+            content_encoding: Some("gzip".into()),
+            sha256: Some(sha256),
+            kv: HashMap::new(),
+        }).await
     }
 
     async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
