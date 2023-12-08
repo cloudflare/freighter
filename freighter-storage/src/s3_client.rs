@@ -19,11 +19,13 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
-use aws_sdk_s3::config::{AppName, Config, Region, BehaviorVersion};
+use aws_sdk_s3::config::{AppName, BehaviorVersion, Config, Region};
 use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::primitives::ByteStream;
 use bytes::Bytes;
-use freighter_api_types::storage::{StorageError, StorageProvider, StorageResult, Metadata};
+use freighter_api_types::storage::{
+    Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
+};
 use std::collections::HashMap;
 
 /// Storage client for working with S3-compatible APIs.
@@ -131,6 +133,21 @@ impl S3StorageProvider {
             .await
             .context("Failed to delete file")?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl MetadataStorageProvider for S3StorageProvider {
+    async fn pull_file(&self, path: &str) -> StorageResult<Bytes> {
+        self.pull_object(path.into()).await
+    }
+
+    async fn put_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()> {
+        self.put_object(path.into(), file_bytes.into(), meta).await
+    }
+
+    async fn delete_file(&self, path: &str) -> StorageResult<()> {
+        self.delete_object(path.into()).await
     }
 }
 

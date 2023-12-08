@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use std::collections::HashMap;
 
-pub use error::{StorageResult, StorageError};
+pub use error::{StorageError, StorageResult};
 
 mod error;
 
@@ -22,4 +22,11 @@ pub struct Metadata {
     pub content_encoding: Option<String>,
     pub sha256: Option<[u8; 32]>,
     pub kv: HashMap<String, String>,
+}
+
+#[async_trait]
+pub trait MetadataStorageProvider {
+    async fn pull_file(&self, path: &str) -> StorageResult<Bytes>;
+    async fn put_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()>;
+    async fn delete_file(&self, path: &str) -> StorageResult<()>;
 }

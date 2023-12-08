@@ -1,5 +1,6 @@
 use freighter_api_types::index::response::CrateVersion;
 use freighter_api_types::index::{IndexError, IndexResult};
+use freighter_api_types::storage::{Bytes, Metadata, MetadataStorageProvider};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::io;
@@ -19,7 +20,7 @@ use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 /// Strong `Arc` is held by current user of the path, so it's easier to clean up the hashmap
 /// after last use of each lock.
 pub(crate) struct AccessLocks<T> {
-    locks: Mutex<HashMap<String, Weak<AsyncRwLock<T>>>>
+    locks: Mutex<HashMap<String, Weak<AsyncRwLock<T>>>>,
 }
 
 impl<T> AccessLocks<T> {
