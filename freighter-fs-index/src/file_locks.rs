@@ -5,7 +5,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::io;
 use std::io::{Seek, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
 use tempfile::NamedTempFile;
 use tokio::sync::RwLock as AsyncRwLock;
@@ -58,54 +58,59 @@ impl<T> AccessLocks<T> {
 
 /// A filesystem path that can be locked for access
 pub(crate) struct CrateMetaPath<'a> {
-    path: Option<Arc<AsyncRwLock<PathBuf>>>,
+    rel_path: Option<Arc<AsyncRwLock<String>>>,
     key: String,
-    locks: &'a AccessLocks<PathBuf>,
+    root: &'a Path,
+    locks: &'a AccessLocks<String>,
 }
 
 impl<'a> CrateMetaPath<'a> {
-    pub fn new(locks: &'a AccessLocks<PathBuf>, key: String, file_path: PathBuf) -> Self {
-        let lockable_path = locks.rwlock_for_key(&key, file_path);
+    pub fn new(root: &'a Path, locks: &'a AccessLocks<String>, key: String, file_rel_path: String) -> Self {
+        let lockable_path = locks.rwlock_for_key(&key, file_rel_path);
         Self {
-            path: Some(lockable_path),
+            root,
+            rel_path: Some(lockable_path),
             key,
             locks,
         }
     }
 
-    pub async fn exclusive(&self) -> LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
+    pub async fn exclusive(&self) -> LockedMetaFile<RwLockWriteGuard<'_, String>> {
         LockedMetaFile {
-            path: self.path.as_ref().unwrap().write().await,
+            root: self.root,
+            rel_path: self.rel_path.as_ref().unwrap().write().await,
         }
     }
 
-    pub async fn shared(&self) -> LockedMetaFile<RwLockReadGuard<'_, PathBuf>> {
+    pub async fn shared(&self) -> LockedMetaFile<RwLockReadGuard<'_, String>> {
         LockedMetaFile {
-            path: self.path.as_ref().unwrap().read().await,
+            root: self.root,
+            rel_path: self.rel_path.as_ref().unwrap().read().await,
         }
     }
 }
 
 impl Drop for CrateMetaPath<'_> {
     fn drop(&mut self) {
-        let _ = self.path.take(); // drop refcount
+        let _ = self.rel_path.take(); // drop refcount
         self.locks.on_unlocked(&self.key);
     }
 }
 
-pub(crate) struct LockedMetaFile<Guard> {
-    path: Guard,
+pub(crate) struct LockedMetaFile<'a, Guard> {
+    rel_path: Guard,
+    root: &'a Path,
 }
 
-impl LockedMetaFile<RwLockReadGuard<'_, PathBuf>> {
+impl LockedMetaFile<'_, RwLockReadGuard<'_, String>> {
     pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(&self.path).await?)
+        deserialize_data(&read_from_path(self.root, &self.rel_path).await?)
     }
 }
 
-impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
+impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
     pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(&self.path).await?)
+        deserialize_data(&read_from_path(self.root, &self.rel_path).await?)
     }
 
     pub async fn replace(&self, data: &[CrateVersion]) -> IndexResult<()> {
@@ -119,7 +124,7 @@ impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
     }
 
     async fn create_or_append_file(&self, data: &[u8]) -> io::Result<()> {
-        let path = &*self.path;
+        let path = self.root.join(&*self.rel_path);
         let parent = path.parent().unwrap();
         if !parent.exists() {
             std::fs::create_dir_all(parent)?;
@@ -130,7 +135,7 @@ impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
     }
 
     async fn replace_file(&self, data: &[u8]) -> io::Result<()> {
-        let path = &*self.path;
+        let path = self.root.join(&*self.rel_path);
         let parent = path.parent().ok_or(io::ErrorKind::InvalidInput)?;
         let mut tmp = NamedTempFile::new_in(parent)?;
         tmp.write_all(data)?;
@@ -139,8 +144,8 @@ impl LockedMetaFile<RwLockWriteGuard<'_, PathBuf>> {
     }
 }
 
-async fn read_from_path(path: &Path) -> IndexResult<Vec<u8>> {
-    std::fs::read(path).map_err(|e| match e.kind() {
+async fn read_from_path(root: &Path, rel_path: &str) -> IndexResult<Vec<u8>> {
+    std::fs::read(root.join(rel_path)).map_err(|e| match e.kind() {
         io::ErrorKind::NotFound => IndexError::NotFound,
         _ => IndexError::ServiceError(e.into()),
     })
