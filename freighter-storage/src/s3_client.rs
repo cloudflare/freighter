@@ -146,6 +146,16 @@ impl MetadataStorageProvider for S3StorageProvider {
         self.put_object(path.into(), file_bytes.into(), meta).await
     }
 
+    async fn create_or_append_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()> {
+        let mut all_data = match self.pull_object(path.into()).await {
+            Ok(data) => Vec::from(data),
+            Err(StorageError::NotFound) => Vec::new(),
+            Err(e) => return Err(e),
+        };
+        all_data.append(&mut Vec::from(file_bytes));
+        self.put_object(path.into(), all_data.into(), meta).await
+    }
+
     async fn delete_file(&self, path: &str) -> StorageResult<()> {
         self.delete_object(path.into()).await
     }

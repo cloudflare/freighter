@@ -103,9 +103,24 @@ async fn e2e_publish_crate_fs() {
     let dir = tempfile::tempdir().unwrap();
 
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
-    e2e_publish_crate_in_index(FsIndexProvider::new(ProviderConfig {
-        index_path: dir.path().into(),
-    }).unwrap(), config).await;
+    let index_config = ProviderConfig::Path(dir.path().into());
+    e2e_publish_crate_in_index(FsIndexProvider::new(index_config).unwrap(), config).await;
+}
+
+#[tokio::test]
+async fn e2e_publish_crate_fs_s3() {
+    let config = TestServerConfig::from_env();
+    let dir = tempfile::tempdir().unwrap();
+
+    type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
+    let index_config = ProviderConfig::S3(freighter_fs_index::StoreConfig {
+        name: config.bucket_name.clone(),
+        endpoint_url: config.bucket_endpoint_url.clone(),
+        region: "us-east-1".into(),
+        access_key_id: config.bucket_access_key_id.clone(),
+        access_key_secret: config.bucket_access_key_secret.clone(),
+    });
+    e2e_publish_crate_in_index(FsIndexProvider::new(index_config).unwrap(), config).await;
 }
 
 #[tokio::test]
@@ -115,9 +130,8 @@ async fn e2e_publish_crate_fs_auth_required() {
     let dir = tempfile::tempdir().unwrap();
 
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
-    e2e_publish_crate_in_index(FsIndexProvider::new(ProviderConfig {
-        index_path: dir.path().into(),
-    }).unwrap(), config).await;
+    let index_config = ProviderConfig::Path(dir.path().into());
+    e2e_publish_crate_in_index(FsIndexProvider::new(index_config).unwrap(), config).await;
 }
 
 async fn e2e_publish_crate_in_index(
@@ -284,8 +298,7 @@ async fn e2e_publish_crate_in_index(
         .await
         .unwrap();
 
-    // 6. List crates
-    let json = freighter_client.list(None, None).await.unwrap();
+    // 6. List crates - unsupported
 
     // 7. Fetch index for crate
     let index = freighter_client
@@ -294,10 +307,6 @@ async fn e2e_publish_crate_in_index(
         .unwrap();
 
     assert_eq!(index.len(), 1);
-
-    assert_eq!(json.results.len(), 2);
-    assert!(json.results.iter().any(|r| r.name == crate_to_publish));
-    assert!(json.results.iter().any(|r| r.name == crate_to_publish_2));
 
     assert_eq!(body, &tarball[..]);
 

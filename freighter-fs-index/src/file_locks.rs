@@ -3,13 +3,10 @@ use freighter_api_types::index::{IndexError, IndexResult};
 use freighter_api_types::storage::{Bytes, Metadata, MetadataStorageProvider};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::io;
-use std::io::{Seek, Write};
-use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
-use tempfile::NamedTempFile;
 use tokio::sync::RwLock as AsyncRwLock;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
+use freighter_api_types::storage::{MetadataStorageProvider, Bytes, Metadata};
 
 /// Lowercase crate name -> lock for file access.
 ///
@@ -60,31 +57,31 @@ impl<T> AccessLocks<T> {
 pub(crate) struct CrateMetaPath<'a> {
     rel_path: Option<Arc<AsyncRwLock<String>>>,
     key: String,
-    root: &'a Path,
+    fs: &'a (dyn MetadataStorageProvider + Send + Sync),
     locks: &'a AccessLocks<String>,
 }
 
 impl<'a> CrateMetaPath<'a> {
-    pub fn new(root: &'a Path, locks: &'a AccessLocks<String>, key: String, file_rel_path: String) -> Self {
+    pub fn new(fs: &'a (dyn MetadataStorageProvider + Send + Sync), locks: &'a AccessLocks<String>, key: String, file_rel_path: String) -> Self {
         let lockable_path = locks.rwlock_for_key(&key, file_rel_path);
         Self {
-            root,
+            fs,
             rel_path: Some(lockable_path),
             key,
             locks,
         }
     }
 
-    pub async fn exclusive(&self) -> LockedMetaFile<RwLockWriteGuard<'_, String>> {
+    pub async fn exclusive(&self) -> LockedMetaFile<'a, RwLockWriteGuard<'_, String>> {
         LockedMetaFile {
-            root: self.root,
+            fs: self.fs,
             rel_path: self.rel_path.as_ref().unwrap().write().await,
         }
     }
 
-    pub async fn shared(&self) -> LockedMetaFile<RwLockReadGuard<'_, String>> {
+    pub async fn shared(&self) -> LockedMetaFile<'a, RwLockReadGuard<'_, String>> {
         LockedMetaFile {
-            root: self.root,
+            fs: self.fs,
             rel_path: self.rel_path.as_ref().unwrap().read().await,
         }
     }
@@ -99,56 +96,46 @@ impl Drop for CrateMetaPath<'_> {
 
 pub(crate) struct LockedMetaFile<'a, Guard> {
     rel_path: Guard,
-    root: &'a Path,
+    fs: &'a (dyn MetadataStorageProvider + Send + Sync),
 }
 
 impl LockedMetaFile<'_, RwLockReadGuard<'_, String>> {
     pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(self.root, &self.rel_path).await?)
+        deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
     }
 }
 
 impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
     pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
-        deserialize_data(&read_from_path(self.root, &self.rel_path).await?)
+        deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
     }
 
     pub async fn replace(&self, data: &[CrateVersion]) -> IndexResult<()> {
-        self.replace_file(&serialize_data(data)?).await
+        let bytes = serialize_data(data)?;
+        let meta = Metadata {
+            content_type: Some("application/json"),
+            content_length: Some(bytes.len()),
+            cache_control: None,
+            content_encoding: None,
+            sha256: None,
+            kv: Default::default()
+        };
+        self.fs.put_file(&self.rel_path, bytes, meta).await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 
     pub async fn create_or_append(&self, version: &CrateVersion) -> IndexResult<()> {
-        self.create_or_append_file(&serialize_data(std::slice::from_ref(version))?).await
+        let meta = Metadata {
+            content_type: Some("application/json"),
+            content_length: None,
+            cache_control: None,
+            content_encoding: None,
+            sha256: None,
+            kv: Default::default()
+        };
+        self.fs.create_or_append_file(&self.rel_path, serialize_data(std::slice::from_ref(version))?, meta).await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
-
-    async fn create_or_append_file(&self, data: &[u8]) -> io::Result<()> {
-        let path = self.root.join(&*self.rel_path);
-        let parent = path.parent().unwrap();
-        if !parent.exists() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path)?;
-        file.seek(io::SeekFrom::End(0))?;
-        file.write_all(data)
-    }
-
-    async fn replace_file(&self, data: &[u8]) -> io::Result<()> {
-        let path = self.root.join(&*self.rel_path);
-        let parent = path.parent().ok_or(io::ErrorKind::InvalidInput)?;
-        let mut tmp = NamedTempFile::new_in(parent)?;
-        tmp.write_all(data)?;
-        tmp.persist(path)?;
-        Ok(())
-    }
-}
-
-async fn read_from_path(root: &Path, rel_path: &str) -> IndexResult<Vec<u8>> {
-    std::fs::read(root.join(rel_path)).map_err(|e| match e.kind() {
-        io::ErrorKind::NotFound => IndexError::NotFound,
-        _ => IndexError::ServiceError(e.into()),
-    })
 }
 
 fn deserialize_data(json_lines: &[u8]) -> IndexResult<Vec<CrateVersion>> {
@@ -160,12 +147,12 @@ fn deserialize_data(json_lines: &[u8]) -> IndexResult<Vec<CrateVersion>> {
         .map_err(|e| IndexError::ServiceError(e.into()))
 }
 
-fn serialize_data(versions: &[CrateVersion]) -> IndexResult<Vec<u8>> {
+fn serialize_data(versions: &[CrateVersion]) -> IndexResult<Bytes> {
     let mut json_lines = Vec::with_capacity(versions.len() * 128);
     for v in versions {
         serde_json::to_writer(&mut json_lines, v)
             .map_err(|e| IndexError::ServiceError(e.into()))?;
         json_lines.push(b'\n');
     }
-    Ok(json_lines)
+    Ok(json_lines.into())
 }
