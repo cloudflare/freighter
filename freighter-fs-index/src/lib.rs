@@ -17,7 +17,7 @@ mod file_locks;
 use file_locks::{CrateMetaPath, AccessLocks};
 
 pub struct FsIndexProvider {
-    meta_file_locks: AccessLocks<PathBuf>,
+    meta_file_locks: AccessLocks<String>,
     root: PathBuf,
 }
 
@@ -33,18 +33,18 @@ impl FsIndexProvider {
         })
     }
 
-    fn access_crate_at_path(&self, path: PathBuf) -> IndexResult<CrateMetaPath<'_>> {
-        let name = path.file_name().and_then(|f| f.to_str())
+    fn access_crate_at_path(&self, path: String) -> IndexResult<CrateMetaPath<'_>> {
+        let name = Path::new(&path).file_name().and_then(|f| f.to_str())
             .ok_or(IndexError::CrateNameNotAllowed)?
             .to_string();
         debug_assert_eq!(name, name.to_ascii_lowercase());
-        Ok(CrateMetaPath::new(&self.meta_file_locks, name, path))
+        Ok(CrateMetaPath::new(&self.root, &self.meta_file_locks, name, path))
     }
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
         let lowercase_name = crate_name.to_ascii_lowercase();
-        let meta_file_path = self.crate_meta_file_path(&lowercase_name).ok_or(IndexError::CrateNameNotAllowed)?;
-        Ok(CrateMetaPath::new(&self.meta_file_locks, lowercase_name, meta_file_path))
+        let meta_file_rel_path = self.crate_meta_file_rel_path(&lowercase_name).ok_or(IndexError::CrateNameNotAllowed)?;
+        Ok(CrateMetaPath::new(&self.root, &self.meta_file_locks, lowercase_name, meta_file_rel_path))
     }
 
     async fn yank_inner(&self, crate_name: &str, version: &Version, yank: bool) -> IndexResult<()> {
@@ -66,30 +66,31 @@ impl FsIndexProvider {
     }
 
     /// Crate name must be already lowercased
-    fn crate_meta_file_path(&self, lc_crate_name: &str) -> Option<PathBuf> {
+    fn crate_meta_file_rel_path(&self, lc_crate_name: &str) -> Option<String> {
         if lc_crate_name.len() > 64 || !lc_crate_name.bytes().all(Self::is_valid_crate_file_name_char) {
             return None;
         }
 
-        let len = self.root.as_os_str().len().checked_add(lc_crate_name.len())?.checked_add(5)?;
-        let mut path = PathBuf::with_capacity(len);
-        path.push(&self.root);
+        let len = lc_crate_name.len().checked_add(5)?;
+        let mut path = String::with_capacity(len);
 
         match lc_crate_name.len() {
             4.. => {
-                let (prefix1, prefix2) = lc_crate_name.as_bytes()[..4].split_at(2);
-                path.push(bytes_as_path(prefix1));
-                path.push(bytes_as_path(prefix2));
+                let (prefix1, prefix2) = lc_crate_name[..4].split_at(2);
+                path.push_str(prefix1);
+                path.push('/');
+                path.push_str(prefix2);
             },
-            1 => path.push("1"),
-            2 => path.push("2"),
+            1 => path.push('1'),
+            2 => path.push('2'),
             3 => {
-                path.push("3");
-                path.push(bytes_as_path(&lc_crate_name.as_bytes()[..1]));
+                path.push_str("3/");
+                path.push_str(&lc_crate_name[..1]);
             },
             _ => return None,
         };
-        path.push(lc_crate_name);
+        path.push('/');
+        path.push_str(lc_crate_name);
         Some(path)
     }
 
@@ -108,7 +109,7 @@ impl FsIndexProvider {
                 if metadata.is_dir() {
                     self.list_crates_in_subdir(&path, out).await?;
                 } else if metadata.is_file() {
-                    let mut releases = self.access_crate_at_path(path)?.shared().await.deserialized().await?;
+                    let mut releases = self.access_crate_at_path(path.to_str().ok_or(IndexError::CrateNameNotAllowed)?.into())?.shared().await.deserialized().await?;
                     let mut versions = Vec::with_capacity(releases.len());
                     let Some(most_recent) = releases.pop() else { continue };
                     versions.extend(releases.into_iter().map(|r| ListAllCrateVersion { version: r.vers })
@@ -240,16 +241,4 @@ impl IndexProvider for FsIndexProvider {
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
         Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
     }
-}
-
-#[cfg(unix)]
-fn bytes_as_path(b: &[u8]) -> &Path {
-    use std::ffi::OsStr;
-    use std::os::unix::ffi::OsStrExt;
-    OsStr::from_bytes(b).as_ref()
-}
-
-#[cfg(not(unix))]
-fn bytes_as_path(b: &[u8]) -> &Path {
-    std::str::from_utf8(b).unwrap().as_ref()
 }
