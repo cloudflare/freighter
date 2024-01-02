@@ -10,12 +10,12 @@ categories = ["asynchronous"]
 keywords = ["registries", "freighter"]
 
 [dependencies]
-freighter-api-types = { workspace = true, features = ["index"] }
+freighter-api-types = { workspace = true, features = ["index", "storage"] }
+freighter-storage = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tempfile = { workspace = true }
 tokio = { workspace = true }
 chrono = { workspace = true }

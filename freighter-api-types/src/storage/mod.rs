@@ -1,5 +1,6 @@
+pub use bytes::Bytes;
+
 use async_trait::async_trait;
-use bytes::Bytes;
 use std::collections::HashMap;
 
 pub use error::{StorageError, StorageResult};
@@ -29,4 +30,5 @@ pub trait MetadataStorageProvider {
     async fn pull_file(&self, path: &str) -> StorageResult<Bytes>;
     async fn put_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()>;
     async fn delete_file(&self, path: &str) -> StorageResult<()>;
+    async fn create_or_append_file(&self, path: &str, append_file_bytes: Bytes, meta_on_create: Metadata) -> StorageResult<()>;
 }

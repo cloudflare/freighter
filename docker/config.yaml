@@ -1,0 +1,29 @@
+service:
+  address: "127.0.0.1:3000"
+  download_endpoint: "127.0.0.1:3000/downloads/{crate}/{version}"
+  api_endpoint: "127.0.0.1:3000"
+  metrics_address: "127.0.0.1:3001"
+  auth_required: true
+
+index_db: &db
+  dbname: "freighter"
+  user: "freighter"
+  password: "crates-crates-crates"
+  host: "127.0.0.1"
+  port: 5432
+
+index_path: /tmp/index
+
+auth_db: *db
+
+auth_path: /tmp/auth
+auth_tokens_pepper: "QktfvOsmNPDsZq6wFxsARJgA"
+
+
+store:
+  name: "crates"
+  endpoint_url: "http://127.0.0.1:9090"
+  region: "us-east-1"
+  access_key_id: "1234567890"
+  access_key_secret: "1234567890"
+

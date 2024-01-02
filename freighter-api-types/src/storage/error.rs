@@ -1,3 +1,4 @@
+use std::io;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::io;
@@ -11,6 +12,15 @@ pub enum StorageError {
     NotFound,
     #[error("Encountered uncategorized error")]
     ServiceError(#[from] anyhow::Error),
+}
+
+impl From<io::Error> for StorageError {
+    fn from(e: io::Error) -> Self {
+        match e.kind() {
+            io::ErrorKind::NotFound => Self::NotFound,
+            _ => Self::ServiceError(e.into()),
+        }
+    }
 }
 
 impl IntoResponse for StorageError {

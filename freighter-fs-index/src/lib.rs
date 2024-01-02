@@ -1,34 +1,43 @@
-use anyhow::Context;
 use async_trait::async_trait;
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults, ListAllCrateEntry, ListAllCrateVersion,
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
+use freighter_api_types::storage::MetadataStorageProvider;
+use freighter_storage::fs::FsStorageProvider;
+use freighter_storage::s3_client::S3StorageProvider;
 use semver::Version;
 use serde::Deserialize;
 use std::future::Future;
 use std::io;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::time::SystemTime;
 
 mod file_locks;
-use file_locks::{CrateMetaPath, AccessLocks};
+use file_locks::{AccessLocks, CrateMetaPath};
 
 pub struct FsIndexProvider {
     meta_file_locks: AccessLocks<String>,
-    root: PathBuf,
+    fs: Box<dyn MetadataStorageProvider + Send + Sync>,
 }
 
 impl FsIndexProvider {
     pub fn new(config: Config) -> IndexResult<Self> {
-        let root = config.index_path;
-        std::fs::create_dir_all(&root)
-            .with_context(|| format!("Index root at {}", root.display()))
-            .map_err(IndexError::ServiceError)?;
+        let fs = match config {
+            Config::Path(root) => Box::new(FsStorageProvider::new(root)?)
+                as Box<dyn MetadataStorageProvider + Send + Sync>,
+            Config::S3(c) => Box::new(S3StorageProvider::new(
+                &c.name,
+                &c.endpoint_url,
+                &c.region,
+                &c.access_key_id,
+                &c.access_key_secret,
+            )),
+        };
         Ok(Self {
-            root,
+            fs,
             meta_file_locks: AccessLocks::new(),
         })
     }
@@ -38,13 +47,13 @@ impl FsIndexProvider {
             .ok_or(IndexError::CrateNameNotAllowed)?
             .to_string();
         debug_assert_eq!(name, name.to_ascii_lowercase());
-        Ok(CrateMetaPath::new(&self.root, &self.meta_file_locks, name, path))
+        Ok(CrateMetaPath::new(&*self.fs, &self.meta_file_locks, name, path))
     }
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
         let lowercase_name = crate_name.to_ascii_lowercase();
         let meta_file_rel_path = self.crate_meta_file_rel_path(&lowercase_name).ok_or(IndexError::CrateNameNotAllowed)?;
-        Ok(CrateMetaPath::new(&self.root, &self.meta_file_locks, lowercase_name, meta_file_rel_path))
+        Ok(CrateMetaPath::new(&*self.fs, &self.meta_file_locks, lowercase_name, meta_file_rel_path))
     }
 
     async fn yank_inner(&self, crate_name: &str, version: &Version, yank: bool) -> IndexResult<()> {
@@ -99,7 +108,7 @@ impl FsIndexProvider {
         &'b self,
         path: &Path,
         out: &'a mut Vec<ListAllCrateEntry>,
-    ) -> Pin<Box<dyn Future<Output = IndexResult<()>> + Send + Sync + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IndexResult<()>> + Send + 'a>> {
         let dir = std::fs::read_dir(path);
         Box::pin(async move {
             for entry in dir.map_err(|e| IndexError::ServiceError(e.into()))? {
@@ -136,8 +145,20 @@ impl FsIndexProvider {
 }
 
 #[derive(Deserialize)]
-pub struct Config {
-    pub index_path: PathBuf,
+pub struct StoreConfig {
+    pub name: String,
+    pub endpoint_url: String,
+    pub region: String,
+    pub access_key_id: String,
+    pub access_key_secret: String,
+}
+
+#[derive(Deserialize)]
+pub enum Config {
+    #[serde(rename = "index_path")]
+    Path(PathBuf),
+    #[serde(rename = "index_s3")]
+    S3(StoreConfig),
 }
 
 #[async_trait]
@@ -223,19 +244,7 @@ impl IndexProvider for FsIndexProvider {
     }
 
     async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
-        let mut results = Vec::new();
-
-        // top level of the index can have config and other stuff
-        for entry in std::fs::read_dir(&self.root).map_err(|e| IndexError::ServiceError(e.into()))? {
-            let Ok(entry) = entry else { continue };
-            let path = entry.path();
-            let Some(file_name) = path.file_name().and_then(|f| f.to_str()) else { continue };
-            if file_name.len() > 2 || file_name.starts_with('.') { continue; }
-
-            self.list_crates_in_subdir(&path, &mut results).await?;
-        }
-
-        Ok(ListAll { results })
+        Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
     }
 
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {

@@ -938,10 +938,10 @@ dependencies = [
  "async-trait",
  "chrono",
  "freighter-api-types",
+ "freighter-storage",
  "semver",
  "serde",
  "serde_json",
- "tempfile",
  "tokio",
 ]
 
@@ -1009,6 +1009,7 @@ dependencies = [
  "base64",
  "bytes",
  "freighter-api-types",
+ "tempfile",
  "thiserror",
  "tracing",
 ]
