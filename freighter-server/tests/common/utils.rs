@@ -3,6 +3,7 @@ use freighter_api_types::index::response::CrateVersion;
 use semver::{Version, VersionReq};
 use std::str::FromStr;
 
+#[must_use]
 pub fn crate_version(name: &str, version: &str) -> CrateVersion {
     CrateVersion {
         name: name.to_owned(),
@@ -17,6 +18,7 @@ pub fn crate_version(name: &str, version: &str) -> CrateVersion {
     }
 }
 
+#[must_use]
 pub fn generate_crate_payload(
     name: &str,
     vers: &str,
