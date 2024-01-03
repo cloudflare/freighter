@@ -17,9 +17,9 @@ use freighter_api_types::index::response::{
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_api_types::ownership::response::ListedOwner;
+use freighter_api_types::storage::{StorageProvider, StorageResult};
 use freighter_auth::{AuthError, AuthProvider, AuthResult};
 use freighter_server::{ServiceConfig, ServiceState};
-use freighter_api_types::storage::{StorageProvider, StorageResult};
 use semver::Version;
 
 #[derive(Default)]
@@ -195,26 +195,31 @@ impl Default for ServiceStateBuilder {
 }
 
 impl ServiceStateBuilder {
+    #[must_use]
     pub fn index_provider(mut self, provider: MockIndexProvider) -> Self {
         self.index = provider;
         self
     }
 
+    #[must_use]
     pub fn storage_provider(mut self, provider: MockStorageProvider) -> Self {
         self.storage = provider;
         self
     }
 
+    #[must_use]
     pub fn auth_provider(mut self, provider: MockAuthProvider) -> Self {
         self.auth = provider;
         self
     }
 
+    #[must_use]
     pub fn auth_required(mut self, req: bool) -> Self {
         self.config.auth_required = req;
         self
     }
 
+    #[must_use]
     pub fn build(
         self,
     ) -> Arc<ServiceState<MockIndexProvider, MockStorageProvider, MockAuthProvider>> {
@@ -226,6 +231,7 @@ impl ServiceStateBuilder {
         })
     }
 
+    #[must_use]
     pub fn build_no_arc(
         self,
     ) -> ServiceState<MockIndexProvider, MockStorageProvider, MockAuthProvider> {
