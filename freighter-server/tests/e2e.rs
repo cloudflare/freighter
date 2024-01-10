@@ -110,7 +110,6 @@ async fn e2e_publish_crate_fs() {
 #[tokio::test]
 async fn e2e_publish_crate_fs_s3() {
     let config = TestServerConfig::from_env();
-    let dir = tempfile::tempdir().unwrap();
 
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
     let index_config = ProviderConfig::S3(freighter_fs_index::StoreConfig {

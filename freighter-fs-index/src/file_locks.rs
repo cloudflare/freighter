@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 use tokio::sync::RwLock as AsyncRwLock;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
-use freighter_api_types::storage::{MetadataStorageProvider, Bytes, Metadata};
 
 /// Lowercase crate name -> lock for file access.
 ///
