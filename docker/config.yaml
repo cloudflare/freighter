@@ -17,7 +17,7 @@ index_path: /tmp/index
 auth_db: *db
 
 auth_path: /tmp/auth
-auth_tokens_pepper: "QktfvOsmNPDsZq6wFxsARJgA"
+auth_tokens_pepper: "AAAAAAAAAAxAAAAAAAAARJgA"
 
 
 store:
