@@ -32,7 +32,7 @@ struct TestServerConfig {
 }
 
 impl TestServerConfig {
-    fn from_env() -> TestServerConfig {
+    fn from_env(default_port: u16) -> TestServerConfig {
         Self {
             db: Config {
                 user: Some(var("POSTGRES_USER").unwrap_or("freighter".to_owned())),
@@ -48,7 +48,7 @@ impl TestServerConfig {
                 ),
                 ..Default::default()
             },
-            server_addr: var("SERVER_ADDR").unwrap_or("127.0.0.1:3000".to_owned()),
+            server_addr: var("SERVER_ADDR").unwrap_or(format!("127.0.0.1:{default_port}")),
             bucket_name: var("BUCKET_NAME").unwrap_or("crates".to_owned()),
             bucket_endpoint_url: var("BUCKET_ENDPOINT")
                 .unwrap_or("http://127.0.0.1:9090".to_owned()),
@@ -89,7 +89,7 @@ fn server(
 
 #[tokio::test]
 async fn e2e_publish_crate_pg() {
-    let config = TestServerConfig::from_env();
+    let config = TestServerConfig::from_env(3000);
 
     type ProviderConfig = <PgIndexProvider as IndexProvider>::Config;
     e2e_publish_crate_in_index(PgIndexProvider::new(ProviderConfig {
@@ -99,7 +99,7 @@ async fn e2e_publish_crate_pg() {
 
 #[tokio::test]
 async fn e2e_publish_crate_fs() {
-    let config = TestServerConfig::from_env();
+    let config = TestServerConfig::from_env(3001);
     let dir = tempfile::tempdir().unwrap();
 
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
@@ -109,7 +109,7 @@ async fn e2e_publish_crate_fs() {
 
 #[tokio::test]
 async fn e2e_publish_crate_fs_s3() {
-    let config = TestServerConfig::from_env();
+    let config = TestServerConfig::from_env(3002);
 
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
     let index_config = ProviderConfig::S3(freighter_fs_index::StoreConfig {
@@ -124,7 +124,7 @@ async fn e2e_publish_crate_fs_s3() {
 
 #[tokio::test]
 async fn e2e_publish_crate_fs_auth_required() {
-    let mut config = TestServerConfig::from_env();
+    let mut config = TestServerConfig::from_env(3003);
     config.auth_required = true;
     let dir = tempfile::tempdir().unwrap();
 
