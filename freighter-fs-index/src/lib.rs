@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
-    CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults, ListAllCrateEntry, ListAllCrateVersion,
+    CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults,
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_api_types::storage::MetadataStorageProvider;
@@ -11,9 +11,8 @@ use semver::Version;
 use serde::Deserialize;
 use std::future::Future;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::pin::Pin;
-use std::time::SystemTime;
 
 mod file_locks;
 use file_locks::{AccessLocks, CrateMetaPath};
@@ -40,14 +39,6 @@ impl FsIndexProvider {
             fs,
             meta_file_locks: AccessLocks::new(),
         })
-    }
-
-    fn access_crate_at_path(&self, path: String) -> IndexResult<CrateMetaPath<'_>> {
-        let name = Path::new(&path).file_name().and_then(|f| f.to_str())
-            .ok_or(IndexError::CrateNameNotAllowed)?
-            .to_string();
-        debug_assert_eq!(name, name.to_ascii_lowercase());
-        Ok(CrateMetaPath::new(&*self.fs, &self.meta_file_locks, name, path))
     }
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
@@ -101,46 +92,6 @@ impl FsIndexProvider {
         path.push('/');
         path.push_str(lc_crate_name);
         Some(path)
-    }
-
-    /// Assumes all files are crates
-    fn list_crates_in_subdir<'a, 'b: 'a>(
-        &'b self,
-        path: &Path,
-        out: &'a mut Vec<ListAllCrateEntry>,
-    ) -> Pin<Box<dyn Future<Output = IndexResult<()>> + Send + 'a>> {
-        let dir = std::fs::read_dir(path);
-        Box::pin(async move {
-            for entry in dir.map_err(|e| IndexError::ServiceError(e.into()))? {
-                let Ok(entry) = entry else { continue };
-                let Ok(metadata) = entry.metadata() else { continue };
-                let path = entry.path();
-                if metadata.is_dir() {
-                    self.list_crates_in_subdir(&path, out).await?;
-                } else if metadata.is_file() {
-                    let mut releases = self.access_crate_at_path(path.to_str().ok_or(IndexError::CrateNameNotAllowed)?.into())?.shared().await.deserialized().await?;
-                    let mut versions = Vec::with_capacity(releases.len());
-                    let Some(most_recent) = releases.pop() else { continue };
-                    versions.extend(releases.into_iter().map(|r| ListAllCrateVersion { version: r.vers })
-                        .chain(Some(ListAllCrateVersion { version: most_recent.vers })));
-                    let created_at = metadata.created().unwrap_or_else(|_| SystemTime::now());
-                    let updated_at = metadata.modified().unwrap_or(created_at);
-                    out.push(ListAllCrateEntry {
-                        versions,
-                        name: most_recent.name,
-                        description: String::new(),
-                        created_at: created_at.into(),
-                        updated_at: updated_at.into(),
-                        homepage: None,
-                        repository: None,
-                        documentation: None,
-                        keywords: Vec::new(),
-                        categories: Vec::new(),
-                    });
-                }
-            }
-            Ok(())
-        })
     }
 }
 
