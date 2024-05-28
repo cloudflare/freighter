@@ -67,8 +67,13 @@ pub struct Config {
 impl IndexProvider for PgIndexProvider {
     type Config = Config;
 
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        let _ = self.pool.get().await?;
+        Ok(())
+    }
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
-        let client = self.pool.get().await.unwrap();
+        let client = self.pool.get().await.map_err(anyhow::Error::from)?;
 
         // prepare these at once to take advantage of pipelining
         let (existential_statement, versions_statement, features_statement, dependencies_statement) =

@@ -48,12 +48,12 @@ tokio-stream = { workspace = true }
 tower-http = { workspace = true, features = ["catch-panic", "trace"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, optional = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
 freighter-api-types = { workspace = true, features = ["client"] }
 
 async-trait = { workspace = true }
 hyper = { workspace = true }
-tokio = { workspace = true }
 tower = { workspace = true }
 

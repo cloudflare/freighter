@@ -36,6 +36,12 @@ pub struct Config {
 #[async_trait]
 impl AuthProvider for CfAuthProvider {
     type Config = Config;
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        self.access.refresh().await?;
+        Ok(())
+    }
+
     async fn register(&self, _username: &str) -> AuthResult<String> {
         Err(AuthError::Unimplemented)
     }

@@ -35,6 +35,8 @@ use freighter_api_types::ownership::response::ListedOwner;
 pub trait AuthProvider {
     type Config;
 
+    async fn healthcheck(&self) -> anyhow::Result<()>;
+
     /// Register a new user, returning a token if successful.
     async fn register(&self, username: &str) -> AuthResult<String>;
 

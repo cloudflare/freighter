@@ -13,6 +13,8 @@ pub trait StorageProvider {
     async fn put_crate(&self, name: &str, version: &str, crate_bytes: Bytes, sha256: [u8; 32]) -> StorageResult<()>;
     /// Called to undo a put after a failed index transaction
     async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()>;
+
+    async fn healthcheck(&self) -> anyhow::Result<()>;
 }
 
 #[derive(Debug, Clone, Default)]
@@ -31,4 +33,6 @@ pub trait MetadataStorageProvider {
     async fn put_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()>;
     async fn delete_file(&self, path: &str) -> StorageResult<()>;
     async fn create_or_append_file(&self, path: &str, append_file_bytes: Bytes, meta_on_create: Metadata) -> StorageResult<()>;
+
+    async fn healthcheck(&self) -> anyhow::Result<()>;
 }

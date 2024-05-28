@@ -20,6 +20,10 @@ impl NoAuthProvider {
 impl AuthProvider for NoAuthProvider {
     type Config = ();
 
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     async fn register(&self, _username: &str) -> AuthResult<String> {
         nope()
     }

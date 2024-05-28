@@ -16,7 +16,7 @@
 //! It is perfectly possible to perform both streaming uploads and streaming downloads, however
 //! doing so has been left to the future.
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{AppName, BehaviorVersion, Config, Region};
@@ -134,6 +134,17 @@ impl S3StorageProvider {
             .context("Failed to delete file")?;
         Ok(())
     }
+
+    async fn healthcheck(&self, path: String) -> Result<(), anyhow::Error> {
+        self.put_object(path.clone(), Bytes::from_static(b"ok").into(), Metadata {
+            content_type: Some("text/plain"),
+            ..Metadata::default()
+        }).await?;
+        if self.pull_object(path).await? != b"ok"[..] {
+            bail!("wrong data");
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -158,6 +169,10 @@ impl MetadataStorageProvider for S3StorageProvider {
 
     async fn delete_file(&self, path: &str) -> StorageResult<()> {
         self.delete_object(path.into()).await
+    }
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        self.healthcheck(".healthcheck-meta".into()).await
     }
 }
 
@@ -184,6 +199,10 @@ impl StorageProvider for S3StorageProvider {
     async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
         let path = construct_path(name, version);
         self.delete_object(path).await
+    }
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        self.healthcheck(".healthcheck-data".into()).await
     }
 }
 
