@@ -29,7 +29,7 @@ where
 
 async fn config<I, S, A>(headers: HeaderMap, State(state): State<Arc<ServiceState<I, S, A>>>) -> axum::response::Result<Json<RegistryConfig>>
 where
-    A: AuthProvider + Send + Sync + 'static
+    A: AuthProvider + Send + Sync + 'static,
 {
     let auth_required = state.config.auth_required;
     if auth_required {

@@ -1,19 +1,19 @@
+use crate::base64_serde;
+use crate::{AuthError, AuthProvider, AuthResult};
 use anyhow::Context;
 use async_trait::async_trait;
-use crate::base64_serde;
-use crate::{AuthProvider, AuthError, AuthResult};
 use freighter_api_types::ownership::response::ListedOwner;
 use parking_lot::MappedRwLockWriteGuard;
 use parking_lot::RwLockWriteGuard;
-use parking_lot::{RwLock, RwLockReadGuard, MappedRwLockReadGuard};
-use serde::{Serialize, Deserialize};
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use serde::{Deserialize, Serialize};
 use sha2::Sha224; // FIPS 180-4
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fmt;
+use std::io;
 use std::io::BufReader;
 use std::io::Write;
-use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
@@ -42,6 +42,7 @@ impl FsAuthProvider {
         })
     }
 
+    #[allow(clippy::unused_self)]
     fn random_token(&self) -> AuthResult<BareToken> {
         use rand::Rng;
         let mut token = [0; 21];
@@ -50,7 +51,7 @@ impl FsAuthProvider {
     }
 
     fn token_to_str(&self, bare_token: &BareToken) -> String {
-        let mut out = String::with_capacity(4 + bare_token.len()*8/6);
+        let mut out = String::with_capacity(4 + bare_token.len() * 8 / 6);
         out.push_str(TOKEN_PREFIX);
         base64_serde::encode(bare_token, &mut out);
         debug_assert!(out.starts_with(TOKEN_PREFIX) && out.len() > bare_token.len());
@@ -64,7 +65,7 @@ impl FsAuthProvider {
     }
 
     fn hash_token(&self, bare_token: &BareToken) -> HashedToken {
-        use hmac::{Mac, Hmac};
+        use hmac::{Hmac, Mac};
         let mut mac = Hmac::<Sha224>::new_from_slice(&self.pepper).unwrap();
         mac.update(bare_token);
         let hashed = mac.finalize().into_bytes();
@@ -79,9 +80,9 @@ impl FsAuthProvider {
                 .map_err(AuthError::ServiceError)
         } else {
             Ok(Owners {
-                crate_owners: Default::default(),
-                owner_tokens: Default::default(),
-                token_owners: Default::default(),
+                crate_owners: HashMap::default(),
+                owner_tokens: HashMap::default(),
+                token_owners: HashMap::default(),
             })
         }
     }
@@ -90,7 +91,7 @@ impl FsAuthProvider {
         let mut read_lock = self.owners.read();
         loop {
             if let Ok(loaded) = RwLockReadGuard::try_map(read_lock, |x| x.as_ref()) {
-                return Ok(loaded)
+                return Ok(loaded);
             }
             let mut locked = self.owners.write();
             if locked.is_none() {

@@ -10,8 +10,8 @@ use freighter_api_types::auth::request::AuthForm;
 use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults};
 use freighter_api_types::index::IndexProvider;
-use freighter_auth::AuthProvider;
 use freighter_api_types::storage::StorageProvider;
+use freighter_auth::AuthProvider;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -245,7 +245,7 @@ where
 
     let search_results = state
         .index
-        .search(&query.q, query.per_page.map(|x| x.max(100)).unwrap_or(10))
+        .search(&query.q, query.per_page.map_or(10, |x| x.max(100)))
         .await?;
 
     Ok(Json(search_results))

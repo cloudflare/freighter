@@ -117,7 +117,7 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             cache_control: None,
             content_encoding: None,
             sha256: None,
-            kv: Default::default()
+            kv: HashMap::default(),
         };
         self.fs.put_file(&self.rel_path, bytes, meta).await
             .map_err(|e| IndexError::ServiceError(e.into()))
@@ -130,7 +130,7 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             cache_control: None,
             content_encoding: None,
             sha256: None,
-            kv: Default::default()
+            kv: HashMap::default(),
         };
         self.fs.create_or_append_file(&self.rel_path, serialize_data(std::slice::from_ref(version))?, meta).await
             .map_err(|e| IndexError::ServiceError(e.into()))

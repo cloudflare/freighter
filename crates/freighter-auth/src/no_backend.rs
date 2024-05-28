@@ -1,5 +1,5 @@
 //! Useless (but safe) placeholder for a backend
-use crate::{AuthProvider, AuthError, AuthResult};
+use crate::{AuthError, AuthProvider, AuthResult};
 use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
 

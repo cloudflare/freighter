@@ -1,6 +1,6 @@
-use sha2::{Digest, Sha256};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 pub type AuthResult<T> = Result<T, AuthError>;

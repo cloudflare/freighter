@@ -57,3 +57,5 @@ async-trait = { workspace = true }
 hyper = { workspace = true }
 tower = { workspace = true }
 
+[lints]
+workspace = true
