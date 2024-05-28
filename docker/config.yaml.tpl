@@ -16,6 +16,14 @@ index_path: /var/lib/freighter/index
 
 auth_db: *db
 
+# FS-based auth
+auth_path: /var/lib/freighter/auth
+auth_tokens_pepper: "AAAAAAAAAAxAAAAAAAAARJgA"
+
+# Cloudflare Access
+auth_audience: "<see application overview tab for the audience tag>"
+auth_team_base_url: "https://<your team here>.cloudflareaccess.com"
+
 store:
   name: "$BUCKET_NAME"
   endpoint_url: "$BUCKET_ENDPOINT"

@@ -21,6 +21,13 @@ mod base64_serde;
 
 mod error;
 
+#[cfg(feature = "cf-backend")]
+mod cf_access;
+
+#[cfg(feature = "cf-backend")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cf-backend")))]
+pub mod cf_backend;
+
 pub use error::*;
 use freighter_api_types::ownership::response::ListedOwner;
 
@@ -53,7 +60,7 @@ pub trait AuthProvider {
     /// to auth any access to the registry.
     async fn auth_index_fetch(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         let _ = (token, crate_name);
-        Err(AuthError::Unauthorized)
+        Err(AuthError::Unimplemented)
     }
 
     /// Verify that a user is allowed to download a given crate.
@@ -62,7 +69,7 @@ pub trait AuthProvider {
     /// to auth any access to the registry.
     async fn auth_crate_download(&self, token: &str, crate_name: &str) -> AuthResult<()> {
         let _ = (token, crate_name);
-        Err(AuthError::Unauthorized)
+        Err(AuthError::Unimplemented)
     }
 
     /// Verify that a user is allowed to view the full index.
@@ -73,12 +80,12 @@ pub trait AuthProvider {
     /// to auth any access to the registry.
     async fn auth_view_full_index(&self, token: &str) -> AuthResult<()> {
         let _ = token;
-        Err(AuthError::Unauthorized)
+        Err(AuthError::Unimplemented)
     }
 
     /// Fetch of config.json. Called only if the server is configured to do so.
     async fn auth_config(&self, token: &str) -> AuthResult<()> {
         let _ = token;
-        Err(AuthError::Unauthorized)
+        Err(AuthError::Unimplemented)
     }
 }

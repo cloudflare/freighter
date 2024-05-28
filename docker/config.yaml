@@ -19,6 +19,9 @@ auth_db: *db
 auth_path: /tmp/auth
 auth_tokens_pepper: "AAAAAAAAAAxAAAAAAAAARJgA"
 
+# Cloudflare Access
+# auth_audience: "<insert audience tag here>"
+auth_team_base_url: "https://cf-rust.cloudflareaccess.com"
 
 store:
   name: "crates"

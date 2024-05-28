@@ -13,6 +13,8 @@ pub enum AuthError {
     Forbidden,
     #[error("The credentials supplied were invalid")]
     InvalidCredentials,
+    #[error("This operation is not implemented")]
+    Unimplemented,
     #[error("The requested crate does not exist")]
     CrateNotFound,
     #[error("Internal error ({})", error_id(_0))]
@@ -26,6 +28,7 @@ impl IntoResponse for AuthError {
             AuthError::Unauthorized => StatusCode::UNAUTHORIZED,
             AuthError::CrateNotFound => StatusCode::NOT_FOUND,
             AuthError::InvalidCredentials => StatusCode::UNAUTHORIZED,
+            AuthError::Unimplemented => StatusCode::NOT_IMPLEMENTED,
             AuthError::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in auth operation");
 
