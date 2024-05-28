@@ -47,7 +47,7 @@ pub struct CrateVersion {
     /// The version of the package this row is describing.
     ///
     /// This must be a valid version number according to the Semantic Versioning 2.0.0 spec at
-    /// https://semver.org/.
+    /// <https://semver.org/>.
     pub vers: Version,
     /// Array of direct dependencies of the package.
     pub deps: Vec<Dependency>,
@@ -111,7 +111,7 @@ pub struct Dependency {
     /// The SemVer requirement for this dependency.
     ///
     /// This must be a valid version requirement defined at
-    /// https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html.
+    /// <https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html>.
     pub req: VersionReq,
     /// Array of features (as strings) enabled for this dependency.
     pub features: Vec<String>,
@@ -121,7 +121,7 @@ pub struct Dependency {
     pub default_features: bool,
     /// The target platform for the dependency.
     ///
-    /// null if not a target dependency. Otherwise, a string such as "cfg(windows)".
+    /// null if not a target dependency. Otherwise, a string such as `cfg(windows)`.
     pub target: Option<String>,
     /// The dependency kind.
     ///

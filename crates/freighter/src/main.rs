@@ -74,7 +74,12 @@ async fn main() -> anyhow::Result<()> {
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
 
-    tracing::info!(?addr, "Starting freighter instance with {} index and {} auth", std::any::type_name::<SelectedIndexProvider>(), std::any::type_name::<SelectedAuthProvider>());
+    tracing::info!(
+        ?addr,
+        "Starting freighter instance with {} index and {} auth",
+        std::any::type_name::<SelectedIndexProvider>(),
+        std::any::type_name::<SelectedAuthProvider>()
+    );
 
     axum::Server::bind(&addr)
         .serve(router.into_make_service())

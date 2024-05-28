@@ -28,7 +28,7 @@ pub fn generate_crate_payload(
     let deps: Vec<_> = deps
         .iter()
         .map(|(name, req, registry)| PublishDependency {
-            name: name.to_string(),
+            name: (*name).to_string(),
             version_req: VersionReq::from_str(req).unwrap(),
             features: vec![],
             optional: false,

@@ -9,8 +9,8 @@ use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_api_types::index::IndexProvider;
-use freighter_auth::AuthProvider;
 use freighter_auth::pg_backend::PgAuthProvider;
+use freighter_auth::AuthProvider;
 use freighter_client::Client;
 use freighter_fs_index::FsIndexProvider;
 use freighter_pg_index::PgIndexProvider;
@@ -156,7 +156,7 @@ async fn e2e_publish_crate_in_index(
     let auth_config = AuthConfig { auth_db: config.db.clone() };
     let auth_client = PgAuthProvider::new(auth_config).expect("Failed to initialize auth client");
 
-    let default_token  = if config.auth_required {
+    let default_token = if config.auth_required {
         Some(auth_client.register(&client_username).await.unwrap())
     } else {
         None

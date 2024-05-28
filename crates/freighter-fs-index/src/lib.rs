@@ -9,6 +9,7 @@ use freighter_storage::fs::FsStorageProvider;
 use freighter_storage::s3_client::S3StorageProvider;
 use semver::Version;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::future::Future;
 use std::io;
 use std::path::PathBuf;
@@ -66,6 +67,7 @@ impl FsIndexProvider {
     }
 
     /// Crate name must be already lowercased
+    #[allow(clippy::unused_self)]
     fn crate_meta_file_rel_path(&self, lc_crate_name: &str) -> Option<String> {
         if lc_crate_name.len() > 64 || !lc_crate_name.bytes().all(Self::is_valid_crate_file_name_char) {
             return None;
@@ -178,7 +180,7 @@ impl IndexProvider for FsIndexProvider {
             yanked: false,
             links: p.links.clone(),
             v: 2,
-            features2: Default::default(),
+            features2: HashMap::default(),
         };
 
         let lock = self.access_crate(&release.name)?;

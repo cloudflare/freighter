@@ -156,13 +156,13 @@ impl Client {
         let mut buf = vec![0; tarball_off + tarball.len()];
 
         // copy json len to buffer
-        buf[0..4].copy_from_slice(&(serialized.len() as u32).to_le_bytes());
+        buf[0..4].copy_from_slice(&u32::try_from(serialized.len()).unwrap().to_le_bytes());
 
         // copy json to buffer
         buf[4..tarball_len_off].copy_from_slice(&serialized);
 
         // copy tarball len to buffer
-        buf[tarball_len_off..tarball_off].copy_from_slice(&(tarball.len() as u32).to_le_bytes());
+        buf[tarball_len_off..tarball_off].copy_from_slice(&u32::try_from(tarball.len()).unwrap().to_le_bytes());
 
         // copy tarball to buffer
         buf[tarball_off..].copy_from_slice(tarball);
@@ -261,6 +261,7 @@ impl Client {
         Ok(())
     }
 
+    #[allow(clippy::unused_async)] // api
     pub async fn set_token(&mut self, token: String) {
         self.token = Some(token);
     }

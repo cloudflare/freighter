@@ -37,3 +37,6 @@ filesystem-index-backend = ["dep:freighter-fs-index"]
 postgresql-auth-backend = ["freighter-auth/pg-backend"]
 filesystem-auth-backend = ["freighter-auth/fs-backend"]
 cloudflare-auth-backend = ["freighter-auth/cf-backend"]
+
+[lints]
+workspace = true

@@ -1,6 +1,6 @@
-use serde::{Serializer, Deserializer};
-use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
+use serde::{Deserializer, Serializer};
 
 pub fn serialize<S: Serializer, const N: usize>(binary: &[u8; N], serializer: S)-> Result<S::Ok, S::Error> {
     let mut tmp = String::with_capacity(base64::encoded_len(N, false).unwrap_or(0));
@@ -9,7 +9,7 @@ pub fn serialize<S: Serializer, const N: usize>(binary: &[u8; N], serializer: S)
 }
 
 pub fn encode<const N: usize>(binary: &[u8; N], out: &mut String) {
-    URL_SAFE_NO_PAD.encode_string(binary, out)
+    URL_SAFE_NO_PAD.encode_string(binary, out);
 }
 
 pub fn decode<const N: usize>(base64: &str) -> Option<[u8; N]> {
@@ -25,7 +25,7 @@ pub fn decode<const N: usize>(base64: &str) -> Option<[u8; N]> {
 
 pub fn deserialize<'de, D: Deserializer<'de>, const N: usize>(deserializer: D) -> Result<[u8; N], D::Error> {
     struct TokenVisitor<const N: usize>;
-    use serde::de::{Error, Visitor, Unexpected};
+    use serde::de::{Error, Unexpected, Visitor};
     use std::fmt;
 
     impl<'de, const N: usize> Visitor<'de> for TokenVisitor<N> {
@@ -58,7 +58,7 @@ fn bin_base64() {
         assert_eq!(input, decode(&out).expect("decode"), "decoded");
         out.push('x');
         assert!(decode::<N>(&out).is_none());
-        out.truncate(out.len()-2);
+        out.truncate(out.len() - 2);
         assert!(decode::<N>(&out).is_none());
     }
     test_case::<40>();

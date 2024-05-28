@@ -92,6 +92,7 @@ impl IndexProvider for PgIndexProvider {
 
         assert!(existential_rows.len() < 2);
 
+        #[allow(clippy::single_match_else)]
         match existential_rows.pop() {
             Some(crate_row) => {
                 let id: i32 = crate_row.get("id");
@@ -257,6 +258,7 @@ impl IndexProvider for PgIndexProvider {
 
     // this one has a lot of optimization headroom, and is thus perfect for experiments
     // sadly it does not matter, as this will never be as slow for the user as compiling the crate
+    #[allow(clippy::too_many_lines)]
     async fn publish(
         &self,
         version: &Publish,

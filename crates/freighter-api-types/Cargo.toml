@@ -36,3 +36,6 @@ serde = { workspace = true, optional = true }
 semver = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
+
+[lints]
+workspace = true

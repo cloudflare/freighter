@@ -202,7 +202,7 @@ async fn one_char_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()
@@ -239,7 +239,7 @@ async fn two_char_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()
@@ -276,7 +276,7 @@ async fn three_char_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()
@@ -313,7 +313,7 @@ async fn four_char_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()
@@ -350,7 +350,7 @@ async fn hyphen_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()
@@ -387,7 +387,7 @@ async fn underscore_crate_name() {
     let crates = BTreeMap::from_iter(
         CRATE_NAMES
             .iter()
-            .map(|x| (x.to_string(), vec![crate_version(x, "1.0.0")])),
+            .map(|x| ((*x).to_string(), vec![crate_version(x, "1.0.0")])),
     );
 
     let state = ServiceStateBuilder::default()

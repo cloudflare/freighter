@@ -118,9 +118,7 @@ impl S3StorageProvider {
         for (k, v) in meta.kv {
             obj = obj.metadata(k, v);
         }
-        obj.send()
-            .await
-            .context("Failed to put file")?;
+        obj.send().await.context("Failed to put file")?;
         Ok(())
     }
 

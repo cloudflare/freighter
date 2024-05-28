@@ -54,5 +54,20 @@ tower-http = "0.4.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["std", "fmt"] }
 
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_possible_wrap = "allow"
+cast_sign_loss = "allow"
+doc_markdown = "allow"
+inline_always = "allow"
+items_after_statements = "allow"
+match_same_arms = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+needless_pass_by_value = "allow"
+redundant_closure_for_method_calls = "allow"
+struct_field_names = "allow"
+
 [profile.release]
 debug = true
