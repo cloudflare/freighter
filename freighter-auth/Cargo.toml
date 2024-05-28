@@ -19,6 +19,7 @@ default = ["pg-backend"]
 yes-backend = []
 pg-backend = ["dep:deadpool-postgres", "dep:tokio"]
 fs-backend = ["dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]
+cf-backend = ["dep:jsonwebtoken", "dep:reqwest", "dep:serde_json", "dep:tokio"]
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["ownership"] }
@@ -27,7 +28,9 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
 deadpool-postgres = { workspace = true, optional = true }
+jsonwebtoken = { version = "9.3.0", optional = true }
 rand = { workspace = true }
+reqwest = { workspace = true, optional = true, default-features = false, features = ["json", "default-tls"] }
 serde = { workspace = true }
 serde_json = { workspace = true, optional = true }
 thiserror = { workspace = true }

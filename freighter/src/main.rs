@@ -13,6 +13,8 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(feature = "filesystem-auth-backend")] {
         use freighter_auth::fs_backend::FsAuthProvider as SelectedAuthProvider;
+    } else if #[cfg(feature = "cloudflare-auth-backend")] {
+        use freighter_auth::cf_backend::CfAuthProvider as SelectedAuthProvider;
     } else if #[cfg(feature = "postgresql-auth-backend")] {
         use freighter_auth::pg_backend::PgAuthProvider as SelectedAuthProvider;
     } else {

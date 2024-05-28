@@ -1,5 +1,4 @@
 //! Useless (but safe) placeholder for a backend
-use std::io;
 use crate::{AuthProvider, AuthError, AuthResult};
 use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
@@ -7,7 +6,7 @@ use freighter_api_types::ownership::response::ListedOwner;
 pub struct NoAuthProvider;
 
 fn nope<T>() -> AuthResult<T> {
-    Err(AuthError::ServiceError(io::Error::new(io::ErrorKind::Unsupported, "auth backend not configured").into()))
+    Err(AuthError::Unimplemented)
 }
 
 impl NoAuthProvider {
