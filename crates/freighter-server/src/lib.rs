@@ -10,7 +10,7 @@ use freighter_api_types::index::response::ListAll;
 use freighter_api_types::index::IndexProvider;
 use freighter_api_types::storage::StorageProvider;
 use freighter_auth::AuthProvider;
-use metrics::{histogram, increment_counter};
+use metrics::{histogram, counter};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -88,7 +88,7 @@ where
         .with_state(state)
         .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
-            increment_counter!("panics_total");
+            counter!("panics_total").increment(1);
 
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }))
@@ -120,7 +120,8 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
 
     let code = response.status().as_u16().to_string();
 
-    histogram!("request_duration_seconds", elapsed, "code" => code, "endpoint" => path);
+    histogram!("request_duration_seconds", "code" => code, "endpoint" => path)
+        .record(elapsed);
 
     response
 }

@@ -49,7 +49,7 @@ impl S3StorageProvider {
         secret_key: &str,
     ) -> Self {
         let config = Config::builder()
-            .behavior_version(BehaviorVersion::v2023_11_09())
+            .behavior_version(BehaviorVersion::v2024_03_28())
             .region(Region::new(region.to_string()))
             .endpoint_url(endpoint_url)
             .credentials_provider(Credentials::from_keys(access_key, secret_key, None))
