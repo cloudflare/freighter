@@ -116,6 +116,11 @@ pub enum Config {
 impl IndexProvider for FsIndexProvider {
     type Config = Config;
 
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        self.fs.healthcheck().await?;
+        Ok(())
+    }
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         self.access_crate(crate_name)?.shared().await.deserialized().await
     }

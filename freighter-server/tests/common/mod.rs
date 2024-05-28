@@ -31,6 +31,10 @@ pub struct MockIndexProvider {
 impl IndexProvider for MockIndexProvider {
     type Config = ();
 
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
         if let Some(versions) = self.crates.get(crate_name).cloned() {
             Ok(versions)
@@ -113,6 +117,10 @@ impl StorageProvider for MockStorageProvider {
     async fn delete_crate(&self, _name: &str, _version: &str) -> StorageResult<()> {
         Ok(())
     }
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -166,6 +174,10 @@ impl AuthProvider for MockAuthProvider {
         } else {
             Err(AuthError::Forbidden)
         }
+    }
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 

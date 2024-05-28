@@ -186,6 +186,11 @@ pub struct Config {
 impl AuthProvider for PgAuthProvider {
     type Config = Config;
 
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        let _ = self.pool.get().await?;
+        Ok(())
+    }
+
     async fn register(&self, username: &str) -> AuthResult<String> {
         let mut client = self
             .pool

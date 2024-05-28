@@ -138,6 +138,12 @@ pub struct Config {
 #[async_trait]
 impl AuthProvider for FsAuthProvider {
     type Config = Config;
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        let _ = self.owners()?;
+        Ok(())
+    }
+
     async fn register(&self, username: &str) -> AuthResult<String> {
         let owners = &mut *self.owners_mut()?;
         let bare_token = self.random_token()?;

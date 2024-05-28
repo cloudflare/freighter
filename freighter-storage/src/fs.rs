@@ -13,6 +13,7 @@ pub struct FsStorageProvider {
 
 impl FsStorageProvider {
     pub fn new(root: PathBuf) -> StorageResult<Self> {
+        std::fs::create_dir_all(&root)?;
         Ok(Self { root })
     }
 
@@ -62,5 +63,13 @@ impl MetadataStorageProvider for FsStorageProvider {
         let path = self.abs_path(path)?;
         std::fs::remove_file(path)?;
         Ok(())
+    }
+
+    async fn healthcheck(&self) -> anyhow::Result<()> {
+        if self.root.is_dir() {
+            Ok(())
+        } else {
+            anyhow::bail!("root not a dir")
+        }
     }
 }

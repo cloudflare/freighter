@@ -9,13 +9,15 @@ use axum::{Json, Router};
 use freighter_api_types::index::request::ListQuery;
 use freighter_api_types::index::response::ListAll;
 use freighter_api_types::index::IndexProvider;
-use freighter_auth::AuthProvider;
 use freighter_api_types::storage::StorageProvider;
+use freighter_auth::AuthProvider;
 use metrics::{histogram, increment_counter};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+use tokio::time::timeout;
+use tokio::try_join;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::classify::StatusInRangeAsFailures;
 use tower_http::trace::{DefaultOnFailure, TraceLayer};
@@ -83,6 +85,7 @@ where
         .nest("/api/v1/crates", api::api_router())
         .route("/me", get(register))
         .route("/all", get(list))
+        .route("/healthcheck", get(healthcheck))
         .with_state(state)
         .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
@@ -144,6 +147,35 @@ where
     let search_results = state.index.list(&query).await?;
 
     Ok(Json(search_results))
+}
+
+async fn healthcheck<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> axum::response::Result<String>
+where
+    I: IndexProvider,
+    S: StorageProvider,
+    A: AuthProvider + Sync,
+{
+    let check_time = Duration::from_secs(4);
+    let label = |label, res: Result<Result<(), anyhow::Error>, _>| match res {
+        // healthcheck is unauthenticated and shouldn't leak internals via errors
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => {
+            for e in e.chain() {
+                tracing::error!("{label} healthcheck: {e}");
+            }
+            Err(format!("{label} failed"))
+        },
+        Err(_) => Err(format!("{label} timed out")),
+    };
+
+    try_join! {
+        async { label("auth", timeout(check_time, state.auth.healthcheck()).await) },
+        async { label("index", timeout(check_time, state.index.healthcheck()).await) },
+        async { label("storage", timeout(check_time, state.storage.healthcheck()).await) },
+    }
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok("OK".into())
 }
 
 pub async fn handle_global_fallback() -> StatusCode {

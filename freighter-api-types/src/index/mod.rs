@@ -89,6 +89,8 @@ impl From<response::CrateVersion> for request::Publish {
 pub trait IndexProvider: Sync {
     type Config;
 
+    async fn healthcheck(&self) -> anyhow::Result<()>;
+
     /// Get the sparse index entry for a crate.
     ///
     /// If successful, a [`CrateVersion`] api object will be returned.
