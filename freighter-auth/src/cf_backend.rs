@@ -3,6 +3,7 @@ use crate::{AuthError, AuthProvider, AuthResult};
 use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
 use serde::Deserialize;
+use http::{header, StatusCode, HeaderMap};
 
 /// Registry auth based on Cloudflare Access, using JsonWebTokens for auth
 pub struct CfAuthProvider {
@@ -102,4 +103,34 @@ impl AuthProvider for CfAuthProvider {
         self.validated_user_id(token).await?;
         Ok(())
     }
+
+    fn token_from_headers<'h>(&self, headers: &'h HeaderMap) -> Result<Option<&'h str>, StatusCode> {
+        if let res @ Some(_) = crate::default_token_from_headers(headers)? {
+            return Ok(res);
+        }
+        if let Some(cookies) = headers.get(header::COOKIE) {
+            let cookies = cookies.to_str().map_err(|_| StatusCode::BAD_REQUEST)?;
+            for c in cookie::Cookie::split_parse(cookies) {
+                let c = c.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if c.name() == "CF_Authorization" {
+                    return Ok(c.value_raw());
+                }
+            }
+        }
+        Ok(None)
+    }
+}
+
+#[test]
+fn cookie_parse() {
+    let a = CfAuthProvider::new(Config {
+        auth_audience: "...".into(),
+        auth_team_base_url: "https://test.example.net".into(),
+    }).unwrap();
+
+    let mut h = http::HeaderMap::new();
+    h.insert("cookie", http::HeaderValue::from_static("other.cookie=1; lastViewedForm-TEST={}; JSESSIONID=EE; CF_AppSession=2; CF_Authorization=aaaaaaaaa.bbbbbbb.cccccc; X=1"));
+
+    let cookie = a.token_from_headers(&h).unwrap().unwrap();
+    assert_eq!("aaaaaaaaa.bbbbbbb.cccccc", cookie);
 }

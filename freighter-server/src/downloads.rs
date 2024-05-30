@@ -1,4 +1,4 @@
-use crate::{token_from_headers, ServiceState};
+use crate::ServiceState;
 use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -32,7 +32,7 @@ where
     A: AuthProvider + Sync,
 {
     if state.config.auth_required {
-        let token = token_from_headers(&headers)?;
+        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_crate_download(token, &name).await?;
     }
 

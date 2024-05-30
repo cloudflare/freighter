@@ -1,4 +1,3 @@
-use crate::token_from_headers;
 use crate::ServiceState;
 use anyhow::Context;
 use axum::body::Bytes;
@@ -80,7 +79,7 @@ where
 
     let json: Publish = serde_json::from_slice(&json_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.publish(auth, &json.name).await?;
 
@@ -126,7 +125,7 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -144,7 +143,7 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -161,7 +160,7 @@ async fn list_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.list_owners(auth, &name).await?;
 
@@ -177,7 +176,7 @@ async fn add_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state
         .auth
@@ -200,7 +199,7 @@ async fn remove_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = token_from_headers(&headers)?;
+    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
 
     state
         .auth
@@ -240,7 +239,7 @@ where
     A: AuthProvider + Sync,
 {
     if state.config.auth_required {
-        let token = token_from_headers(&headers)?;
+        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_view_full_index(token).await?;
     }
 
