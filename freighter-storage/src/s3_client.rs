@@ -113,7 +113,7 @@ impl S3StorageProvider {
         }
         if let Some(sha) = meta.sha256 {
             use base64::{engine, Engine as _};
-            obj = obj.checksum_sha256(engine::general_purpose::STANDARD_NO_PAD.encode(sha));
+            obj = obj.checksum_sha256(engine::general_purpose::STANDARD.encode(sha));
         }
         for (k, v) in meta.kv {
             obj = obj.metadata(k, v);
