@@ -1,6 +1,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use async_trait::async_trait;
+use http::header::AUTHORIZATION;
+use http::{HeaderMap, StatusCode};
 
 #[cfg(feature = "yes-backend")]
 #[cfg_attr(docsrs, doc(cfg(feature = "yes-backend")))]
@@ -89,5 +91,16 @@ pub trait AuthProvider {
     async fn auth_config(&self, token: &str) -> AuthResult<()> {
         let _ = token;
         Err(AuthError::Unimplemented)
+    }
+
+    fn token_from_headers<'h>(&self, headers: &'h HeaderMap) -> Result<Option<&'h str>, StatusCode> {
+        default_token_from_headers(headers)
+    }
+}
+
+pub(crate) fn default_token_from_headers(headers: &HeaderMap) -> Result<Option<&str>, StatusCode> {
+    match headers.get(AUTHORIZATION) {
+        Some(auth) => auth.to_str().map_err(|_| StatusCode::BAD_REQUEST).map(Some),
+        None => Ok(None),
     }
 }

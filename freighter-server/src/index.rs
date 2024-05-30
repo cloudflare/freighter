@@ -1,4 +1,3 @@
-use crate::{token_from_headers, token_from_headers_opt};
 use crate::ServiceState;
 use axum::extract::{Path, State};
 use axum::http::header::WWW_AUTHENTICATE;
@@ -34,7 +33,7 @@ where
 {
     let auth_required = state.config.auth_required;
     if auth_required {
-        let Some(token) = token_from_headers_opt(&headers)? else {
+        let Some(token) = state.auth.token_from_headers(&headers)? else {
             return Err((StatusCode::UNAUTHORIZED, [(WWW_AUTHENTICATE, "Cargo login_url=/me")], CARGO_AUTH_REQUIRED_ERROR).into());
         };
         state.auth.auth_config(token).await?;
@@ -65,7 +64,7 @@ where
     };
 
     if state.config.auth_required {
-        let token = token_from_headers(&headers)?;
+        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_index_fetch(token, crate_name).await?;
     }
 

@@ -1,6 +1,5 @@
 use axum::body::Body;
 use axum::extract::{MatchedPath, Query, State};
-use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
@@ -140,7 +139,7 @@ where
     A: AuthProvider + Sync,
 {
     if state.config.auth_required {
-        let token = token_from_headers(&headers)?;
+        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_view_full_index(token).await?;
     }
 
@@ -187,17 +186,3 @@ fn default_true() -> bool {
     true
 }
 
-fn token_from_headers(headers: &HeaderMap) -> Result<&str, StatusCode> {
-    headers
-        .get(AUTHORIZATION)
-        .ok_or(StatusCode::UNAUTHORIZED)?
-        .to_str()
-        .map_err(|_| StatusCode::BAD_REQUEST)
-}
-
-fn token_from_headers_opt(headers: &HeaderMap) -> Result<Option<&str>, StatusCode> {
-    headers
-        .get(AUTHORIZATION)
-        .map(|x| x.to_str().or(Err(StatusCode::BAD_REQUEST)))
-        .transpose()
-}
