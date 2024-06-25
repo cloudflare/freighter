@@ -1,19 +1,12 @@
-FROM rust:1.71-bullseye as builder
+FROM rust:1.79-bookworm as builder
 WORKDIR /usr/src/freighter
 
 COPY Cargo.toml .
 COPY Cargo.lock .
 COPY .cargo/ .cargo
-COPY freighter/ freighter
-COPY freighter-auth/ freighter-auth
-COPY freighter-index/ freighter-index
-COPY freighter-server/ freighter-server
-COPY freighter-storage/ freighter-storage
-COPY freighter-api-types/ freighter-api-types
-COPY freighter-client/ freighter-client
+COPY crates/ crates
 
-RUN cd freighter \
-  && cargo install --path .
+RUN cargo install --path crates/freighter --features cloudflare-auth-backend
 
 FROM debian:bullseye-slim
 COPY --from=builder /usr/local/cargo/bin/freighter /usr/local/bin/freighter
