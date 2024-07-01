@@ -32,8 +32,16 @@ impl FsIndexProvider {
                 &c.name,
                 &c.endpoint_url,
                 &c.region,
-                &c.access_key_id,
-                &c.access_key_secret,
+                &c.access_key_id.unwrap_or_else(|| {
+                    std::env::var("FREIGHTER_INDEX_BUCKET_KEY_ID").expect(
+                        "Failed to find index bucket key id in environment variable or config",
+                    )
+                }),
+                &c.access_key_secret.unwrap_or_else(|| {
+                    std::env::var("FREIGHTER_INDEX_BUCKET_KEY_SECRET").expect(
+                        "Failed to find index bucket key secret in environment variable or config",
+                    )
+                }),
             )),
         };
         Ok(Self {
@@ -44,8 +52,15 @@ impl FsIndexProvider {
 
     pub(crate) fn access_crate(&self, crate_name: &str) -> IndexResult<CrateMetaPath<'_>> {
         let lowercase_name = crate_name.to_ascii_lowercase();
-        let meta_file_rel_path = self.crate_meta_file_rel_path(&lowercase_name).ok_or(IndexError::CrateNameNotAllowed)?;
-        Ok(CrateMetaPath::new(&*self.fs, &self.meta_file_locks, lowercase_name, meta_file_rel_path))
+        let meta_file_rel_path = self
+            .crate_meta_file_rel_path(&lowercase_name)
+            .ok_or(IndexError::CrateNameNotAllowed)?;
+        Ok(CrateMetaPath::new(
+            &*self.fs,
+            &self.meta_file_locks,
+            lowercase_name,
+            meta_file_rel_path,
+        ))
     }
 
     async fn yank_inner(&self, crate_name: &str, version: &Version, yank: bool) -> IndexResult<()> {
@@ -53,7 +68,8 @@ impl FsIndexProvider {
         let meta = lock.exclusive().await;
 
         let mut releases = meta.deserialized().await?;
-        let release = releases.iter_mut()
+        let release = releases
+            .iter_mut()
             .rfind(|v| &v.vers == version)
             .ok_or(IndexError::NotFound)?;
         release.yanked = yank;
@@ -61,15 +77,20 @@ impl FsIndexProvider {
     }
 
     fn is_valid_crate_file_name_char(c: u8) -> bool {
-        (c.is_ascii_alphabetic() && c.is_ascii_lowercase()) ||
-        c.is_ascii_digit() ||
-        c == b'-' || c == b'_'
+        (c.is_ascii_alphabetic() && c.is_ascii_lowercase())
+            || c.is_ascii_digit()
+            || c == b'-'
+            || c == b'_'
     }
 
     /// Crate name must be already lowercased
     #[allow(clippy::unused_self)]
     fn crate_meta_file_rel_path(&self, lc_crate_name: &str) -> Option<String> {
-        if lc_crate_name.len() > 64 || !lc_crate_name.bytes().all(Self::is_valid_crate_file_name_char) {
+        if lc_crate_name.len() > 64
+            || !lc_crate_name
+                .bytes()
+                .all(Self::is_valid_crate_file_name_char)
+        {
             return None;
         }
 
@@ -82,13 +103,13 @@ impl FsIndexProvider {
                 path.push_str(prefix1);
                 path.push('/');
                 path.push_str(prefix2);
-            },
+            }
             1 => path.push('1'),
             2 => path.push('2'),
             3 => {
                 path.push_str("3/");
                 path.push_str(&lc_crate_name[..1]);
-            },
+            }
             _ => return None,
         };
         path.push('/');
@@ -102,8 +123,8 @@ pub struct StoreConfig {
     pub name: String,
     pub endpoint_url: String,
     pub region: String,
-    pub access_key_id: String,
-    pub access_key_secret: String,
+    pub access_key_id: Option<String>,
+    pub access_key_secret: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -124,12 +145,19 @@ impl IndexProvider for FsIndexProvider {
     }
 
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
-        self.access_crate(crate_name)?.shared().await.deserialized().await
+        self.access_crate(crate_name)?
+            .shared()
+            .await
+            .deserialized()
+            .await
     }
 
     async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
-        self.access_crate(crate_name)?.shared().await
-            .deserialized().await?
+        self.access_crate(crate_name)?
+            .shared()
+            .await
+            .deserialized()
+            .await?
             .iter()
             .rfind(|e| &e.vers == version)
             .map(|e| e.yanked)
@@ -189,10 +217,13 @@ impl IndexProvider for FsIndexProvider {
         match meta.deserialized().await {
             Ok(existing_releases) => {
                 if existing_releases.iter().any(|v| v.vers == release.vers) {
-                    return Err(IndexError::Conflict(format!("{}-{} aleady exists", p.name, p.vers)));
+                    return Err(IndexError::Conflict(format!(
+                        "{}-{} aleady exists",
+                        p.name, p.vers
+                    )));
                 }
-            },
-            Err(IndexError::NotFound) => {},
+            }
+            Err(IndexError::NotFound) => {}
             Err(other) => return Err(other),
         };
 
@@ -202,10 +233,14 @@ impl IndexProvider for FsIndexProvider {
     }
 
     async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
-        Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
+        Err(IndexError::ServiceError(
+            io::Error::from(io::ErrorKind::Unsupported).into(),
+        ))
     }
 
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
-        Err(IndexError::ServiceError(io::Error::from(io::ErrorKind::Unsupported).into()))
+        Err(IndexError::ServiceError(
+            io::Error::from(io::ErrorKind::Unsupported).into(),
+        ))
     }
 }

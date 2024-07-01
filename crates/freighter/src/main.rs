@@ -60,17 +60,24 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = service.address;
 
-    let index_client = SelectedIndexProvider::new(index_config)
-        .context("Failed to construct index client")?;
+    let index_client =
+        SelectedIndexProvider::new(index_config).context("Failed to construct index client")?;
 
     let storage_client = S3StorageProvider::new(
         &store.name,
         &store.endpoint_url,
         &store.region,
-        &store.access_key_id,
-        &store.access_key_secret,
+        &store.access_key_id.unwrap_or_else(|| {
+            std::env::var("FREIGHTER_STORE_BUCKET_KEY_ID")
+                .expect("Failed to find store bucket key id in environment variable or config")
+        }),
+        &store.access_key_secret.unwrap_or_else(|| {
+            std::env::var("FREIGHTER_STORE_BUCKET_KEY_SECRET")
+                .expect("Failed to find store bucket key secret in environment variable or config")
+        }),
     );
-    let auth_client = SelectedAuthProvider::new(auth_config).context("Failed to initialize auth client")?;
+    let auth_client =
+        SelectedAuthProvider::new(auth_config).context("Failed to initialize auth client")?;
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
 
