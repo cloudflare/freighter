@@ -6,7 +6,7 @@ COPY Cargo.lock .
 COPY .cargo/ .cargo
 COPY crates/ crates
 
-RUN cargo install --path crates/freighter --features filesystem-index-backend
+RUN cargo install --path crates/freighter --features filesystem-index-backend --features yes-auth-backend
 
 FROM debian:bookworm-slim
 COPY --from=builder /usr/local/cargo/bin/freighter /usr/local/bin/freighter
