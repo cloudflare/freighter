@@ -6,7 +6,7 @@ COPY Cargo.lock .
 COPY .cargo/ .cargo
 COPY crates/ crates
 
-RUN cargo install --path crates/freighter --features cloudflare-auth-backend
+RUN cargo install --path crates/freighter --features filesystem-index-backend
 
 FROM debian:bullseye-slim
 COPY --from=builder /usr/local/cargo/bin/freighter /usr/local/bin/freighter
