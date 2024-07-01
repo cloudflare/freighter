@@ -92,9 +92,14 @@ async fn e2e_publish_crate_pg() {
     let config = TestServerConfig::from_env(3000);
 
     type ProviderConfig = <PgIndexProvider as IndexProvider>::Config;
-    e2e_publish_crate_in_index(PgIndexProvider::new(ProviderConfig {
-        index_db: config.db.clone(),
-    }).unwrap(), config).await;
+    e2e_publish_crate_in_index(
+        PgIndexProvider::new(ProviderConfig {
+            index_db: config.db.clone(),
+        })
+        .unwrap(),
+        config,
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -116,8 +121,8 @@ async fn e2e_publish_crate_fs_s3() {
         name: config.bucket_name.clone(),
         endpoint_url: config.bucket_endpoint_url.clone(),
         region: "us-east-1".into(),
-        access_key_id: config.bucket_access_key_id.clone(),
-        access_key_secret: config.bucket_access_key_secret.clone(),
+        access_key_id: Some(config.bucket_access_key_id.clone()),
+        access_key_secret: Some(config.bucket_access_key_secret.clone()),
     });
     e2e_publish_crate_in_index(FsIndexProvider::new(index_config).unwrap(), config).await;
 }
@@ -153,7 +158,9 @@ async fn e2e_publish_crate_in_index(
     let client_username = format!("kargo-{test_unique_str}");
 
     type AuthConfig = <PgAuthProvider as AuthProvider>::Config;
-    let auth_config = AuthConfig { auth_db: config.db.clone() };
+    let auth_config = AuthConfig {
+        auth_db: config.db.clone(),
+    };
     let auth_client = PgAuthProvider::new(auth_config).expect("Failed to initialize auth client");
 
     let default_token = if config.auth_required {
@@ -165,7 +172,8 @@ async fn e2e_publish_crate_in_index(
     // 0. Start Freighter
     let server_spawned = tokio::spawn(server(&config, index_client, auth_client).unwrap());
 
-    let mut freighter_client = Client::new(&format!("http://{server_addr}/index"), default_token).await;
+    let mut freighter_client =
+        Client::new(&format!("http://{server_addr}/index"), default_token).await;
 
     if !config.auth_required {
         // 1. Create a user to get a publish token.
