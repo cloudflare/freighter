@@ -16,7 +16,6 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY docker/entrypoint.sh .
-COPY docker/config.yaml.tpl .
 
 # Create file so it can be written in entrypoint
 RUN touch config.yaml && chown nobody:nogroup config.yaml
