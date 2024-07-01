@@ -8,7 +8,7 @@ COPY crates/ crates
 
 RUN cargo install --path crates/freighter --features filesystem-index-backend
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 COPY --from=builder /usr/local/cargo/bin/freighter /usr/local/bin/freighter
 
 RUN apt-get update \
