@@ -17,6 +17,8 @@ cfg_if::cfg_if! {
         use freighter_auth::cf_backend::CfAuthProvider as SelectedAuthProvider;
     } else if #[cfg(feature = "postgresql-auth-backend")] {
         use freighter_auth::pg_backend::PgAuthProvider as SelectedAuthProvider;
+    } else if #[cfg(feature = "yes-auth-backend")] {
+        use freighter_auth::yes_backend::YesAuthProvider as SelectedAuthProvider;
     } else {
         use freighter_auth::no_backend::NoAuthProvider as SelectedAuthProvider;
     }
