@@ -7,17 +7,28 @@ use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
 use rand::distributions::{Alphanumeric, DistString};
 
-pub struct YesAuthProvider;
+/// In the config specify `auth_allow_full_access_without_any_checks: true` to give full access to the registry,
+/// including crate publishing, to anyone who can connect to it.
+pub struct YesAuthProvider(());
 
 impl YesAuthProvider {
-    pub fn new(_yes_config: ()) -> AuthResult<Self> {
-        Ok(YesAuthProvider)
+    #[track_caller]
+    pub fn new(yes_config: Config) -> AuthResult<Self> {
+        if !yes_config.auth_allow_full_access_without_any_checks {
+            return Err(anyhow::anyhow!("enabled 'yes' auth without explicit opt-in").into());
+        }
+        Ok(YesAuthProvider(()))
     }
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct Config {
+    pub auth_allow_full_access_without_any_checks: bool,
 }
 
 #[async_trait]
 impl AuthProvider for YesAuthProvider {
-    type Config = ();
+    type Config = Config;
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
         Ok(())
