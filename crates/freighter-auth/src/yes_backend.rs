@@ -9,6 +9,12 @@ use rand::distributions::{Alphanumeric, DistString};
 
 pub struct YesAuthProvider;
 
+impl YesAuthProvider {
+    pub fn new(_yes_config: ()) -> AuthResult<Self> {
+        Ok(YesAuthProvider)
+    }
+}
+
 #[async_trait]
 impl AuthProvider for YesAuthProvider {
     type Config = ();
