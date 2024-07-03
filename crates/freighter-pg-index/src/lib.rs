@@ -312,9 +312,10 @@ impl IndexProvider for PgIndexProvider {
         .context("Failed to prepare statements for publish transaction")?;
 
         histogram!(
-            "publish_component_duration_seconds",
+            "freighter_publish_component_duration_seconds",
             "component" => "startup"
-        ).record(startup_timer.elapsed());
+        )
+        .record(startup_timer.elapsed());
 
         let crate_timer = Instant::now();
 
@@ -349,7 +350,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "crate"
-        ).record(crate_timer.elapsed());
+        )
+        .record(crate_timer.elapsed());
 
         let get_keycat_timer = Instant::now();
 
@@ -372,7 +374,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "get_keycat"
-        ).record(get_keycat_timer.elapsed());
+        )
+        .record(get_keycat_timer.elapsed());
 
         // add missing keywords and categories
 
@@ -411,7 +414,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "add_to_keycat"
-        ).record(add_to_keycat_timer.elapsed());
+        )
+        .record(add_to_keycat_timer.elapsed());
 
         // prune unneeded keywords and categories
 
@@ -438,7 +442,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "prune_keycat"
-        ).record(prune_keycat_timer.elapsed());
+        )
+        .record(prune_keycat_timer.elapsed());
 
         let insert_version_timer = Instant::now();
 
@@ -459,7 +464,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "insert_version"
-        ).record(insert_version_timer.elapsed());
+        )
+        .record(insert_version_timer.elapsed());
 
         let insert_dependencies_timer = Instant::now();
 
@@ -489,7 +495,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "insert_dependencies"
-        ).record(insert_dependencies_timer.elapsed());
+        )
+        .record(insert_dependencies_timer.elapsed());
 
         let insert_features_timer = Instant::now();
 
@@ -506,7 +513,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "insert_features"
-        ).record(insert_features_timer.elapsed());
+        )
+        .record(insert_features_timer.elapsed());
 
         let end_step_timer = Instant::now();
 
@@ -517,7 +525,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "end_step"
-        ).record(end_step_timer.elapsed());
+        )
+        .record(end_step_timer.elapsed());
 
         let commit_timer = Instant::now();
 
@@ -529,7 +538,8 @@ impl IndexProvider for PgIndexProvider {
         histogram!(
             "publish_component_duration_seconds",
             "component" => "commit"
-        ).record(commit_timer.elapsed());
+        )
+        .record(commit_timer.elapsed());
 
         Ok(CompletedPublication { warnings: None })
     }

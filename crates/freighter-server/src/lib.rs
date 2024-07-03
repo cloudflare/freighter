@@ -88,7 +88,7 @@ where
         .with_state(state)
         .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
-            counter!("panics_total").increment(1);
+            counter!("freighter_panics_total").increment(1);
 
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }))
@@ -120,7 +120,7 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
 
     let code = response.status().as_u16().to_string();
 
-    histogram!("request_duration_seconds", "code" => code, "endpoint" => path)
+    histogram!("freighter_request_duration_seconds", "code" => code, "endpoint" => path)
         .record(elapsed);
 
     response
