@@ -75,6 +75,9 @@ where
     Ok(resp)
 }
 
-async fn handle_index_fallback() -> StatusCode {
-    StatusCode::NOT_FOUND
+async fn handle_index_fallback() -> (StatusCode, &'static str) {
+    (
+        StatusCode::NOT_FOUND,
+        "Freighter: Invalid URL for the crate index endpoint",
+    )
 }

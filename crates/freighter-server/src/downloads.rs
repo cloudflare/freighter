@@ -46,6 +46,9 @@ where
     Ok(crate_bytes)
 }
 
-async fn handle_downloads_fallback() -> StatusCode {
-    StatusCode::NOT_FOUND
+async fn handle_downloads_fallback() -> (StatusCode, &'static str) {
+    (
+        StatusCode::NOT_FOUND,
+        "Freighter: Invalid URL for the crate download endpoint",
+    )
 }

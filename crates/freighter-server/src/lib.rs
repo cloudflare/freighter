@@ -85,6 +85,7 @@ where
         .route("/me", get(register))
         .route("/all", get(list))
         .route("/healthcheck", get(healthcheck))
+        .route("/", get(root_page))
         .with_state(state)
         .fallback(handle_global_fallback)
         .layer(CatchPanicLayer::custom(|_| {
@@ -124,6 +125,20 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
         .record(elapsed);
 
     response
+}
+
+pub async fn root_page<I, S, A>(
+    State(state): State<Arc<ServiceState<I, S, A>>>,
+) -> String {
+    format!(
+        "This is root of the Freighter server. There's nothing here.
+The API endpoint is at {}.
+The download endpoint is at {}.
+Auth is always required: {}",
+        state.config.api_endpoint,
+        state.config.download_endpoint,
+        state.config.auth_required,
+    )
 }
 
 pub async fn register() -> Html<&'static str> {
@@ -178,8 +193,11 @@ where
     Ok("OK".into())
 }
 
-pub async fn handle_global_fallback() -> StatusCode {
-    StatusCode::NOT_FOUND
+pub async fn handle_global_fallback() -> (StatusCode, &'static str) {
+    (
+        StatusCode::NOT_FOUND,
+        "Freighter: There is no such URL at the root of the server",
+    )
 }
 
 #[inline(always)]
