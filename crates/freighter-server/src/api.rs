@@ -11,7 +11,7 @@ use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults};
 use freighter_api_types::index::{IndexError, IndexProvider};
 use freighter_api_types::storage::{StorageError, StorageProvider};
-use freighter_auth::{AuthError, AuthProvider, AuthResult};
+use freighter_auth::{AuthError, AuthProvider};
 use metrics::counter;
 use semver::Version;
 use serde::Deserialize;
