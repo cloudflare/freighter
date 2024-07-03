@@ -3,7 +3,6 @@ use anyhow::Context;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
@@ -260,17 +259,16 @@ where
 async fn register<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> axum::response::Result<Html<String>>
+) -> axum::response::Result<String>
 where
     A: AuthProvider,
 {
-    if state.config.allow_registration {
-        let token = state.auth.register(&auth.username).await?;
-
-        Ok(Html(token))
-    } else {
-        Err(StatusCode::UNAUTHORIZED.into())
+    if !state.config.allow_registration {
+        return Err((StatusCode::UNAUTHORIZED, "Registration disabled").into());
     }
+
+    let token = state.auth.register(&auth.username).await?;
+    Ok(token)
 }
 
 async fn search<I, S, A>(
