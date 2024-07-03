@@ -140,8 +140,8 @@ impl AuthProvider for CfAuthProvider {
         &self,
         headers: &'h HeaderMap,
     ) -> Result<Option<&'h str>, StatusCode> {
-        if let res @ Some(_) = crate::default_token_from_headers(headers)? {
-            return Ok(res);
+        if let Some(res) = crate::default_token_from_headers(headers)? {
+            return Ok(Some(res.strip_prefix("CF_Authorization=").unwrap_or(res)));
         }
         if let Some(cookies) = headers.get(header::COOKIE) {
             let cookies = cookies.to_str().map_err(|_| StatusCode::BAD_REQUEST)?;
