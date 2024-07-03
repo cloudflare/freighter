@@ -9,9 +9,10 @@ use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
 use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults};
-use freighter_api_types::index::IndexProvider;
-use freighter_api_types::storage::StorageProvider;
-use freighter_auth::AuthProvider;
+use freighter_api_types::index::{IndexError, IndexProvider};
+use freighter_api_types::storage::{StorageError, StorageProvider};
+use freighter_auth::{AuthError, AuthProvider, AuthResult};
+use metrics::counter;
 use semver::Version;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -79,9 +80,27 @@ where
 
     let json: Publish = serde_json::from_slice(&json_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    state.auth.publish(auth, &json.name).await?;
+    let auth_result = state.auth.publish(auth, &json.name).await;
+
+    if let Err(e) = &auth_result {
+        let error_label = match e {
+            AuthError::Unauthorized => "unauthorized",
+            AuthError::Forbidden => "forbidden",
+            AuthError::InvalidCredentials => "invalid_credentials",
+            AuthError::Unimplemented => "unimplemented",
+            AuthError::CrateNotFound => "crate_not_found",
+            AuthError::ServiceError(_) => "service_error",
+        };
+
+        counter!("freighter_publish_auth_errors_total", "error" => error_label).increment(1);
+    }
+
+    auth_result?;
 
     let version = json.vers.to_string();
     let storage = state.storage.clone();
@@ -91,10 +110,22 @@ where
         let sha256 = Sha256::digest(&crate_bytes);
         let hash = format!("{sha256:x}");
         let end_step = std::pin::pin!(async {
-            storage
+            let res = storage
                 .put_crate(&json.name, &version, crate_bytes, sha256.into())
-                .await
-                .context("Failed to store the crate in a storage medium")?;
+                .await;
+
+            if let Err(e) = &res {
+                let error_label = match e {
+                    StorageError::NotFound => "not_found",
+                    StorageError::ServiceError(_) => "service_error",
+                };
+
+                counter!("freighter_publish_tarballs_errors_total", "error" => error_label)
+                    .increment(1);
+            }
+
+            res.context("Failed to store the crate in a storage medium")?;
+
             stored_crate = true;
             Ok(())
         });
@@ -108,6 +139,15 @@ where
             Ok(Json(res))
         }
         Err(e) => {
+            let error_label = match &e {
+                IndexError::Conflict(_) => "conflict",
+                IndexError::CrateNameNotAllowed => "crate_name_not_allowed",
+                IndexError::NotFound => "crate_not_found",
+                IndexError::ServiceError(_) => "service_error",
+            };
+
+            counter!("freighter_publish_index_errors_total", "error" => error_label).increment(1);
+
             if stored_crate {
                 let _ = storage.delete_crate(&json.name, &version).await;
             }
@@ -125,7 +165,10 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -143,7 +186,10 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -160,7 +206,10 @@ async fn list_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     state.auth.list_owners(auth, &name).await?;
 
@@ -176,7 +225,10 @@ async fn add_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     state
         .auth
@@ -199,7 +251,10 @@ async fn remove_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
     state
         .auth
@@ -239,7 +294,10 @@ where
     A: AuthProvider + Sync,
 {
     if state.config.auth_required {
-        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+        let token = state
+            .auth
+            .token_from_headers(&headers)?
+            .ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_view_full_index(token).await?;
     }
 

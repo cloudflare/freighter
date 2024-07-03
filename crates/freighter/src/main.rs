@@ -50,7 +50,6 @@ async fn main() -> anyhow::Result<()> {
     } = config;
 
     PrometheusBuilder::new()
-        .add_global_label("service", "freighter")
         .with_http_listener(service.metrics_address)
         .set_buckets(&[
             100e-6, 500e-6, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 2e-1, 3e-1, 4e-1, 5e-1, 6e-1, 7e-1, 8e-1,
