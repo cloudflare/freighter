@@ -89,3 +89,31 @@ cargo run -p freighter -- -c config.yaml
 
 [tracing]: https://docs.rs/tracing/latest/tracing/
 [metrics]: https://docs.rs/metrics/latest/metrics/
+
+## Login with Cloudflare access
+
+Edit `~/.cargo/credentials.toml`, and add at the top, if `"cargo:token"` isn't there already:
+
+```toml
+[registry]
+global-credential-providers = ["cargo:token"]
+```
+
+Edit `~/.cargo/config.toml` or `.cargo/config.toml` in your project, and add:
+
+```toml
+[registries.$nickname_for_your_registry]
+index = "sparse+http://$hostname_of_your_instance/index/"
+```
+
+replacing `$nickname_for_your_registry` with any name you like,
+and `$hostname_of_your_instance` with the actual hostname like `registry.example.net`. It has to support HTTPS.
+
+Then run:
+
+```bash
+cloudflared access login $hostname_of_your_instance | fgrep . | cargo login --registry=$nickname_for_your_registry
+```
+
+If you're using service auth tokens, you need to obtain a JWT from `CF_Authorization` cookie instead,
+by making an HTTP request to an endpoint protected by Cloudflare Accesss. Then pipe it to the `cargo login` command above.
