@@ -26,6 +26,8 @@ use bytes::Bytes;
 use freighter_api_types::storage::{
     Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
 };
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use std::collections::HashMap;
 
 /// Storage client for working with S3-compatible APIs.
@@ -93,8 +95,14 @@ impl S3StorageProvider {
         Ok(crate_bytes)
     }
 
-    async fn put_object(&self, path: String, file_bytes: ByteStream, meta: Metadata) -> StorageResult<()> {
-        let mut obj = self.client
+    async fn put_object(
+        &self,
+        path: String,
+        file_bytes: ByteStream,
+        meta: Metadata,
+    ) -> StorageResult<()> {
+        let mut obj = self
+            .client
             .put_object()
             .bucket(self.bucket_name.clone())
             .key(path)
@@ -134,10 +142,15 @@ impl S3StorageProvider {
     }
 
     async fn healthcheck(&self, path: String) -> Result<(), anyhow::Error> {
-        self.put_object(path.clone(), Bytes::from_static(b"ok").into(), Metadata {
-            content_type: Some("text/plain"),
-            ..Metadata::default()
-        }).await?;
+        self.put_object(
+            path.clone(),
+            Bytes::from_static(b"ok").into(),
+            Metadata {
+                content_type: Some("text/plain"),
+                ..Metadata::default()
+            },
+        )
+        .await?;
         if self.pull_object(path).await? != b"ok"[..] {
             bail!("wrong data");
         }
@@ -155,7 +168,12 @@ impl MetadataStorageProvider for S3StorageProvider {
         self.put_object(path.into(), file_bytes.into(), meta).await
     }
 
-    async fn create_or_append_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()> {
+    async fn create_or_append_file(
+        &self,
+        path: &str,
+        file_bytes: Bytes,
+        meta: Metadata,
+    ) -> StorageResult<()> {
         let mut all_data = match self.pull_object(path.into()).await {
             Ok(data) => Vec::from(data),
             Err(StorageError::NotFound) => Vec::new(),
@@ -170,7 +188,13 @@ impl MetadataStorageProvider for S3StorageProvider {
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
-        self.healthcheck(".healthcheck-meta".into()).await
+        let s: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect();
+
+        self.healthcheck(format!("{s}.healthcheck-meta")).await
     }
 }
 
@@ -181,17 +205,28 @@ impl StorageProvider for S3StorageProvider {
         self.pull_object(path).await
     }
 
-    async fn put_crate(&self, name: &str, version: &str, crate_bytes: Bytes, sha256: [u8; 32]) -> StorageResult<()> {
+    async fn put_crate(
+        &self,
+        name: &str,
+        version: &str,
+        crate_bytes: Bytes,
+        sha256: [u8; 32],
+    ) -> StorageResult<()> {
         let len = crate_bytes.len();
         let path = construct_path(name, version);
-        self.put_object(path, crate_bytes.into(), Metadata {
-            content_type: Some("application/x-tar"),
-            content_length: Some(len),
-            cache_control: Some("public,immutable".into()),
-            content_encoding: Some("gzip".into()),
-            sha256: Some(sha256),
-            kv: HashMap::new(),
-        }).await
+        self.put_object(
+            path,
+            crate_bytes.into(),
+            Metadata {
+                content_type: Some("application/x-tar"),
+                content_length: Some(len),
+                cache_control: Some("public,immutable".into()),
+                content_encoding: Some("gzip".into()),
+                sha256: Some(sha256),
+                kv: HashMap::new(),
+            },
+        )
+        .await
     }
 
     async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
@@ -200,7 +235,13 @@ impl StorageProvider for S3StorageProvider {
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
-        self.healthcheck(".healthcheck-data".into()).await
+        let s: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect();
+
+        self.healthcheck(format!("{s}.healthcheck-data")).await
     }
 }
 
