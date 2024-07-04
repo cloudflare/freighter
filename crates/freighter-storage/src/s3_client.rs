@@ -147,12 +147,11 @@ impl S3StorageProvider {
                 Ok(obj) => {
                     if obj.as_ref() == b"ok" {
                         return Ok(());
-                    } else {
-                        // this case will not attempt to repair the data - if corruption is
-                        // occurring healthchecks should contineu to fail until manual intervention
-                        // occurs
-                        bail!("wrong data");
                     }
+
+                    // this case will not attempt to repair the data - if corruption is occurring
+                    // healthchecks should continue to fail until manual intervention occurs
+                    bail!("wrong data");
                 }
                 Err(e) => {
                     if matches!(e, StorageError::NotFound) {
@@ -169,11 +168,11 @@ impl S3StorageProvider {
                         .await?;
 
                         continue;
-                    } else {
-                        // if we failed to contact the bucket or anything else happened other than
-                        // not seeing the specific object, fail the check
-                        bail!(e);
                     }
+
+                    // if we failed to contact the bucket or anything else happened other than not
+                    // seeing the specific object, fail the check
+                    bail!(e);
                 }
             }
         }
