@@ -26,8 +26,6 @@ use bytes::Bytes;
 use freighter_api_types::storage::{
     Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
 };
-use rand::distributions::Alphanumeric;
-use rand::Rng;
 use std::collections::HashMap;
 
 /// Storage client for working with S3-compatible APIs.
@@ -141,20 +139,48 @@ impl S3StorageProvider {
         Ok(())
     }
 
+    // check that we can actually contact the bucket
     async fn healthcheck(&self, path: String) -> Result<(), anyhow::Error> {
-        self.put_object(
-            path.clone(),
-            Bytes::from_static(b"ok").into(),
-            Metadata {
-                content_type: Some("text/plain"),
-                ..Metadata::default()
-            },
-        )
-        .await?;
-        if self.pull_object(path).await? != b"ok"[..] {
-            bail!("wrong data");
+        for _ in 0..3 {
+            // try and pull the object initially to make sure the health file is there
+            match self.pull_object(path.clone()).await {
+                Ok(obj) => {
+                    if obj.as_ref() == b"ok" {
+                        return Ok(());
+                    } else {
+                        // this case will not attempt to repair the data - if corruption is
+                        // occurring healthchecks should contineu to fail until manual intervention
+                        // occurs
+                        bail!("wrong data");
+                    }
+                }
+                Err(e) => {
+                    if matches!(e, StorageError::NotFound) {
+                        // if the key isn't there (because you just stood the service up), put it
+                        // there and retry the loop
+                        self.put_object(
+                            path.clone(),
+                            Bytes::from_static(b"ok").into(),
+                            Metadata {
+                                content_type: Some("text/plain"),
+                                ..Metadata::default()
+                            },
+                        )
+                        .await?;
+
+                        continue;
+                    } else {
+                        // if we failed to contact the bucket or anything else happened other than
+                        // not seeing the specific object, fail the check
+                        bail!(e);
+                    }
+                }
+            }
         }
-        Ok(())
+
+        // this case should never reasonably happen with most buckets, and should be extremely
+        // transient and only happen briefly when initially standing up the service with EC stores
+        bail!("successfully put object but saw NotFound on pull 3 times");
     }
 }
 
@@ -188,13 +214,7 @@ impl MetadataStorageProvider for S3StorageProvider {
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
-        let s: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect();
-
-        self.healthcheck(format!("{s}.healthcheck-meta")).await
+        self.healthcheck(".healthcheck-meta".into()).await
     }
 }
 
@@ -235,13 +255,7 @@ impl StorageProvider for S3StorageProvider {
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
-        let s: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect();
-
-        self.healthcheck(format!("{s}.healthcheck-data")).await
+        self.healthcheck(".healthcheck-data".into()).await
     }
 }
 
