@@ -6,6 +6,13 @@ use http::{header, HeaderMap, StatusCode};
 use serde::Deserialize;
 
 /// Registry auth based on Cloudflare Access, using JsonWebTokens for auth
+///
+/// It's not possible to validate Service Auth tokens direclty. To use a token,
+/// you need to log in with it to an Access-protected URL, and obtain the JWT from
+/// the CF_Authorization cookie. This temporary cookie is the only way
+/// auth with this Freighter backend.
+///
+/// For personal account, you can call `cloudflared access token` to obtain the JWT.
 pub struct CfAuthProvider {
     team_base_url: String,
     access: CfAccess,
@@ -133,8 +140,8 @@ impl AuthProvider for CfAuthProvider {
         &self,
         headers: &'h HeaderMap,
     ) -> Result<Option<&'h str>, StatusCode> {
-        if let res @ Some(_) = crate::default_token_from_headers(headers)? {
-            return Ok(res);
+        if let Some(res) = crate::default_token_from_headers(headers)? {
+            return Ok(Some(res.strip_prefix("CF_Authorization=").unwrap_or(res)));
         }
         if let Some(cookies) = headers.get(header::COOKIE) {
             let cookies = cookies.to_str().map_err(|_| StatusCode::BAD_REQUEST)?;

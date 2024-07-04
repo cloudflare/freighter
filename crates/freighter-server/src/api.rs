@@ -3,7 +3,6 @@ use anyhow::Context;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::Html;
 use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
@@ -52,8 +51,11 @@ where
     S: StorageProvider + Send + Sync + Clone + 'static,
     A: AuthProvider,
 {
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
+
     if body.len() <= 4 {
-        return Err(StatusCode::BAD_REQUEST.into());
+        return Err((StatusCode::BAD_REQUEST, "Missing body").into());
     }
 
     let json_len_bytes = body.split_to(4);
@@ -73,17 +75,13 @@ where
     let crate_len = u32::from_le_bytes(crate_len_bytes.as_ref().try_into().unwrap()) as usize;
 
     if body.len() < crate_len {
-        return Err(StatusCode::BAD_REQUEST.into());
+        return Err((StatusCode::BAD_REQUEST, "Crate data truncated").into());
     }
 
     let crate_bytes = body.split_to(crate_len);
 
-    let json: Publish = serde_json::from_slice(&json_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
-
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let json: Publish = serde_json::from_slice(&json_bytes)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "JSON parsing error"))?;
 
     let auth_result = state.auth.publish(auth, &json.name).await;
 
@@ -165,10 +163,8 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -186,10 +182,8 @@ where
     I: IndexProvider,
     A: AuthProvider,
 {
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state.auth.auth_yank(auth, &name).await?;
 
@@ -206,10 +200,8 @@ async fn list_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state.auth.list_owners(auth, &name).await?;
 
@@ -225,10 +217,8 @@ async fn add_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state
         .auth
@@ -251,10 +241,8 @@ async fn remove_owners<I, S, A>(
 where
     A: AuthProvider,
 {
-    let auth = state
-        .auth
-        .token_from_headers(&headers)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let auth = state.auth.token_from_headers(&headers)?
+        .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state
         .auth
@@ -271,17 +259,16 @@ where
 async fn register<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Form(auth): Form<AuthForm>,
-) -> axum::response::Result<Html<String>>
+) -> axum::response::Result<String>
 where
     A: AuthProvider,
 {
-    if state.config.allow_registration {
-        let token = state.auth.register(&auth.username).await?;
-
-        Ok(Html(token))
-    } else {
-        Err(StatusCode::UNAUTHORIZED.into())
+    if !state.config.allow_registration {
+        return Err((StatusCode::UNAUTHORIZED, "Registration disabled").into());
     }
+
+    let token = state.auth.register(&auth.username).await?;
+    Ok(token)
 }
 
 async fn search<I, S, A>(
@@ -294,10 +281,9 @@ where
     A: AuthProvider + Sync,
 {
     if state.config.auth_required {
-        let token = state
-            .auth
-            .token_from_headers(&headers)?
-            .ok_or(StatusCode::UNAUTHORIZED)?;
+        let token = state.auth.token_from_headers(&headers)?
+            .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
+
         state.auth.auth_view_full_index(token).await?;
     }
 
@@ -309,6 +295,9 @@ where
     Ok(Json(search_results))
 }
 
-async fn handle_api_fallback() -> StatusCode {
-    StatusCode::NOT_FOUND
+async fn handle_api_fallback() -> (StatusCode, &'static str) {
+    (
+        StatusCode::NOT_FOUND,
+        "Freighter: Invalid URL for the crates.io API endpoint",
+    )
 }
