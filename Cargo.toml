@@ -12,14 +12,24 @@ members = [
 ]
 default-members = ["crates/freighter"]
 
+[workspace.package]
+authors = ["Noah Kennedy <nkennedy@cloudflare.com>", "Kornel Lesiński <kornel@cloudflare.com>"]
+description = "Cloudflare's third-party Rust registry implementation"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cloudflare/freighter"
+publish = ["crates-io", "freighter", "freighter-staging"]
+keywords = ["registries", "freighter"]
+categories = []
+
 [workspace.dependencies]
-freighter-api-types = { path = "crates/freighter-api-types", version = "=0.1.0-rc.2" }
-freighter-client = { path = "crates/freighter-client", version = "=0.1.0-rc.2" }
-freighter-auth = { path = "crates/freighter-auth", registry = "freighter", version = "0.1.0-rc" }
-freighter-pg-index = { path = "crates/freighter-pg-index", registry = "freighter", version = "0.1.0-rc" }
-freighter-fs-index = { path = "crates/freighter-fs-index", registry = "freighter", version = "0.1.0-rc" }
-freighter-server = { path = "crates/freighter-server", registry = "freighter", version = "0.1.0-rc" }
-freighter-storage = { path = "crates/freighter-storage", registry = "freighter", version = "0.1.0-rc" }
+freighter-api-types = { path = "crates/freighter-api-types", version = "1.0.0" }
+freighter-client = { path = "crates/freighter-client", version = "1.0.0" }
+freighter-auth = { path = "crates/freighter-auth", registry = "freighter", version = "1.0.0" }
+freighter-pg-index = { path = "crates/freighter-pg-index", registry = "freighter", version = "1.0.0" }
+freighter-fs-index = { path = "crates/freighter-fs-index", registry = "freighter", version = "1.0.0" }
+freighter-server = { path = "crates/freighter-server", registry = "freighter", version = "1.0.0" }
+freighter-storage = { path = "crates/freighter-storage", registry = "freighter", version = "1.0.0" }
 
 anyhow = "1.0.79"
 async-trait = "0.1.77"

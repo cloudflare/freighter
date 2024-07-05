@@ -1,13 +1,14 @@
 [package]
 name = "freighter-fs-index"
-version = "0.1.0-rc"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-authors = ["Kornel Lesiński <kornel@cloudflare.com>"]
-repository = "https://github.com/cloudflare/freighter"
-description = "Filesystem-based index implementation for the freighter registry"
-categories = ["asynchronous"]
-keywords = ["registries", "freighter"]
+version = "1.0.0"
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
 
 [dependencies]
 freighter-api-types = { workspace = true, features = ["index", "storage"] }
