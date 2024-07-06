@@ -111,9 +111,6 @@ impl S3StorageProvider {
         if let Some(ty) = meta.content_type {
             obj = obj.content_type(ty);
         }
-        if let Some(ty) = meta.content_encoding {
-            obj = obj.content_encoding(ty);
-        }
         if let Some(cc) = meta.cache_control {
             obj = obj.cache_control(cc);
         }
@@ -240,7 +237,7 @@ impl StorageProvider for S3StorageProvider {
                 content_type: Some("application/x-tar"),
                 content_length: Some(len),
                 cache_control: Some("public,immutable".into()),
-                content_encoding: Some("gzip".into()),
+                content_encoding: None,
                 sha256: Some(sha256),
                 kv: HashMap::new(),
             },
@@ -260,5 +257,5 @@ impl StorageProvider for S3StorageProvider {
 
 #[inline(always)]
 fn construct_path(name: &str, version: &str) -> String {
-    format!("{name}-{version}.crate")
+    format!("crates/{name}-{version}.crate")
 }

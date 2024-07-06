@@ -21,23 +21,27 @@ pub(crate) struct AccessLocks<T> {
 
 impl<T> AccessLocks<T> {
     pub fn new() -> Self {
-        Self { locks: Mutex::default() }
+        Self {
+            locks: Mutex::default(),
+        }
     }
 
     pub fn rwlock_for_key(&self, key: &str, object: T) -> Arc<AsyncRwLock<T>> {
         match self.locks.lock().unwrap().entry(key.to_owned()) {
-            Entry::Occupied(mut e) => if let Some(existing) = e.get().upgrade() {
-                existing
-            } else {
-                let new_lock = Arc::new(AsyncRwLock::new(object));
-                *e.get_mut() = Arc::downgrade(&new_lock);
-                new_lock
-            },
+            Entry::Occupied(mut e) => {
+                if let Some(existing) = e.get().upgrade() {
+                    existing
+                } else {
+                    let new_lock = Arc::new(AsyncRwLock::new(object));
+                    *e.get_mut() = Arc::downgrade(&new_lock);
+                    new_lock
+                }
+            }
             Entry::Vacant(e) => {
                 let new_lock = Arc::new(AsyncRwLock::new(object));
                 e.insert(Arc::downgrade(&new_lock));
                 new_lock
-            },
+            }
         }
     }
 
@@ -61,7 +65,12 @@ pub(crate) struct CrateMetaPath<'a> {
 }
 
 impl<'a> CrateMetaPath<'a> {
-    pub fn new(fs: &'a (dyn MetadataStorageProvider + Send + Sync), locks: &'a AccessLocks<String>, key: String, file_rel_path: String) -> Self {
+    pub fn new(
+        fs: &'a (dyn MetadataStorageProvider + Send + Sync),
+        locks: &'a AccessLocks<String>,
+        key: String,
+        file_rel_path: String,
+    ) -> Self {
         let lockable_path = locks.rwlock_for_key(&key, file_rel_path);
         Self {
             fs,
@@ -119,7 +128,9 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             sha256: None,
             kv: HashMap::default(),
         };
-        self.fs.put_file(&self.rel_path, bytes, meta).await
+        self.fs
+            .put_file(&self.rel_path, bytes, meta)
+            .await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 
@@ -132,7 +143,13 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             sha256: None,
             kv: HashMap::default(),
         };
-        self.fs.create_or_append_file(&self.rel_path, serialize_data(std::slice::from_ref(version))?, meta).await
+        self.fs
+            .create_or_append_file(
+                &self.rel_path,
+                serialize_data(std::slice::from_ref(version))?,
+                meta,
+            )
+            .await
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 }

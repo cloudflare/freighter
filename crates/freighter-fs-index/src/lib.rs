@@ -94,8 +94,10 @@ impl FsIndexProvider {
             return None;
         }
 
-        let len = lc_crate_name.len().checked_add(5)?;
+        let len = lc_crate_name.len().checked_add(12)?;
         let mut path = String::with_capacity(len);
+
+        path.push_str("index/");
 
         match lc_crate_name.len() {
             4.. => {
