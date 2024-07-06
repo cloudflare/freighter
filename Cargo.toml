@@ -25,11 +25,11 @@ categories = []
 [workspace.dependencies]
 freighter-api-types = { path = "crates/freighter-api-types", version = "1.0.0" }
 freighter-client = { path = "crates/freighter-client", version = "1.0.0" }
-freighter-auth = { path = "crates/freighter-auth", registry = "freighter", version = "1.0.0" }
-freighter-pg-index = { path = "crates/freighter-pg-index", registry = "freighter", version = "1.0.0" }
-freighter-fs-index = { path = "crates/freighter-fs-index", registry = "freighter", version = "1.0.0" }
-freighter-server = { path = "crates/freighter-server", registry = "freighter", version = "1.0.0" }
-freighter-storage = { path = "crates/freighter-storage", registry = "freighter", version = "1.0.0" }
+freighter-auth = { path = "crates/freighter-auth", version = "1.0.0" }
+freighter-pg-index = { path = "crates/freighter-pg-index", version = "1.0.0" }
+freighter-fs-index = { path = "crates/freighter-fs-index", version = "1.0.0" }
+freighter-server = { path = "crates/freighter-server", version = "1.0.0" }
+freighter-storage = { path = "crates/freighter-storage", version = "1.0.0" }
 
 anyhow = "1.0.79"
 async-trait = "0.1.77"

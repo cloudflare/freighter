@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "freighter"
-version = "0.1.1-rc.4"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -896,7 +896,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-api-types"
-version = "0.1.0-rc.2"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -912,7 +912,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-auth"
-version = "0.1.0-rc"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -938,7 +938,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-client"
-version = "0.1.0-rc.2"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "freighter-api-types",
@@ -950,7 +950,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-fs-index"
-version = "0.1.0-rc"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -965,7 +965,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-pg-index"
-version = "0.1.0-rc"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -985,7 +985,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-server"
-version = "0.1.0-rc"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1017,7 +1017,7 @@ dependencies = [
 
 [[package]]
 name = "freighter-storage"
-version = "0.1.0-rc"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
