@@ -3,7 +3,6 @@ WORKDIR /usr/src/freighter
 
 COPY Cargo.toml .
 COPY Cargo.lock .
-COPY .cargo/ .cargo
 COPY crates/ crates
 
 RUN cargo install --path crates/freighter --features filesystem-index-backend --features cloudflare-auth-backend
