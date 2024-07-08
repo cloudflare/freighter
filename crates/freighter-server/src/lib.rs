@@ -131,18 +131,25 @@ pub async fn root_page<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
 ) -> String {
     format!(
-        "This is root of the Freighter server. There's nothing here.
-The API endpoint is at {}.
-The download endpoint is at {}.
-Auth is always required: {}",
-        state.config.api_endpoint,
-        state.config.download_endpoint,
-        state.config.auth_required,
+        "The registry URL for cargo is \"sparse+http://{api}/index\".
+
+This is root of the Freighter server. There's nothing here.
+The API endpoint is at {api}.
+The download endpoint is at {download}.
+Auth is always required: {auth}",
+        api = state.config.api_endpoint,
+        download = state.config.download_endpoint,
+        auth = state.config.auth_required,
     )
 }
 
-pub async fn register() -> Html<&'static str> {
-    Html(include_str!("../static/register.html"))
+pub async fn register<I, S, A: AuthProvider>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Html<&'static str> {
+    let page = if let Err(why) = state.auth.register_supported() {
+        why
+    } else {
+        include_str!("../static/register.html")
+    };
+    Html(page)
 }
 
 async fn list<I, S, A>(

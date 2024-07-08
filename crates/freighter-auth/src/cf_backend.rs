@@ -66,6 +66,15 @@ impl AuthProvider for CfAuthProvider {
         Err(AuthError::Unimplemented)
     }
 
+    fn register_supported(&self) -> Result<(), &'static str> {
+        Err("<h1>Registration is only via <code>cloudflared</code></h1>
+<style>var{color:red}</style>
+<p>Run:</p>
+<pre>
+cloudflared access login <var>hostname of the registry</var> | fgrep . | cargo login --registry=<var>name of the registry</var>
+</pre>")
+    }
+
     async fn list_owners(&self, token: &str, _crate_name: &str) -> AuthResult<Vec<ListedOwner>> {
         self.validated_user_id(token).await?;
 

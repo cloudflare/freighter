@@ -42,6 +42,11 @@ pub trait AuthProvider {
     /// Register a new user, returning a token if successful.
     async fn register(&self, username: &str) -> AuthResult<String>;
 
+    /// If not, returns an HTML message why
+    fn register_supported(&self) -> Result<(), &'static str> {
+        Ok(())
+    }
+
     /// List the owners of a crate.
     async fn list_owners(&self, token: &str, crate_name: &str) -> AuthResult<Vec<ListedOwner>>;
     /// Add a new owner to a crate.
