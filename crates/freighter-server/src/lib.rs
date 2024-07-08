@@ -131,7 +131,7 @@ pub async fn root_page<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
 ) -> String {
     format!(
-        "The registry URL for cargo is \"sparse+http://{api}/index\".
+        "The registry URL for cargo is \"sparse+https://{api}/index\".
 
 This is root of the Freighter server. There's nothing here.
 The API endpoint is at {api}.
