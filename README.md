@@ -103,7 +103,7 @@ Edit `~/.cargo/config.toml` or `.cargo/config.toml` in your project, and add:
 
 ```toml
 [registries.$nickname_for_your_registry]
-index = "sparse+http://$hostname_of_your_instance/index/"
+index = "sparse+https://$hostname_of_your_instance/index/"
 ```
 
 replacing `$nickname_for_your_registry` with any name you like,
