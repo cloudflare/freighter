@@ -28,6 +28,10 @@ impl AuthProvider for NoAuthProvider {
         nope()
     }
 
+    fn register_supported(&self) -> Result<(), &'static str> {
+        Err("This is a 'no' backend")
+    }
+
     async fn list_owners(&self, _token: &str, _crate_name: &str) -> AuthResult<Vec<ListedOwner>> {
         nope()
     }
