@@ -80,9 +80,9 @@ impl Client {
             config.api.pop();
         }
 
-        if config.dl.ends_with('/') {
-            config.dl.pop();
-        }
+        config.dl = Self::sanitize_dl(config.dl);
+
+        auth_required |= config.auth_required;
 
         Self {
             http: client,
@@ -94,17 +94,7 @@ impl Client {
     }
 
     pub async fn fetch_index(&self, name: &str) -> Result<Vec<CrateVersion>> {
-        let prefix = match name.len() {
-            0 => panic!("Should not be asked for crate name of len 0"),
-            1 => "1".to_string(),
-            2 => "2".to_string(),
-            3 => format!("3/{}", name.split_at(1).0),
-            _ => {
-                let (prefix_1_tmp, rest) = name.split_at(2);
-                let (prefix_2_tmp, _) = rest.split_at(2);
-                format!("{prefix_1_tmp}/{prefix_2_tmp}")
-            }
-        };
+        let prefix = Self::crate_prefix(name);
 
         let url = format!("{}/{prefix}/{name}", &self.endpoint);
 
@@ -130,7 +120,7 @@ impl Client {
     }
 
     pub async fn download_crate(&self, name: &str, version: &Version) -> Result<Vec<u8>> {
-        let url = format!("{}/{name}/{version}", self.config.dl);
+        let url = Self::apply_markers(&self.config.dl, name, &version.to_string(), "");
 
         let mut req = self.http.get(url).build().unwrap();
 
@@ -275,6 +265,52 @@ impl Client {
         if let Some(token) = self.token.as_ref() {
             req.headers_mut()
                 .append(AUTHORIZATION, HeaderValue::from_str(token).unwrap());
+        }
+    }
+
+    /// Sanitise the index config.json's dl field. The URL requires specific markers,
+    /// if missing then a default URL template is appended.
+    fn sanitize_dl(mut dl: String) -> String {
+        if dl.ends_with('/') {
+            dl.pop();
+        }
+
+        const MARKERS: &[&str] = &[
+            "{crate}",
+            "{version}",
+            "{prefix}",
+            "{lowerprefix}",
+            "{sha256-checksum}",
+        ];
+
+        if !MARKERS.iter().any(|marker| dl.contains(marker)) {
+            dl.push_str("/{crate}/{version}/download");
+        }
+
+        dl
+    }
+
+    fn apply_markers(url: &str, name: &str, version: &str, shasum: &str) -> String {
+        let prefix = Self::crate_prefix(name);
+        url.replace("{crate}", name)
+            .replace("{version}", version)
+            .replace("{prefix}", &prefix)
+            .replace("{lowerprefix}", &prefix.to_ascii_lowercase())
+            .replace("{sha256-checksum}", shasum)
+    }
+
+    // Implements the crate prefix transformation.
+    fn crate_prefix(name: &str) -> String {
+        match name.len() {
+            0 => panic!("Should not be asked for crate name of len 0"),
+            1 => "1".to_string(),
+            2 => "2".to_string(),
+            3 => format!("3/{}", name.split_at(1).0),
+            _ => {
+                let (prefix_1_tmp, rest) = name.split_at(2);
+                let (prefix_2_tmp, _) = rest.split_at(2);
+                format!("{prefix_1_tmp}/{prefix_2_tmp}")
+            }
         }
     }
 }
