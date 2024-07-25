@@ -80,7 +80,8 @@ impl Client {
             config.api.pop();
         }
 
-        config.dl = Self::sanitize_dl(config.dl);
+        config.api = Self::sanitize_url_scheme(config.api, &endpoint);
+        config.dl = Self::sanitize_dl(Self::sanitize_url_scheme(config.dl, &endpoint));
 
         auth_required |= config.auth_required;
 
@@ -265,6 +266,19 @@ impl Client {
         if let Some(token) = self.token.as_ref() {
             req.headers_mut()
                 .append(AUTHORIZATION, HeaderValue::from_str(token).unwrap());
+        }
+    }
+
+    /// Sanitise the index config.json's dl or API field to ensure that the URL has a valid scheme.
+    /// If no scheme is present, it is copied from the endpoint URL.
+    fn sanitize_url_scheme(url: String, endpoint_url: &str) -> String {
+        if url.contains("://") {
+            url
+        } else if let Some((scheme, _)) = endpoint_url.split_once("://") {
+            format!("{}://{}", scheme, url)
+        } else {
+            // no scheme found in either URL, how does this work?
+            url
         }
     }
 
