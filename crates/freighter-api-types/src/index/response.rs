@@ -13,6 +13,7 @@ use std::collections::HashMap;
 pub struct RegistryConfig {
     pub dl: String,
     pub api: String,
+    #[serde(default)]
     pub auth_required: bool,
 }
 
