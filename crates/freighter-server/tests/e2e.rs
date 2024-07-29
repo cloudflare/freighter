@@ -80,6 +80,7 @@ fn server(
         metrics_address: "127.0.0.1:9999".parse()?,
         allow_registration: true,
         auth_required: config.auth_required,
+        crate_size_limit: 1024 * 1024,
     };
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
