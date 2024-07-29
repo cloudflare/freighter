@@ -198,6 +198,7 @@ impl Default for ServiceStateBuilder {
                 metrics_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3001),
                 allow_registration: true,
                 auth_required: false,
+                crate_size_limit: 1024 * 1024,
             },
             index: Default::default(),
             storage: Default::default(),

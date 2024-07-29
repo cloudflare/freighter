@@ -1,5 +1,5 @@
 use axum::body::Body;
-use axum::extract::{MatchedPath, Query, State};
+use axum::extract::{DefaultBodyLimit, MatchedPath, Query, State};
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
@@ -40,6 +40,11 @@ pub struct ServiceConfig {
     /// Currently requires `-Z registry-auth` nightly feature.
     #[serde(default = "default_true")]
     pub auth_required: bool,
+
+    /// Maximum limit for the size of published crates.
+    /// This includes both the metadata and the crate tarball.
+    #[serde(default = "default_crate_size_limit")]
+    pub crate_size_limit: usize,
 }
 
 pub struct ServiceState<I, S, A> {
@@ -71,6 +76,7 @@ where
     S: StorageProvider + Clone + Send + Sync + 'static,
     A: AuthProvider + Send + Sync + 'static,
 {
+    let crate_size_limit = config.crate_size_limit;
     let state = Arc::new(ServiceState::new(
         config,
         index_client,
@@ -81,7 +87,10 @@ where
     Router::new()
         .nest("/downloads", downloads::downloads_router())
         .nest("/index", index::index_router())
-        .nest("/api/v1/crates", api::api_router())
+        .nest(
+            "/api/v1/crates",
+            api::api_router().layer(DefaultBodyLimit::max(crate_size_limit)),
+        )
         .route("/me", get(register))
         .route("/all", get(list))
         .route("/healthcheck", get(healthcheck))
@@ -212,3 +221,7 @@ fn default_true() -> bool {
     true
 }
 
+#[inline(always)]
+fn default_crate_size_limit() -> usize {
+    16 * 1024 * 1024
+}
