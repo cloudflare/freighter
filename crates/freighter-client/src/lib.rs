@@ -49,7 +49,7 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl Client {
     pub async fn new(endpoint: &str, token: Option<String>) -> Self {
@@ -157,8 +157,10 @@ impl Client {
         // copy tarball to buffer
         buf[tarball_off..].copy_from_slice(tarball);
 
-        let url = format!("{}/{API_PATH}/new", &self.config.api);
-
+        let url = format!("{}{}/{API_PATH}/new",
+            if self.config.api.contains("://") {""} else {"http://"},
+            self.config.api
+        );
         let mut req = self.http.put(url).build().unwrap();
 
         *req.body_mut() = Some(Body::from(buf));
@@ -229,14 +231,17 @@ impl Client {
     // }
 
     pub async fn register(&mut self, username: &str) -> Result<()> {
-        let url = format!("{}/{API_PATH}/account", self.config.api);
+        let url = format!("{}{}/{API_PATH}/account",
+            if self.config.api.contains("://") {""} else {"http://"},
+            self.config.api
+        );
 
         let mut req = self
             .http
-            .post(url)
+            .post(&url)
             .form(&[("username", username)])
             .build()
-            .unwrap();
+            .map_err(|e| anyhow::anyhow!("{url}: {e}"))?;
 
         self.attach_auth(&mut req);
 
