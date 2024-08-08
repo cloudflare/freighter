@@ -38,12 +38,6 @@ pub trait MetadataStorageProvider {
     async fn pull_file(&self, path: &str) -> StorageResult<Bytes>;
     async fn put_file(&self, path: &str, file_bytes: Bytes, meta: Metadata) -> StorageResult<()>;
     async fn delete_file(&self, path: &str) -> StorageResult<()>;
-    async fn create_or_append_file(
-        &self,
-        path: &str,
-        append_file_bytes: Bytes,
-        meta_on_create: Metadata,
-    ) -> StorageResult<()>;
-
+    async fn list_prefix(&self, path: &str) -> StorageResult<Vec<String>>;
     async fn healthcheck(&self) -> anyhow::Result<()>;
 }

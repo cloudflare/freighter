@@ -1,7 +1,10 @@
+use anyhow::Context;
 use async_trait::async_trait;
+use chrono::Utc;
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
-    CompletedPublication, CrateVersion, Dependency, ListAll, SearchResults,
+    CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
+    ListAllCrateVersion, SearchResults,
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_api_types::storage::MetadataStorageProvider;
@@ -9,18 +12,23 @@ use freighter_storage::fs::FsStorageProvider;
 use freighter_storage::s3_client::S3StorageProvider;
 use semver::Version;
 use serde::Deserialize;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::future::Future;
 use std::io;
 use std::path::PathBuf;
 use std::pin::Pin;
+use std::sync::Arc;
+use tokio::task::JoinSet;
 
 mod file_locks;
 use file_locks::{AccessLocks, CrateMetaPath};
 
+use crate::file_locks::deserialize_data;
+
 pub struct FsIndexProvider {
     meta_file_locks: AccessLocks<String>,
-    fs: Box<dyn MetadataStorageProvider + Send + Sync>,
+    fs: Arc<Box<dyn MetadataStorageProvider + Send + Sync>>,
 }
 
 impl FsIndexProvider {
@@ -45,7 +53,7 @@ impl FsIndexProvider {
             )),
         };
         Ok(Self {
-            fs,
+            fs: Arc::new(fs),
             meta_file_locks: AccessLocks::new(),
         })
     }
@@ -56,7 +64,7 @@ impl FsIndexProvider {
             .crate_meta_file_rel_path(&lowercase_name)
             .ok_or(IndexError::CrateNameNotAllowed)?;
         Ok(CrateMetaPath::new(
-            &*self.fs,
+            &**self.fs,
             &self.meta_file_locks,
             lowercase_name,
             meta_file_rel_path,
@@ -67,13 +75,13 @@ impl FsIndexProvider {
         let lock = self.access_crate(crate_name)?;
         let meta = lock.exclusive().await;
 
-        let mut releases = meta.deserialized().await?;
+        let (mut releases, publish) = meta.deserialized().await?;
         let release = releases
             .iter_mut()
             .rfind(|v| &v.vers == version)
             .ok_or(IndexError::NotFound)?;
         release.yanked = yank;
-        meta.replace(&releases).await
+        meta.replace(&releases, publish.as_ref()).await
     }
 
     fn is_valid_crate_file_name_char(c: u8) -> bool {
@@ -152,6 +160,7 @@ impl IndexProvider for FsIndexProvider {
             .await
             .deserialized()
             .await
+            .map(|(versions, _)| versions)
     }
 
     async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
@@ -159,7 +168,8 @@ impl IndexProvider for FsIndexProvider {
             .shared()
             .await
             .deserialized()
-            .await?
+            .await
+            .map(|(versions, _)| versions)?
             .iter()
             .rfind(|e| &e.vers == version)
             .map(|e| e.yanked)
@@ -176,14 +186,14 @@ impl IndexProvider for FsIndexProvider {
 
     async fn publish(
         &self,
-        p: &Publish,
+        publish: &Publish,
         checksum: &str,
         end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         let release = CrateVersion {
-            name: p.name.clone(),
-            vers: p.vers.clone(),
-            deps: p
+            name: publish.name.clone(),
+            vers: publish.vers.clone(),
+            deps: publish
                 .deps
                 .iter()
                 .map(|d| {
@@ -206,9 +216,9 @@ impl IndexProvider for FsIndexProvider {
                 })
                 .collect(),
             cksum: checksum.into(),
-            features: p.features.clone(),
+            features: publish.features.clone(),
             yanked: false,
-            links: p.links.clone(),
+            links: publish.links.clone(),
             v: 2,
             features2: HashMap::default(),
         };
@@ -216,33 +226,109 @@ impl IndexProvider for FsIndexProvider {
         let lock = self.access_crate(&release.name)?;
         let meta = lock.exclusive().await;
 
-        match meta.deserialized().await {
-            Ok(existing_releases) => {
+        let mut versions = match meta.deserialized().await {
+            Ok((existing_releases, _)) => {
                 if existing_releases.iter().any(|v| v.vers == release.vers) {
                     return Err(IndexError::Conflict(format!(
                         "{}-{} aleady exists",
-                        p.name, p.vers
+                        publish.name, publish.vers
                     )));
                 }
+
+                existing_releases
             }
-            Err(IndexError::NotFound) => {}
+            Err(IndexError::NotFound) => vec![],
             Err(other) => return Err(other),
         };
+        versions.push(release);
 
         end_step.await?;
-        meta.create_or_append(&release).await?;
+
+        meta.put_index_file(&versions, publish).await?;
         Ok(CompletedPublication { warnings: None })
     }
 
     async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
-        Err(IndexError::ServiceError(
-            io::Error::from(io::ErrorKind::Unsupported).into(),
-        ))
+        let index_keys = self.fs.list_prefix("index/").await?;
+
+        let mut crate_versions_with_publish =
+            get_latest_crate_publishes(Arc::clone(&self.fs)).await?;
+        let mut results = Vec::with_capacity(index_keys.len());
+
+        while let Some(handle) = crate_versions_with_publish.join_next().await {
+            let publish_fetch_result = handle.context("index fetch task unexpectedly failed")?;
+
+            match publish_fetch_result {
+                Ok((versions, publish)) => {
+                    let entry = convert_publish_to_crate_entry(versions, publish);
+                    results.push(entry);
+                }
+                Err(error) => {
+                    tracing::error!(%error, "failed to get Publish information for crate");
+                }
+            }
+        }
+
+        Ok(ListAll { results })
     }
 
     async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
         Err(IndexError::ServiceError(
             io::Error::from(io::ErrorKind::Unsupported).into(),
         ))
+    }
+}
+
+async fn get_latest_crate_publishes(
+    fs: Arc<Box<dyn MetadataStorageProvider + Send + Sync>>,
+) -> IndexResult<JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>>> {
+    let index_keys = fs.list_prefix("index/").await?;
+    let mut join_set = JoinSet::new();
+
+    for index_key in index_keys {
+        let fs = Arc::clone(&fs);
+        join_set.spawn(async move {
+            let (versions, publish) = fs
+                .pull_file(&index_key)
+                .await
+                .map(|bytes| deserialize_data(&bytes))?
+                .context("deserializing index file for list")?;
+
+            Ok((versions, publish))
+        });
+    }
+
+    Ok(join_set)
+}
+
+fn convert_publish_to_crate_entry(
+    mut versions: Vec<CrateVersion>,
+    publish: Option<Publish>,
+) -> ListAllCrateEntry {
+    versions.sort_by_key(|v| Reverse(v.vers.clone()));
+
+    let publish = publish.unwrap_or_else(|| {
+        let mut empty = Publish::empty();
+        empty.name = versions[0].name.to_string();
+        empty.vers = versions[0].vers.clone();
+        empty
+    });
+
+    ListAllCrateEntry {
+        name: publish.name.clone(),
+        versions: versions
+            .into_iter()
+            .map(|version| ListAllCrateVersion {
+                version: version.vers,
+            })
+            .collect(),
+        description: publish.description.unwrap_or_default(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+        homepage: publish.homepage.clone(),
+        repository: publish.repository.clone(),
+        documentation: publish.documentation.clone(),
+        keywords: publish.keywords.clone(),
+        categories: publish.categories.clone(),
     }
 }
