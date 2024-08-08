@@ -906,7 +906,6 @@ dependencies = [
  "postgres-types",
  "semver",
  "serde",
- "serde_json",
  "thiserror",
  "tracing",
 ]
@@ -962,7 +961,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "tracing",
 ]
 
 [[package]]

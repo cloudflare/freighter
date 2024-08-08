@@ -18,7 +18,7 @@ description = "Cloudflare's third-party Rust registry implementation"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/cloudflare/freighter"
-publish = ["crates-io", "freighter", "freighter-staging", "freighter-local"]
+publish = ["crates-io", "freighter", "freighter-staging"]
 keywords = ["registries", "freighter"]
 categories = []
 

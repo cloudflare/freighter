@@ -26,13 +26,6 @@ impl From<StorageError> for IndexError {
     }
 }
 
-#[cfg(feature = "index")]
-impl From<serde_json::Error> for IndexError {
-    fn from(error: serde_json::Error) -> Self {
-        IndexError::ServiceError(error.into())
-    }
-}
-
 impl IntoResponse for IndexError {
     fn into_response(self) -> Response {
         let code = match &self {

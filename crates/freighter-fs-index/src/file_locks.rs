@@ -1,4 +1,3 @@
-use freighter_api_types::index::request::Publish;
 use freighter_api_types::index::response::CrateVersion;
 use freighter_api_types::index::{IndexError, IndexResult};
 use freighter_api_types::storage::{Bytes, Metadata, MetadataStorageProvider};
@@ -109,22 +108,18 @@ pub(crate) struct LockedMetaFile<'a, Guard> {
 }
 
 impl LockedMetaFile<'_, RwLockReadGuard<'_, String>> {
-    pub async fn deserialized(&self) -> IndexResult<(Vec<CrateVersion>, Option<Publish>)> {
+    pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
         deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
     }
 }
 
 impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
-    pub async fn deserialized(&self) -> IndexResult<(Vec<CrateVersion>, Option<Publish>)> {
+    pub async fn deserialized(&self) -> IndexResult<Vec<CrateVersion>> {
         deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
     }
 
-    pub async fn replace(
-        &self,
-        data: &[CrateVersion],
-        publish: Option<&Publish>,
-    ) -> IndexResult<()> {
-        let bytes = serialize_data(data, publish)?;
+    pub async fn replace(&self, data: &[CrateVersion]) -> IndexResult<()> {
+        let bytes = serialize_data(data)?;
         let meta = Metadata {
             content_type: Some("application/json"),
             content_length: Some(bytes.len()),
@@ -139,11 +134,7 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             .map_err(|e| IndexError::ServiceError(e.into()))
     }
 
-    pub async fn put_index_file(
-        &self,
-        versions: &[CrateVersion],
-        latest_publish: &Publish,
-    ) -> IndexResult<()> {
+    pub async fn create_or_append(&self, version: &CrateVersion) -> IndexResult<()> {
         let meta = Metadata {
             content_type: Some("application/json"),
             content_length: None,
@@ -152,11 +143,10 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
             sha256: None,
             kv: HashMap::default(),
         };
-
         self.fs
-            .put_file(
+            .create_or_append_file(
                 &self.rel_path,
-                serialize_data(versions, Some(latest_publish))?,
+                serialize_data(std::slice::from_ref(version))?,
                 meta,
             )
             .await
@@ -164,49 +154,21 @@ impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
     }
 }
 
-pub(crate) fn deserialize_data(
-    json_lines: &[u8],
-) -> IndexResult<(Vec<CrateVersion>, Option<Publish>)> {
-    let mut versions = Vec::new();
-    let mut publish = None;
-
-    for line in json_lines
+fn deserialize_data(json_lines: &[u8]) -> IndexResult<Vec<CrateVersion>> {
+    json_lines
         .split(|&c| c == b'\n')
         .filter(|line| !line.is_empty())
-    {
-        if publish.is_some() {
-            tracing::error!(
-                "invalid index file format. A `Publish` struct should be the last line"
-            );
-        }
-
-        if let Ok(version) = serde_json::from_slice::<CrateVersion>(line) {
-            versions.push(version);
-        } else if let Ok(p) = serde_json::from_slice::<Publish>(line) {
-            publish = Some(p);
-        } else {
-            return Err(IndexError::ServiceError(anyhow::anyhow!(
-                "invalid index file format"
-            )));
-        }
-    }
-
-    Ok((versions, publish))
+        .map(serde_json::from_slice::<CrateVersion>)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| IndexError::ServiceError(e.into()))
 }
 
-fn serialize_data(versions: &[CrateVersion], publish: Option<&Publish>) -> IndexResult<Bytes> {
-    let mut json_lines = Vec::with_capacity((versions.len() + 1) * 128);
+fn serialize_data(versions: &[CrateVersion]) -> IndexResult<Bytes> {
+    let mut json_lines = Vec::with_capacity(versions.len() * 128);
     for v in versions {
         serde_json::to_writer(&mut json_lines, v)
             .map_err(|e| IndexError::ServiceError(e.into()))?;
         json_lines.push(b'\n');
     }
-
-    if let Some(publish) = publish {
-        serde_json::to_writer(&mut json_lines, publish)
-            .map_err(|e| IndexError::ServiceError(e.into()))?;
-        json_lines.push(b'\n');
-    }
-
     Ok(json_lines.into())
 }

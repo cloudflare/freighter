@@ -3,7 +3,7 @@ use freighter_api_types::storage::{
     Bytes, Metadata, MetadataStorageProvider, StorageError, StorageResult,
 };
 use std::io;
-use std::io::Write;
+use std::io::{Seek, Write};
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
@@ -43,15 +43,20 @@ impl MetadataStorageProvider for FsStorageProvider {
         }
         let mut tmp = NamedTempFile::new_in(parent)?;
         tmp.write_all(&file_bytes)?;
-        tmp.persist(path)
-            .map_err(|e| StorageError::ServiceError(e.into()))?;
+        tmp.persist(path).map_err(|e| StorageError::ServiceError(e.into()))?;
         Ok(())
     }
 
-    async fn list_prefix(&self, _path: &str) -> StorageResult<Vec<String>> {
-        Err(StorageError::ServiceError(anyhow::anyhow!(
-            "list_prefix is unimplemented for the FsStorageProvider"
-        )))
+    async fn create_or_append_file(&self, path: &str, file_bytes: Bytes, _meta: Metadata) -> StorageResult<()> {
+        let path = self.abs_path(path)?;
+        let parent = path.parent().unwrap();
+        if !parent.exists() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path)?;
+        file.seek(io::SeekFrom::End(0))?;
+        file.write_all(&file_bytes)?;
+        Ok(())
     }
 
     async fn delete_file(&self, path: &str) -> StorageResult<()> {

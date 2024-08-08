@@ -310,8 +310,6 @@ async fn e2e_publish_crate_in_index(
         .unwrap();
 
     // 6. List crates - unsupported
-    let list = freighter_client.list(None, None).await.unwrap();
-    assert!(!list.results.is_empty());
 
     // 7. Fetch index for crate
     let index = freighter_client

@@ -2,10 +2,11 @@ use super::DependencyKind;
 use semver::{Version, VersionReq};
 #[cfg(feature = "server")]
 use serde::Deserialize;
+#[cfg(feature = "client")]
 use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Clone, Serialize)]
+#[cfg_attr(feature = "client", derive(Serialize))]
 #[cfg_attr(feature = "server", derive(Deserialize))]
 pub struct Publish {
     /// The name of the package.
@@ -74,32 +75,7 @@ pub struct Publish {
     pub links: Option<String>,
 }
 
-impl Publish {
-    #[must_use]
-    pub fn empty() -> Publish {
-        Publish {
-            name: String::default(),
-            vers: Version::new(0, 0, 0),
-            deps: Vec::default(),
-            features: HashMap::default(),
-            authors: Vec::default(),
-            description: None,
-            documentation: None,
-            homepage: None,
-            readme: None,
-            readme_file: None,
-            keywords: Vec::default(),
-            categories: Vec::default(),
-            license: None,
-            license_file: None,
-            repository: None,
-            badges: None,
-            links: None,
-        }
-    }
-}
-
-#[derive(Clone, Serialize)]
+#[cfg_attr(feature = "client", derive(Serialize))]
 #[cfg_attr(feature = "server", derive(Deserialize))]
 pub struct PublishDependency {
     /// Name of the dependency.

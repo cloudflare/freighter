@@ -121,7 +121,6 @@ impl S3StorageProvider {
         for (k, v) in meta.kv {
             obj = obj.metadata(k, v);
         }
-
         obj.send().await.context("Failed to put file")?;
         Ok(())
     }
@@ -179,25 +178,6 @@ impl S3StorageProvider {
         // transient and only happen briefly when initially standing up the service with EC stores
         bail!("successfully put object but saw NotFound on pull 3 times");
     }
-
-    async fn list_prefix(&self, index: &str) -> StorageResult<Vec<String>> {
-        let objects = self
-            .client
-            .list_objects()
-            .bucket(self.bucket_name.clone())
-            .prefix(index)
-            .send()
-            .await
-            .context("failed to list all files")?;
-
-        let keys = objects
-            .contents()
-            .iter()
-            .filter_map(|obj| obj.key().map(ToString::to_string))
-            .collect();
-
-        Ok(keys)
-    }
 }
 
 #[async_trait]
@@ -210,8 +190,19 @@ impl MetadataStorageProvider for S3StorageProvider {
         self.put_object(path.into(), file_bytes.into(), meta).await
     }
 
-    async fn list_prefix(&self, path: &str) -> StorageResult<Vec<String>> {
-        self.list_prefix(path).await
+    async fn create_or_append_file(
+        &self,
+        path: &str,
+        file_bytes: Bytes,
+        meta: Metadata,
+    ) -> StorageResult<()> {
+        let mut all_data = match self.pull_object(path.into()).await {
+            Ok(data) => Vec::from(data),
+            Err(StorageError::NotFound) => Vec::new(),
+            Err(e) => return Err(e),
+        };
+        all_data.append(&mut Vec::from(file_bytes));
+        self.put_object(path.into(), all_data.into(), meta).await
     }
 
     async fn delete_file(&self, path: &str) -> StorageResult<()> {
