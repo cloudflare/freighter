@@ -303,13 +303,13 @@ async fn e2e_publish_crate_in_index(
         .await
         .unwrap();
 
+    // 6. List crates - unsupported
+
     // 5. Fetch our crate
     let body = freighter_client
         .download_crate(&crate_to_publish, &Version::new(1, 2, 3))
         .await
         .unwrap();
-
-    // 6. List crates - unsupported
 
     // 7. Fetch index for crate
     let index = freighter_client
