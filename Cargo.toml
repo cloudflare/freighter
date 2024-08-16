@@ -33,35 +33,35 @@ freighter-server = { path = "crates/freighter-server", version = "1.0.0" }
 freighter-storage = { path = "crates/freighter-storage", version = "1.0.0" }
 
 anyhow = "1.0.79"
-async-trait = "0.1.77"
-aws-credential-types = "1.1.1"
-aws-sdk-s3 = "1.11.0"
-axum = { version = "0.6.9", default-features = false }
-axum-extra = { version = "0.7.0", features = ["json-lines"] }
+async-trait = "0.1.81"
+aws-credential-types = "1.2.0"
+aws-sdk-s3 = "1.44.0"
+axum = { version = "0.6.20", default-features = false }
+axum-extra = { version = "0.7.7", features = ["json-lines"] }
 base64 = "0.22"
-bytes = "1.5.0"
-chrono = { version = "0.4.26", default-features = false, features = ["std", "serde"] }
-clap = { version = "4.4", default-features = false }
-deadpool-postgres = { version = "0.13.2", features = ["serde"] }
+bytes = "1.7.1"
+chrono = { version = "0.4.38", default-features = false, features = ["std", "serde"] }
+clap = { version = "4.5", default-features = false }
+deadpool-postgres = { version = "0.14.0", features = ["serde"] }
 futures-util = { version = "0.3.30", default-features = false }
-hyper = { version = "0.14", default-features = false }
+hyper = { version = "0.14.30", default-features = false }
 metrics = "0.23.0"
 metrics-exporter-prometheus = { version = "0.15.0", default-features = false, features = ["http-listener"] }
-postgres-types = "0.2.6"
+postgres-types = "0.2.7"
 rand = { version = "0.8.5", features = ["min_const_gen"] }
 reqwest = { version = "0.11.23", default-features = false, features = ["json"] }
 semver = { version = "1.0.21", features = ["serde"] }
-serde = { version = "1.0.195", features = ["derive"] }
-serde_json = "1.0.71"
-serde_yaml = "0.9.30"
+serde = { version = "1.0.208", features = ["derive"] }
+serde_json = "1.0.125"
+serde_yaml = "0.9.34"
 sha2 = "0.10.8"
 hmac = "0.12.1" # must share digest with sha2
 tempfile = "3.9.0"
 thiserror = "1.0.56"
 tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros", "signal", "sync"] }
 tokio-stream = { version = "0.1.14", default-features = false }
-tower = { version = "0.4", default-features = false }
-tower-http = "0.4.0"
+tower = { version = "0.4.13", default-features = false }
+tower-http = "0.4.4"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["std", "fmt"] }
 
