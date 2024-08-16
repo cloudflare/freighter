@@ -10,7 +10,7 @@ use freighter_api_types::index::response::ListAll;
 use freighter_api_types::index::IndexProvider;
 use freighter_api_types::storage::StorageProvider;
 use freighter_auth::AuthProvider;
-use metrics::{histogram, counter};
+use metrics::{counter, histogram};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -136,9 +136,7 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
     response
 }
 
-pub async fn root_page<I, S, A>(
-    State(state): State<Arc<ServiceState<I, S, A>>>,
-) -> String {
+pub async fn root_page<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> String {
     format!(
         "The registry URL for cargo is \"sparse+https://{api}/index\".
 
