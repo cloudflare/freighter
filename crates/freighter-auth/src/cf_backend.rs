@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
 use http::{header, HeaderMap, StatusCode};
 use serde::Deserialize;
+use std::collections::HashSet;
 
 /// Registry auth based on Cloudflare Access, using JsonWebTokens for auth
 ///
@@ -16,6 +17,7 @@ use serde::Deserialize;
 pub struct CfAuthProvider {
     team_base_url: String,
     access: CfAccess,
+    publish_access_ids: HashSet<String>,
 }
 
 impl CfAuthProvider {
@@ -25,6 +27,7 @@ impl CfAuthProvider {
         Ok(Self {
             access,
             team_base_url: config.auth_team_base_url,
+            publish_access_ids: config.auth_publish_access_ids,
         })
     }
 
@@ -41,6 +44,9 @@ pub struct Config {
     /// Long hash from overview tab
     #[serde(default = "default_auth_auth_audience")]
     pub auth_audience: String,
+    /// List of token IDs ("xxx.access") allowed to publish crates
+    #[serde(default = "default_auth_publish_access_ids")]
+    pub auth_publish_access_ids: HashSet<String>,
 }
 
 fn default_auth_team_base_url() -> String {
@@ -51,6 +57,14 @@ fn default_auth_team_base_url() -> String {
 fn default_auth_auth_audience() -> String {
     std::env::var("FREIGHTER_AUTH_AUDIENCE")
         .expect("auth_audience not found in config or environment")
+}
+
+fn default_auth_publish_access_ids() -> HashSet<String> {
+    std::env::var("FREIGHTER_AUTH_PUBLISH_ACCESS_IDS")
+        .expect("auth_publish_access_ids not found in config or environment")
+        .split([',', ':', ';'])
+        .map(String::from)
+        .collect()
 }
 
 #[async_trait]
@@ -104,7 +118,7 @@ cloudflared access login <var>hostname of the registry</var> | fgrep . | cargo l
     async fn publish(&self, token: &str, _crate_name: &str) -> AuthResult<()> {
         // only CI (using service token) is allowed to publish
         let id = self.validated_user_id(token).await?;
-        if id.is_service_token() {
+        if id.is_service_token() && self.publish_access_ids.contains(&id.0) {
             Ok(())
         } else {
             Err(AuthError::Forbidden)
@@ -170,6 +184,7 @@ fn cookie_parse() {
     let a = CfAuthProvider::new(Config {
         auth_audience: "...".into(),
         auth_team_base_url: "https://test.example.net".into(),
+        auth_publish_access_ids: Default::default(),
     })
     .unwrap();
 

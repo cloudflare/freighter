@@ -22,6 +22,8 @@ auth_tokens_pepper: "AAAAAAAAAAxAAAAAAAAARJgA"
 # Cloudflare Access
 # auth_audience: "<insert audience tag here>"
 auth_team_base_url: "https://cf-rust.cloudflareaccess.com"
+# Service tokens allowed to publish crates
+auth_publish_access_ids: ["abc...def.access"]
 
 store:
   name: "crates"
