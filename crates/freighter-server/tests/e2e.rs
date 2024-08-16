@@ -32,7 +32,7 @@ struct TestServerConfig {
 }
 
 impl TestServerConfig {
-    fn from_env(default_port: u16) -> TestServerConfig {
+    fn from_env(default_port: u16) -> Self {
         Self {
             db: Config {
                 user: Some(var("POSTGRES_USER").unwrap_or("freighter".to_owned())),
@@ -62,7 +62,7 @@ impl TestServerConfig {
 
 fn server(
     config: &TestServerConfig,
-    index_client: impl IndexProvider + Send + Sync + 'static,
+    index_client: impl IndexProvider + Send + 'static,
     auth_client: impl AuthProvider + Send + Sync + 'static,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router<(), Body>>>> {
     let storage_client = S3StorageProvider::new(
@@ -79,7 +79,7 @@ fn server(
             "http://{}/downloads/{{crate}}/{{version}}",
             config.server_addr
         ),
-        api_endpoint: format!("http://{}", config.server_addr.to_owned()),
+        api_endpoint: format!("http://{}", config.server_addr.clone()),
         metrics_address: "127.0.0.1:9999".parse()?,
         allow_registration: true,
         auth_required: config.auth_required,
@@ -143,7 +143,7 @@ async fn e2e_publish_crate_fs_auth_required() {
 }
 
 async fn e2e_publish_crate_in_index(
-    index_client: impl IndexProvider + Send + Sync + 'static,
+    index_client: impl IndexProvider + Send + 'static,
     config: TestServerConfig,
 ) {
     static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -262,8 +262,7 @@ async fn e2e_publish_crate_in_index(
 
     assert!(
         matches!(publish_res, freighter_client::Error::Conflict),
-        "{:?}",
-        publish_res
+        "{publish_res:?}"
     );
 
     // 4. Publish a newer version

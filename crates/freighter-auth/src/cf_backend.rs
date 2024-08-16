@@ -6,11 +6,11 @@ use http::{header, HeaderMap, StatusCode};
 use serde::Deserialize;
 use std::collections::HashSet;
 
-/// Registry auth based on Cloudflare Access, using JsonWebTokens for auth
+/// Registry auth based on Cloudflare Access, using `JsonWebTokens` for auth
 ///
 /// It's not possible to validate Service Auth tokens direclty. To use a token,
 /// you need to log in with it to an Access-protected URL, and obtain the JWT from
-/// the CF_Authorization cookie. This temporary cookie is the only way
+/// the `CF_Authorization` cookie. This temporary cookie is the only way
 /// auth with this Freighter backend.
 ///
 /// For personal account, you can call `cloudflared access token` to obtain the JWT.

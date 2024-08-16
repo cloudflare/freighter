@@ -14,7 +14,7 @@ use std::path::{Component, PathBuf};
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Args {
-    /// Registry http URL (http://rs.example.com/index)
+    /// Registry http URL (`http://rs.example.com/index`)
     registry_url: String,
     #[arg(env = "FREIGHTER_CLIENT_AUTH_TOKEN")]
     auth_token: Option<String>,

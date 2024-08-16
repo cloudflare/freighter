@@ -76,8 +76,8 @@ pub struct Publish {
 
 impl Publish {
     #[must_use]
-    pub fn empty() -> Publish {
-        Publish {
+    pub fn empty() -> Self {
+        Self {
             name: String::default(),
             vers: Version::new(0, 0, 0),
             deps: Vec::default(),

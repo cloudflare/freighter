@@ -25,8 +25,8 @@ impl From<io::Error> for StorageError {
 impl IntoResponse for StorageError {
     fn into_response(self) -> Response {
         let code = match &self {
-            StorageError::NotFound => StatusCode::NOT_FOUND,
-            StorageError::ServiceError(error) => {
+            Self::NotFound => StatusCode::NOT_FOUND,
+            Self::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in storage operation");
                 StatusCode::INTERNAL_SERVER_ERROR
             }

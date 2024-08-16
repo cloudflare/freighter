@@ -84,7 +84,7 @@ impl FsIndexProvider {
         meta.replace(&releases, publish.as_ref()).await
     }
 
-    fn is_valid_crate_file_name_char(c: u8) -> bool {
+    const fn is_valid_crate_file_name_char(c: u8) -> bool {
         (c.is_ascii_alphabetic() && c.is_ascii_lowercase())
             || c.is_ascii_digit()
             || c == b'-'
@@ -328,6 +328,6 @@ fn convert_publish_to_crate_entry(
         repository: publish.repository.clone(),
         documentation: publish.documentation.clone(),
         keywords: publish.keywords.clone(),
-        categories: publish.categories.clone(),
+        categories: publish.categories,
     }
 }

@@ -24,12 +24,12 @@ pub enum AuthError {
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let code = match &self {
-            AuthError::Forbidden => StatusCode::FORBIDDEN,
-            AuthError::Unauthorized => StatusCode::UNAUTHORIZED,
-            AuthError::CrateNotFound => StatusCode::NOT_FOUND,
-            AuthError::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            AuthError::Unimplemented => StatusCode::NOT_IMPLEMENTED,
-            AuthError::ServiceError(error) => {
+            Self::Forbidden => StatusCode::FORBIDDEN,
+            Self::Unauthorized => StatusCode::UNAUTHORIZED,
+            Self::CrateNotFound => StatusCode::NOT_FOUND,
+            Self::InvalidCredentials => StatusCode::UNAUTHORIZED,
+            Self::Unimplemented => StatusCode::NOT_IMPLEMENTED,
+            Self::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in auth operation");
 
                 StatusCode::INTERNAL_SERVER_ERROR
