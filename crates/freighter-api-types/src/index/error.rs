@@ -29,21 +29,21 @@ impl From<StorageError> for IndexError {
 #[cfg(feature = "index")]
 impl From<serde_json::Error> for IndexError {
     fn from(error: serde_json::Error) -> Self {
-        IndexError::ServiceError(error.into())
+        Self::ServiceError(error.into())
     }
 }
 
 impl IntoResponse for IndexError {
     fn into_response(self) -> Response {
         let code = match &self {
-            IndexError::Conflict(s) => {
+            Self::Conflict(s) => {
                 tracing::error!("Encountered conflict in index operation: {s}");
 
                 StatusCode::CONFLICT
             }
-            IndexError::NotFound => StatusCode::NOT_FOUND,
-            IndexError::CrateNameNotAllowed => StatusCode::BAD_REQUEST,
-            IndexError::ServiceError(error) => {
+            Self::NotFound => StatusCode::NOT_FOUND,
+            Self::CrateNameNotAllowed => StatusCode::BAD_REQUEST,
+            Self::ServiceError(error) => {
                 tracing::error!(?error, "Encountered service error in index operation");
 
                 StatusCode::INTERNAL_SERVER_ERROR

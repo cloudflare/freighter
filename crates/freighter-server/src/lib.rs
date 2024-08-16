@@ -215,11 +215,11 @@ pub async fn handle_global_fallback() -> (StatusCode, &'static str) {
 }
 
 #[inline(always)]
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
 
 #[inline(always)]
-fn default_crate_size_limit() -> usize {
+const fn default_crate_size_limit() -> usize {
     16 * 1024 * 1024
 }
