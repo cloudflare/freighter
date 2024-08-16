@@ -13,6 +13,7 @@ members = [
 default-members = ["crates/freighter"]
 
 [workspace.package]
+version = "1.1.0"
 authors = ["Noah Kennedy <nkennedy@cloudflare.com>", "Kornel Lesiński <kornel@cloudflare.com>"]
 description = "Cloudflare's third-party Rust registry implementation"
 edition = "2021"
