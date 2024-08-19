@@ -4,7 +4,7 @@ use chrono::Utc;
 use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
-    ListAllCrateVersion, SearchResults,
+    ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
 use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
 use freighter_api_types::storage::MetadataStorageProvider;
@@ -15,7 +15,6 @@ use serde::Deserialize;
 use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::future::Future;
-use std::io;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -250,10 +249,10 @@ impl IndexProvider for FsIndexProvider {
 
     async fn list(&self, _pagination: &ListQuery) -> IndexResult<ListAll> {
         let index_keys = self.fs.list_prefix("index/").await?;
+        let mut results = Vec::with_capacity(index_keys.len());
 
         let mut crate_versions_with_publish =
-            get_latest_crate_publishes(Arc::clone(&self.fs)).await?;
-        let mut results = Vec::with_capacity(index_keys.len());
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys).await?;
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let publish_fetch_result = handle.context("index fetch task unexpectedly failed")?;
@@ -272,17 +271,37 @@ impl IndexProvider for FsIndexProvider {
         Ok(ListAll { results })
     }
 
-    async fn search(&self, _query_string: &str, _limit: usize) -> IndexResult<SearchResults> {
-        Err(IndexError::ServiceError(
-            io::Error::from(io::ErrorKind::Unsupported).into(),
-        ))
+    async fn search(&self, query_string: &str, limit: usize) -> IndexResult<SearchResults> {
+        let mut index_keys = self.fs.list_prefix("index/").await?;
+        index_keys.retain(|k| k.contains(query_string));
+        let total = index_keys.len();
+        index_keys.truncate(limit.min(100));
+        let mut results = Vec::with_capacity(index_keys.len());
+
+        let mut crate_versions_with_publish =
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys).await?;
+
+        while let Some(handle) = crate_versions_with_publish.join_next().await {
+            let Ok(Ok((mut versions, publish_meta))) = handle else { continue };
+            let Some(most_recent_version) = versions.pop() else { continue };
+            results.push(SearchResultsEntry {
+                name: most_recent_version.name,
+                max_version: most_recent_version.vers,
+                description: publish_meta.and_then(|p| p.description).unwrap_or_default(),
+            })
+        }
+
+        Ok(SearchResults {
+            crates: results,
+            meta: SearchResultsMeta { total },
+        })
     }
 }
 
 async fn get_latest_crate_publishes(
     fs: Arc<dyn MetadataStorageProvider + Send + Sync>,
+    index_keys: Vec<String>,
 ) -> IndexResult<JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>>> {
-    let index_keys = fs.list_prefix("index/").await?;
     let mut join_set = JoinSet::new();
 
     for index_key in index_keys {
