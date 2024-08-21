@@ -252,7 +252,7 @@ impl IndexProvider for FsIndexProvider {
         let mut results = Vec::with_capacity(index_keys.len());
 
         let mut crate_versions_with_publish =
-            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys).await?;
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys)?;
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let publish_fetch_result = handle.context("index fetch task unexpectedly failed")?;
@@ -279,7 +279,7 @@ impl IndexProvider for FsIndexProvider {
         let mut results = Vec::with_capacity(index_keys.len());
 
         let mut crate_versions_with_publish =
-            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys).await?;
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys)?;
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let Ok(Ok((mut versions, publish_meta))) = handle else { continue };
@@ -288,7 +288,7 @@ impl IndexProvider for FsIndexProvider {
                 name: most_recent_version.name,
                 max_version: most_recent_version.vers,
                 description: publish_meta.and_then(|p| p.description).unwrap_or_default(),
-            })
+            });
         }
 
         Ok(SearchResults {
@@ -298,7 +298,7 @@ impl IndexProvider for FsIndexProvider {
     }
 }
 
-async fn get_latest_crate_publishes(
+fn get_latest_crate_publishes(
     fs: Arc<dyn MetadataStorageProvider + Send + Sync>,
     index_keys: Vec<String>,
 ) -> IndexResult<JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>>> {

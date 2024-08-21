@@ -32,3 +32,5 @@ store:
   access_key_id: "1234567890"
   access_key_secret: "1234567890"
 
+
+auth_allow_full_access_without_any_checks: true
