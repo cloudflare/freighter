@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_lines)]
 #![cfg(feature = "test_e2e")]
 pub mod common;
 
