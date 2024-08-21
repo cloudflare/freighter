@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 use anyhow::Context;
 use async_trait::async_trait;
 use chrono::Utc;
@@ -252,7 +253,7 @@ impl IndexProvider for FsIndexProvider {
         let mut results = Vec::with_capacity(index_keys.len());
 
         let mut crate_versions_with_publish =
-            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys)?;
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys);
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let publish_fetch_result = handle.context("index fetch task unexpectedly failed")?;
@@ -279,7 +280,7 @@ impl IndexProvider for FsIndexProvider {
         let mut results = Vec::with_capacity(index_keys.len());
 
         let mut crate_versions_with_publish =
-            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys)?;
+            get_latest_crate_publishes(Arc::clone(&self.fs), index_keys);
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let Ok(Ok((mut versions, publish_meta))) = handle else { continue };
@@ -301,7 +302,7 @@ impl IndexProvider for FsIndexProvider {
 fn get_latest_crate_publishes(
     fs: Arc<dyn MetadataStorageProvider + Send + Sync>,
     index_keys: Vec<String>,
-) -> IndexResult<JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>>> {
+) -> JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>> {
     let mut join_set = JoinSet::new();
 
     for index_key in index_keys {
@@ -317,7 +318,7 @@ fn get_latest_crate_publishes(
         });
     }
 
-    Ok(join_set)
+    join_set
 }
 
 fn convert_publish_to_crate_entry(
