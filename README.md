@@ -56,9 +56,9 @@ Finally, a config file using the above:
 ```yaml
 service:
   address: "127.0.0.1:3000"
-  download_endpoint: "127.0.0.1:3000/downloads/{crate}/{version}"
-  api_endpoint: "127.0.0.1:3000"
   metrics_address: "127.0.0.1:3001"
+  download_endpoint: "http://127.0.0.1:3000/downloads/{crate}/{version}"
+  api_endpoint: "http://127.0.0.1:3000"
 
 # for postgres backend
 index_db: &db

@@ -47,6 +47,17 @@ pub struct ServiceConfig {
     pub crate_size_limit: usize,
 }
 
+impl ServiceConfig {
+    pub fn sanitize(&mut self) {
+        if !self.api_endpoint.contains("://") {
+            self.api_endpoint = format!("https://{}", self.api_endpoint);
+        }
+        if !self.download_endpoint.contains("://") {
+            self.download_endpoint = format!("https://{}", self.download_endpoint);
+        }
+    }
+}
+
 pub struct ServiceState<I, S, A> {
     pub config: ServiceConfig,
     pub index: I,
@@ -55,7 +66,8 @@ pub struct ServiceState<I, S, A> {
 }
 
 impl<I, S, A> ServiceState<I, S, A> {
-    pub fn new(config: ServiceConfig, index: I, storage: S, auth: A) -> Self {
+    pub fn new(mut config: ServiceConfig, index: I, storage: S, auth: A) -> Self {
+        config.sanitize();
         Self {
             config,
             index,
