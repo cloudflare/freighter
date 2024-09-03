@@ -59,7 +59,7 @@ impl Client {
     }
 
     pub async fn from_reqwest(endpoint: &str, token: Option<String>, client: reqwest::Client) -> Self {
-        let endpoint = endpoint.to_string();
+        let endpoint = endpoint.trim_end_matches('/').to_string();
         let config_url = format!("{endpoint}/config.json");
 
         let mut auth_required = false;
