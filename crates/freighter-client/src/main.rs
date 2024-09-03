@@ -33,7 +33,7 @@ enum Commands {
 async fn main() {
     let args = Args::parse();
 
-    let mut client = Client::new(&args.registry_url, args.auth_token).await;
+    let mut client = Client::new(&args.registry_url, args.auth_token).await.unwrap();
 
     match args.command {
         Commands::Register { username } => {

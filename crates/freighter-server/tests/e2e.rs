@@ -178,7 +178,7 @@ async fn e2e_publish_crate_in_index(
     let server_spawned = tokio::spawn(server(&config, index_client, auth_client).unwrap());
 
     let mut freighter_client =
-        Client::new(&format!("http://{server_addr}/index"), default_token).await;
+        Client::new(&format!("http://{server_addr}/index"), default_token).await.unwrap();
 
     if !config.auth_required {
         // 1. Create a user to get a publish token.
