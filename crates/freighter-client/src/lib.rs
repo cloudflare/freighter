@@ -52,29 +52,36 @@ impl From<reqwest::Error> for Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl Client {
-    pub async fn new(endpoint: &str, token: Option<String>) -> Self {
+    pub async fn new(endpoint: &str, token: Option<String>) -> Result<Self, Error> {
         let http = reqwest::Client::new();
 
         Self::from_reqwest(endpoint, token, http).await
     }
 
-    pub async fn from_reqwest(endpoint: &str, token: Option<String>, client: reqwest::Client) -> Self {
+    pub async fn from_reqwest(endpoint: &str, token: Option<String>, client: reqwest::Client) -> Result<Self, Error> {
         let endpoint = endpoint.trim_end_matches('/').to_string();
         let config_url = format!("{endpoint}/config.json");
 
         let mut auth_required = false;
-        let mut resp = client.get(&config_url).send().await.unwrap();
+        let mut resp = client.get(&config_url).send().await?;
 
         if resp.status() == StatusCode::UNAUTHORIZED {
             let token = token.as_ref().expect("registry requires auth, no token given");
             auth_required = true;
             resp = client.get(&config_url)
-                .header(AUTHORIZATION, HeaderValue::from_str(token).unwrap())
+                .header(AUTHORIZATION, HeaderValue::from_str(token).map_err(anyhow::Error::from)?)
                 .send().await.unwrap();
         }
-        assert_eq!(resp.status(), StatusCode::OK);
 
-        let mut config: RegistryConfig = resp.json().await.unwrap();
+        if resp.status() != StatusCode::OK {
+            let text = match resp.text().await {
+                Ok(t) => t,
+                Err(e) => e.to_string(),
+            };
+            return Err(anyhow::anyhow!("Can't get config from {config_url}: {text}").into());
+        }
+
+        let mut config: RegistryConfig = resp.json().await?;
 
         if config.api.ends_with('/') {
             config.api.pop();
@@ -84,13 +91,13 @@ impl Client {
 
         auth_required |= config.auth_required;
 
-        Self {
+        Ok(Self {
             http: client,
             endpoint,
             token,
             config,
             auth_required,
-        }
+        })
     }
 
     pub async fn fetch_index(&self, name: &str) -> Result<Vec<CrateVersion>> {
