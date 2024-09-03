@@ -62,10 +62,13 @@ pub struct CrateVersion {
     /// Each feature maps to an array of features or dependencies it enables.
     pub features: HashMap<String, Vec<String>>,
     /// Boolean of whether or not this version has been yanked.
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default))]
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "is_false"))]
     pub yanked: bool,
     /// The `links` string value from the package's manifest, or null if not specified.
     ///
     /// This field is optional and defaults to null.
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "Option::is_none"))]
     pub links: Option<String>,
     /// An unsigned 32-bit integer value indicating the schema version of this entry.
     ///
@@ -82,7 +85,7 @@ pub struct CrateVersion {
     ///      This is honored in Rust version 1.51 and newer.
     /// * 2: The addition of the `features2` field.
     ///      This is honored in Rust version 1.60 and newer.
-    #[cfg_attr(feature = "client", serde(default = "default_v"))]
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default = "default_v"))]
     pub v: u32,
     /// This optional field contains features with new, extended syntax.
     ///
@@ -99,7 +102,8 @@ pub struct CrateVersion {
     /// to include those in the "features" field. Using this is only necessary if the registry
     /// wants to support cargo versions older than 1.19, which in practice is only crates.io since
     /// those older versions do not support other registries.
-    #[cfg_attr(feature = "client", serde(default))]
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "HashMap::is_empty"))]
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default))]
     pub features2: HashMap<String, Vec<String>>,
 }
 
@@ -118,14 +122,18 @@ pub struct Dependency {
     /// <https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html>.
     pub req: VersionReq,
     /// Array of features (as strings) enabled for this dependency.
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default))]
     pub features: Vec<String>,
     /// Boolean of whether or not this is an optional dependency.
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default))]
     pub optional: bool,
     /// Boolean of whether or not default features are enabled.
     pub default_features: bool,
     /// The target platform for the dependency.
     ///
     /// null if not a target dependency. Otherwise, a string such as `cfg(windows)`.
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "Option::is_none"))]
+    #[cfg_attr(any(feature = "index", feature = "client"), serde(default))]
     pub target: Option<String>,
     /// The dependency kind.
     ///
@@ -136,12 +144,18 @@ pub struct Dependency {
     /// The URL of the index of the registry where this dependency is from as a string.
     ///
     /// If not specified or null, it is assumed the dependency is in the current registry.
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "Option::is_none"))]
     pub registry: Option<String>,
     /// If the dependency is renamed, this is a string of the actual package name.
     ///
     /// If not specified or null, this dependency is not
     /// renamed.
+    #[cfg_attr(any(feature = "index", feature = "server"), serde(skip_serializing_if = "Option::is_none"))]
     pub package: Option<String>,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
 }
 
 #[derive(Default)]
@@ -208,7 +222,7 @@ pub struct SearchResultsEntry {
     pub description: String,
 }
 
-#[cfg(feature = "client")]
+#[cfg(any(feature = "index", feature = "client"))]
 fn default_v() -> u32 {
     1
 }

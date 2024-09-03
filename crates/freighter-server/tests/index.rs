@@ -93,8 +93,8 @@ async fn valid_crate() {
     let body = std::str::from_utf8(&body).unwrap();
     assert_eq!(
         body,
-        r#"{"name":"example-lib","vers":"1.3.0","deps":[],"cksum":"beefcafe","features":{},"yanked":false,"links":null,"v":2,"features2":{}}
-{"name":"example-lib","vers":"1.3.1","deps":[],"cksum":"beefcafe","features":{},"yanked":false,"links":null,"v":2,"features2":{}}
+        r#"{"name":"example-lib","vers":"1.3.0","deps":[],"cksum":"beefcafe","features":{},"v":2}
+{"name":"example-lib","vers":"1.3.1","deps":[],"cksum":"beefcafe","features":{},"v":2}
 "#
     );
 }
