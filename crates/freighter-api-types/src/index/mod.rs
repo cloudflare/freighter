@@ -46,16 +46,24 @@ impl From<response::CrateVersion> for request::Publish {
             deps: value
                 .deps
                 .into_iter()
-                .map(|x| PublishDependency {
-                    name: x.name,
-                    version_req: x.req,
-                    features: x.features,
-                    optional: x.optional,
-                    default_features: x.default_features,
-                    target: x.target,
-                    kind: x.kind,
-                    registry: x.registry,
-                    explicit_name_in_toml: x.package,
+                .map(|x| {
+                    // This is the opposite of how Cargo.toml does it
+                    let (package_name, explicit_name_in_toml) = if let Some(package) = x.package {
+                        (package, Some(x.name))
+                    } else {
+                        (x.name, None)
+                    };
+                    PublishDependency {
+                        name: package_name,
+                        version_req: x.req,
+                        features: x.features,
+                        optional: x.optional,
+                        default_features: x.default_features,
+                        target: x.target,
+                        kind: x.kind,
+                        registry: x.registry,
+                        explicit_name_in_toml,
+                    }
                 })
                 .collect(),
             features: value.features,

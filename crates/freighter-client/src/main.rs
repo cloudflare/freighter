@@ -90,16 +90,23 @@ async fn publish_from_tarball(client: &Client, crate_tarball: PathBuf) -> (Strin
             &Publish {
                 name: package.name().into(),
                 vers: package.version().parse().unwrap(),
-                deps: all_deps.map(|(key, dep, kind, target)| PublishDependency {
-                    name: key.to_string(),
-                    version_req: VersionReq::parse(dep.req()).unwrap(),
-                    features: dep.req_features().to_vec(),
-                    optional: dep.optional(),
-                    default_features: dep.detail().map_or(true, |det| det.default_features),
-                    target: target.map(From::from),
-                    kind,
-                    registry: if dep.detail().is_some_and(|d| d.registry.is_some()) { None } else { Some("https://github.com/rust-lang/crates.io-index".into()) },
-                    explicit_name_in_toml: dep.package().map(From::from),
+                deps: all_deps.map(|(key, dep, kind, target)| {
+                    let (package_name, explicit_name_in_toml) = if let Some(package) = dep.package() {
+                        (package.into(), Some(key.into()))
+                    } else {
+                        (key.into(), None)
+                    };
+                    PublishDependency {
+                        name: package_name,
+                        version_req: VersionReq::parse(dep.req()).unwrap(),
+                        features: dep.req_features().to_vec(),
+                        optional: dep.optional(),
+                        default_features: dep.detail().map_or(true, |det| det.default_features),
+                        target: target.map(From::from),
+                        kind,
+                        registry: if dep.detail().is_some_and(|d| d.registry.is_some()) { None } else { Some("https://github.com/rust-lang/crates.io-index".into()) },
+                        explicit_name_in_toml,
+                    }
                 }).collect(),
                 authors: vec![],
                 description: package.description().map(From::from),
