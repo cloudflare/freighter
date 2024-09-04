@@ -4,7 +4,7 @@ use freighter_api_types::storage::{
 };
 use std::io;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
 
 pub struct FsStorageProvider {
@@ -48,10 +48,11 @@ impl MetadataStorageProvider for FsStorageProvider {
         Ok(())
     }
 
-    async fn list_prefix(&self, _path: &str) -> StorageResult<Vec<String>> {
-        Err(StorageError::ServiceError(anyhow::anyhow!(
-            "list_prefix is unimplemented for the FsStorageProvider"
-        )))
+    async fn list_prefix(&self, path: &str) -> StorageResult<Vec<String>> {
+        let start = self.abs_path(path)?;
+        let mut out = Vec::new();
+        append_dir(&start, &mut out)?;
+        Ok(out)
     }
 
     async fn delete_file(&self, path: &str) -> StorageResult<()> {
@@ -67,4 +68,18 @@ impl MetadataStorageProvider for FsStorageProvider {
             anyhow::bail!("root not a dir")
         }
     }
+}
+
+fn append_dir(path: &Path, out: &mut Vec<String>) -> StorageResult<()> {
+    for e in std::fs::read_dir(path)? {
+        let e = e?;
+        let ty = e.file_type()?;
+        if ty.is_dir() {
+            append_dir(&e.path(), out)?;
+        }
+        if let Ok(p) = e.path().into_os_string().into_string() {
+            out.push(p);
+        }
+    }
+    Ok(())
 }
