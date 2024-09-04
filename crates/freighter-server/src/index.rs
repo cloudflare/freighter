@@ -14,7 +14,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
 
-const CARGO_AUTH_REQUIRED_ERROR: &str = "error: This registry requires `cargo +nightly -Z registry-auth` or `CARGO_UNSTABLE_REGISTRY_AUTH=true RUSTC_BOOTSTRAP=1`";
+const CARGO_AUTH_REQUIRED_ERROR: &str = "error: This registry requires cargo authentication\nhttps://doc.rust-lang.org/cargo/reference/registry-authentication.html";
 
 pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
 where
