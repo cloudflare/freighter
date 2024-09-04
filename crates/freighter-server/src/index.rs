@@ -9,6 +9,7 @@ use axum_extra::json_lines::AsResponse;
 use freighter_api_types::index::response::{CrateVersion, RegistryConfig};
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::AuthProvider;
+use std::collections::HashSet;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
@@ -68,11 +69,41 @@ where
         state.auth.auth_index_fetch(token, crate_name).await?;
     }
 
-    let crate_versions = state.index.get_sparse_entry(crate_name).await?;
+    let mut crate_versions = state.index.get_sparse_entry(crate_name).await?;
+    // Fixes already-published crates
+    ensure_correct_metadata(&mut crate_versions);
 
     let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
 
     Ok(resp)
+}
+
+
+fn ensure_correct_metadata(entries: &mut [CrateVersion]) {
+    for e in entries {
+        let valid_features: HashSet<_> = e.features.keys().chain(e.features2.keys()).cloned().collect();
+        let mut missing_features = Vec::new();
+        for feature_actions in e.features.values_mut().chain(e.features2.values_mut()) {
+            // ensure there are no features that refer to non-existent dependencies - cargo checks for this.
+            // (this may happen because dev deps are not in the index)
+            feature_actions.retain(|action| {
+                if !valid_features.contains(action) {
+                    let action = action.strip_prefix("dep:").unwrap_or(action).split(['?','/']).next().unwrap();
+                    if !e.deps.iter().any(|d| d.name == action) {
+                        if !valid_features.contains(action) {
+                            missing_features.push(action.to_string());
+                        }
+                        return false;
+                    }
+                }
+                true
+            });
+        }
+        // make the features exist in case other crates refer to them too
+        for f in missing_features {
+            e.features.entry(f).or_insert_with(Vec::new);
+        }
+    }
 }
 
 async fn handle_index_fallback() -> (StatusCode, &'static str) {
