@@ -104,7 +104,11 @@ async fn publish_from_tarball(client: &Client, crate_tarball: PathBuf) -> (Strin
                         default_features: dep.detail().map_or(true, |det| det.default_features),
                         target: target.map(From::from),
                         kind,
-                        registry: if dep.detail().is_some_and(|d| d.registry.is_some()) { None } else { Some("https://github.com/rust-lang/crates.io-index".into()) },
+                        registry: if dep.detail().is_some_and(|d| d.registry.as_ref().is_some_and(|r| r != "crates-io")) {
+                            None
+                        } else {
+                            Some("https://github.com/rust-lang/crates.io-index".into())
+                        },
                         explicit_name_in_toml,
                     }
                 }).collect(),
