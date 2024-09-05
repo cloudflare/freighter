@@ -16,7 +16,7 @@ use std::collections::HashMap;
 pub struct RegistryConfig {
     pub dl: String,
     pub api: String,
-    #[serde(default)]
+    #[cfg_attr(any(feature = "client", feature = "server"), serde(default))]
     pub auth_required: bool,
 }
 
@@ -154,6 +154,7 @@ pub struct Dependency {
     pub package: Option<String>,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_false(b: &bool) -> bool {
     !*b
 }
