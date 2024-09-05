@@ -78,6 +78,7 @@ missing_panics_doc = "allow"
 module_name_repetitions = "allow"
 needless_pass_by_value = "allow"
 redundant_closure_for_method_calls = "allow"
+manual_assert = "allow"
 struct_field_names = "allow"
 
 [profile.release]
