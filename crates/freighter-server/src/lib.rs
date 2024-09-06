@@ -1,6 +1,6 @@
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, MatchedPath, Query, State};
-use axum::http::{HeaderMap, Request, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, Request, StatusCode, header};
 use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
@@ -124,6 +124,7 @@ where
                 })
                 .on_failure(DefaultOnFailure::new()),
         )
+        .layer(from_fn(x_powered_by))
         .layer(from_fn(metrics_layer))
 }
 
@@ -145,6 +146,13 @@ async fn metrics_layer<B>(request: Request<B>, next: Next<B>) -> Response {
     histogram!("freighter_request_duration_seconds", "code" => code, "endpoint" => path)
         .record(elapsed);
 
+    response
+}
+
+async fn x_powered_by<B>(request: Request<B>, next: Next<B>) -> Response {
+    let mut response = next.run(request).await;
+    response.headers_mut().insert("x-powered-by", HeaderValue::from_static(concat!("freighter/", env!("CARGO_PKG_VERSION"))));
+    response.headers_mut().insert(header::SERVER, HeaderValue::from_static("axum/0.6"));
     response
 }
 
