@@ -60,7 +60,7 @@ async fn main() {
                     Ok(published) => println!("{package_spec}: {published:#?}"),
                     Err(e) => {
                         failures += 1;
-                        eprintln!("{package_spec}: failed: {e}")
+                        eprintln!("{package_spec}: failed: {e}");
                     },
                 }
             }
