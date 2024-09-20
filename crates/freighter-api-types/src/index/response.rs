@@ -264,3 +264,16 @@ impl CrateVersion {
         }
     }
 }
+
+#[cfg_attr(feature = "client", derive(Deserialize))]
+#[cfg_attr(feature = "server", derive(Serialize))]
+pub struct YankResult {
+    // Indicates the operation succeeded, always true.
+    pub ok: bool,
+}
+
+impl Default for YankResult {
+    fn default() -> Self {
+        Self { ok: true, }
+    }
+}

@@ -7,9 +7,10 @@ use axum::routing::{delete, get, post, put};
 use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
 use freighter_api_types::index::request::{Publish, SearchQuery};
-use freighter_api_types::index::response::{CompletedPublication, SearchResults};
+use freighter_api_types::index::response::{CompletedPublication, YankResult, SearchResults};
 use freighter_api_types::index::{IndexError, IndexProvider};
 use freighter_api_types::storage::{StorageError, StorageProvider};
+use freighter_api_types::ownership::response::{OwnerList, ChangedOwnership};
 use freighter_auth::{AuthError, AuthProvider};
 use metrics::counter;
 use semver::Version;
@@ -158,7 +159,7 @@ async fn yank<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<()>
+) -> axum::response::Result<Json<YankResult>>
 where
     I: IndexProvider,
     A: AuthProvider,
@@ -170,14 +171,14 @@ where
 
     state.index.yank_crate(&name, &version).await?;
 
-    Ok(())
+    Ok(Json::default())
 }
 
 async fn unyank<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<()>
+) -> axum::response::Result<Json<YankResult>>
 where
     I: IndexProvider,
     A: AuthProvider,
@@ -189,23 +190,23 @@ where
 
     state.index.unyank_crate(&name, &version).await?;
 
-    Ok(())
+    Ok(Json::default())
 }
 
 async fn list_owners<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(name): Path<String>,
-) -> axum::response::Result<()>
+) -> axum::response::Result<Json<OwnerList>>
 where
     A: AuthProvider,
 {
     let auth = state.auth.token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
-    state.auth.list_owners(auth, &name).await?;
+    let users = state.auth.list_owners(auth, &name).await?;
 
-    Ok(())
+    Ok(Json(OwnerList { users }))
 }
 
 async fn add_owners<I, S, A>(
@@ -213,7 +214,7 @@ async fn add_owners<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
-) -> axum::response::Result<()>
+) -> axum::response::Result<Json<ChangedOwnership>>
 where
     A: AuthProvider,
 {
@@ -229,7 +230,7 @@ where
         )
         .await?;
 
-    Ok(())
+    Ok(Json(ChangedOwnership::with_msg("owners successfully added".into())))
 }
 
 async fn remove_owners<I, S, A>(
@@ -237,7 +238,7 @@ async fn remove_owners<I, S, A>(
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
-) -> axum::response::Result<()>
+) -> axum::response::Result<Json<ChangedOwnership>>
 where
     A: AuthProvider,
 {
@@ -253,7 +254,7 @@ where
         )
         .await?;
 
-    Ok(())
+    Ok(Json(ChangedOwnership::with_msg("owners successfully removed".into())))
 }
 
 async fn register<I, S, A>(
