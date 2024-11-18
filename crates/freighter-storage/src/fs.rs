@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use freighter_api_types::storage::{
-    Bytes, Metadata, MetadataStorageProvider, StorageError, StorageResult,
+    Bytes, FileResponse, Metadata, MetadataStorageProvider, StorageError, StorageResult,
 };
-use std::io;
-use std::io::Write;
+use std::fs::File;
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
 
@@ -30,9 +30,16 @@ impl FsStorageProvider {
 
 #[async_trait]
 impl MetadataStorageProvider for FsStorageProvider {
-    async fn pull_file(&self, path: &str) -> StorageResult<Bytes> {
-        let data = std::fs::read(self.root.join(path))?;
-        Ok(data.into())
+    async fn pull_file(&self, path: &str) -> StorageResult<FileResponse> {
+        let mut file = File::open(self.root.join(path))?;
+        let meta = file.metadata()?;
+        let last_modified = meta.modified().ok().map(From::from);
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+        Ok(FileResponse {
+            last_modified,
+            data: buf.into(),
+        })
     }
 
     async fn put_file(&self, path: &str, file_bytes: Bytes, _meta: Metadata) -> StorageResult<()> {

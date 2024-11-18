@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use semver::Version;
 use std::future::Future;
 use std::pin::Pin;
@@ -85,6 +86,11 @@ impl From<response::CrateVersion> for request::Publish {
     }
 }
 
+pub struct SparseEntries {
+    pub entries: Vec<CrateVersion>,
+    pub last_modified: Option<DateTime<Utc>>,
+}
+
 /// A client for talking with a backing index database or storage medium.
 ///
 /// Operations performed via this client MUST be atomic.
@@ -107,7 +113,7 @@ pub trait IndexProvider: Sync {
     ///
     /// If an error occurs while trying to generate the sparse entry, [`IndexError::ServiceError`]
     /// will be returned.
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>>;
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<SparseEntries>;
     /// Confirm that a particular crate and version pair exists, and return its yank status
     async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool>;
     /// Yank a crate version.

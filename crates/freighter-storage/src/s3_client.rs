@@ -24,7 +24,7 @@ use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::primitives::ByteStream;
 use bytes::Bytes;
 use freighter_api_types::storage::{
-    Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
+    FileResponse, Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
 };
 use std::collections::HashMap;
 
@@ -65,7 +65,7 @@ impl S3StorageProvider {
         }
     }
 
-    async fn pull_object(&self, path: String) -> StorageResult<Bytes> {
+    async fn pull_object(&self, path: String) -> StorageResult<FileResponse> {
         let resp = self
             .client
             .get_object()
@@ -81,16 +81,20 @@ impl S3StorageProvider {
             }
         }
 
-        let data = resp.context("Storage response error")?;
+        let resp = resp.context("Storage response error")?;
+        let last_modified = resp.last_modified().and_then(|d| chrono::DateTime::from_timestamp(d.secs(), 0));
 
-        let crate_bytes = data
+        let crate_bytes = resp
             .body
             .collect()
             .await
             .context("Error while retrieving body")?
             .into_bytes();
 
-        Ok(crate_bytes)
+        Ok(FileResponse {
+            last_modified,
+            data: crate_bytes,
+        })
     }
 
     async fn put_object(
@@ -143,7 +147,7 @@ impl S3StorageProvider {
             // try and pull the object initially to make sure the health file is there
             match self.pull_object(path.clone()).await {
                 Ok(obj) => {
-                    if obj.as_ref() == b"ok" {
+                    if obj.data.as_ref() == b"ok" {
                         return Ok(());
                     }
 
@@ -202,7 +206,7 @@ impl S3StorageProvider {
 
 #[async_trait]
 impl MetadataStorageProvider for S3StorageProvider {
-    async fn pull_file(&self, path: &str) -> StorageResult<Bytes> {
+    async fn pull_file(&self, path: &str) -> StorageResult<FileResponse> {
         self.pull_object(path.into()).await
     }
 
@@ -225,7 +229,7 @@ impl MetadataStorageProvider for S3StorageProvider {
 
 #[async_trait]
 impl StorageProvider for S3StorageProvider {
-    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<Bytes> {
+    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<FileResponse> {
         let path = construct_path(name, version);
         self.pull_object(path).await
     }

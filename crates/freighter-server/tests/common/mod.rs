@@ -10,7 +10,7 @@ use std::{
 
 use async_trait::async_trait;
 use axum::body::Bytes;
-use freighter_api_types::index::request::{ListQuery, Publish};
+use freighter_api_types::{index::{request::{ListQuery, Publish}, SparseEntries}, storage::FileResponse};
 use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, ListAll, ListAllCrateEntry, ListAllCrateVersion,
     SearchResults,
@@ -35,9 +35,9 @@ impl IndexProvider for MockIndexProvider {
         Ok(())
     }
 
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
-        if let Some(versions) = self.crates.get(crate_name).cloned() {
-            Ok(versions)
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<SparseEntries> {
+        if let Some(entries) = self.crates.get(crate_name).cloned() {
+            Ok(SparseEntries { entries, last_modified: None })
         } else {
             Err(IndexError::NotFound)
         }
@@ -100,7 +100,7 @@ pub struct MockStorageProvider;
 
 #[async_trait]
 impl StorageProvider for MockStorageProvider {
-    async fn pull_crate(&self, _name: &str, _version: &str) -> StorageResult<Bytes> {
+    async fn pull_crate(&self, _name: &str, _version: &str) -> StorageResult<FileResponse> {
         unimplemented!()
     }
 

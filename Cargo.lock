@@ -1140,6 +1140,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "bytes",
+ "chrono",
  "freighter-api-types",
  "tempfile",
  "thiserror 2.0.3",
