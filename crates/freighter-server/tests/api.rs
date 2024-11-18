@@ -1,14 +1,13 @@
 pub mod common;
 
-use crate::common::{
-    utils::{crate_version, generate_crate_payload},
-    MockIndexProvider, ServiceStateBuilder,
-};
+use crate::common::utils::{crate_version, generate_crate_payload};
+use crate::common::{MockIndexProvider, ServiceStateBuilder};
+use axum::body::{to_bytes, Body};
 
 use axum::http::{Request, StatusCode};
 use freighter_api_types::index::response::CrateVersion;
 use freighter_server::{api, router};
-use hyper::{header::AUTHORIZATION, Body};
+use hyper::header::AUTHORIZATION;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use tower::ServiceExt;
@@ -34,7 +33,7 @@ async fn publish_crate() {
                 .uri("/new")
                 .method("PUT")
                 .header(AUTHORIZATION, TOKEN)
-                .body(payload.into())
+                .body(Body::from(payload))
                 .unwrap(),
         )
         .await
@@ -62,7 +61,7 @@ async fn publish_crate_auth_denied() {
                 .uri("/new")
                 .method("PUT")
                 .header(AUTHORIZATION, "1234")
-                .body(payload.into())
+                .body(Body::from(payload))
                 .unwrap(),
         )
         .await
@@ -145,7 +144,7 @@ async fn list_all_crates() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(
         value,
@@ -226,7 +225,7 @@ async fn one_char_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("a", value.name);
@@ -263,7 +262,7 @@ async fn two_char_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("aa", value.name);
@@ -300,7 +299,7 @@ async fn three_char_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("aaa", value.name);
@@ -337,7 +336,7 @@ async fn four_char_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("aaaa", value.name);
@@ -374,7 +373,7 @@ async fn hyphen_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("aa-aa", value.name);
@@ -411,7 +410,7 @@ async fn underscore_crate_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     // only one version present, this should deserialize
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let value: CrateVersion = serde_json::from_slice(&body).unwrap();
 
     assert_eq!("aa_aa", value.name);
