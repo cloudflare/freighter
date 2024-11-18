@@ -7,7 +7,7 @@ use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
     ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
+use freighter_api_types::index::{IndexError, IndexProvider, IndexResult, SparseEntries};
 use freighter_api_types::storage::MetadataStorageProvider;
 use freighter_storage::fs::FsStorageProvider;
 use freighter_storage::s3_client::S3StorageProvider;
@@ -76,12 +76,12 @@ impl FsIndexProvider {
         let meta = lock.exclusive().await;
 
         let (mut releases, publish) = meta.deserialized().await?;
-        let release = releases
+        let release = releases.entries
             .iter_mut()
             .rfind(|v| &v.vers == version)
             .ok_or(IndexError::NotFound)?;
         release.yanked = yank;
-        meta.replace(&releases, publish.as_ref()).await
+        meta.replace(&releases.entries, publish.as_ref()).await
     }
 
     const fn is_valid_crate_file_name_char(c: u8) -> bool {
@@ -154,7 +154,7 @@ impl IndexProvider for FsIndexProvider {
         Ok(())
     }
 
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<SparseEntries> {
         self.access_crate(crate_name)?
             .shared()
             .await
@@ -169,7 +169,7 @@ impl IndexProvider for FsIndexProvider {
             .await
             .deserialized()
             .await
-            .map(|(versions, _)| versions)?
+            .map(|(versions, _)| versions.entries)?
             .iter()
             .rfind(|e| &e.vers == version)
             .map(|e| e.yanked)
@@ -228,14 +228,14 @@ impl IndexProvider for FsIndexProvider {
 
         let mut versions = match meta.deserialized().await {
             Ok((existing_releases, _)) => {
-                if existing_releases.iter().any(|v| v.vers == release.vers) {
+                if existing_releases.entries.iter().any(|v| v.vers == release.vers) {
                     return Err(IndexError::Conflict(format!(
                         "{}-{} aleady exists",
                         publish.name, publish.vers
                     )));
                 }
 
-                existing_releases
+                existing_releases.entries
             }
             Err(IndexError::NotFound) => vec![],
             Err(other) => return Err(other),
@@ -284,7 +284,7 @@ impl IndexProvider for FsIndexProvider {
 
         while let Some(handle) = crate_versions_with_publish.join_next().await {
             let Ok(Ok((mut versions, publish_meta))) = handle else { continue };
-            let Some(most_recent_version) = versions.pop() else { continue };
+            let Some(most_recent_version) = versions.entries.pop() else { continue };
             results.push(SearchResultsEntry {
                 name: most_recent_version.name,
                 max_version: most_recent_version.vers,
@@ -311,7 +311,7 @@ fn get_latest_crate_publishes(
             let (versions, publish) = fs
                 .pull_file(&index_key)
                 .await
-                .map(|bytes| deserialize_data(&bytes))?
+                .map(|res| deserialize_data(&res.data))?
                 .context("deserializing index file for list")?;
 
             Ok((versions, publish))

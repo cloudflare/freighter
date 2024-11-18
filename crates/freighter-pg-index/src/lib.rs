@@ -7,7 +7,7 @@ use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
     ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
+use freighter_api_types::index::{IndexError, IndexProvider, IndexResult, SparseEntries};
 use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;
@@ -72,7 +72,7 @@ impl IndexProvider for PgIndexProvider {
         Ok(())
     }
 
-    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<Vec<CrateVersion>> {
+    async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<SparseEntries> {
         let client = self.pool.get().await.map_err(anyhow::Error::from)?;
 
         // prepare these at once to take advantage of pipelining
@@ -181,7 +181,10 @@ impl IndexProvider for PgIndexProvider {
                     });
                 }
 
-                Ok(versions)
+                Ok(SparseEntries {
+                    entries: versions,
+                    last_modified: None,
+                })
             }
             None => {
                 tracing::warn!("Returning 404 for crate index");

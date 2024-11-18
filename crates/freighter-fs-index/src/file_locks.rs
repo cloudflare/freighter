@@ -1,6 +1,6 @@
 use freighter_api_types::index::request::Publish;
 use freighter_api_types::index::response::CrateVersion;
-use freighter_api_types::index::{IndexError, IndexResult};
+use freighter_api_types::index::{IndexError, IndexResult, SparseEntries};
 use freighter_api_types::storage::{Bytes, Metadata, MetadataStorageProvider};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -109,14 +109,24 @@ pub(crate) struct LockedMetaFile<'a, Guard> {
 }
 
 impl LockedMetaFile<'_, RwLockReadGuard<'_, String>> {
-    pub async fn deserialized(&self) -> IndexResult<(Vec<CrateVersion>, Option<Publish>)> {
-        deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
+    pub async fn deserialized(&self) -> IndexResult<(SparseEntries, Option<Publish>)> {
+        let res = self.fs.pull_file(&self.rel_path).await?;
+        let (entries, publish) = deserialize_data(&res.data)?;
+        Ok((SparseEntries {
+            entries,
+            last_modified: res.last_modified,
+        }, publish))
     }
 }
 
 impl LockedMetaFile<'_, RwLockWriteGuard<'_, String>> {
-    pub async fn deserialized(&self) -> IndexResult<(Vec<CrateVersion>, Option<Publish>)> {
-        deserialize_data(&self.fs.pull_file(&self.rel_path).await?)
+    pub async fn deserialized(&self) -> IndexResult<(SparseEntries, Option<Publish>)> {
+        let res = self.fs.pull_file(&self.rel_path).await?;
+        let (entries, publish) = deserialize_data(&res.data)?;
+        Ok((SparseEntries {
+            entries,
+            last_modified: res.last_modified,
+        }, publish))
     }
 
     pub async fn replace(

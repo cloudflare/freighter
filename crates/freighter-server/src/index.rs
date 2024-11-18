@@ -1,18 +1,18 @@
 use crate::ServiceState;
 use axum::extract::{Path, State};
 use axum::http::header::WWW_AUTHENTICATE;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{header, HeaderMap, StatusCode};
+use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
-use axum_extra::json_lines::AsResponse;
 use freighter_api_types::index::response::{CrateVersion, RegistryConfig};
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::AuthProvider;
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::sync::Arc;
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::StreamExt;
 
 const CARGO_AUTH_REQUIRED_ERROR: &str = "error: This registry requires cargo authentication\nhttps://doc.rust-lang.org/cargo/reference/registry-authentication.html";
 
@@ -52,9 +52,7 @@ async fn get_sparse_meta<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path(crate_index_path): Path<String>,
-) -> axum::response::Result<
-    JsonLines<impl Stream<Item = Result<CrateVersion, Infallible>>, AsResponse>,
->
+) -> axum::response::Result<axum::response::Response>
 where
     I: IndexProvider,
     A: AuthProvider + Sync,
@@ -71,11 +69,14 @@ where
 
     let mut crate_versions = state.index.get_sparse_entry(crate_name).await?;
     // Fixes already-published crates
-    ensure_correct_metadata(&mut crate_versions);
+    ensure_correct_metadata(&mut crate_versions.entries);
 
-    let resp = JsonLines::new(tokio_stream::iter(crate_versions).map(Ok));
+    let mut res = JsonLines::new(tokio_stream::iter(crate_versions.entries).map(Ok::<_, Infallible>)).into_response();
+    if let Some(last_mod) = crate_versions.last_modified.and_then(|d| d.to_rfc2822().try_into().ok()) {
+        res.headers_mut().insert(header::LAST_MODIFIED, last_mod);
+    }
 
-    Ok(resp)
+    Ok(res)
 }
 
 

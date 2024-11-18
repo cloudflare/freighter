@@ -1,7 +1,6 @@
 use crate::ServiceState;
-use axum::body::Bytes;
 use axum::extract::{Path, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{header, HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::Router;
 use freighter_api_types::index::IndexProvider;
@@ -25,7 +24,7 @@ async fn serve_crate<I, S, A>(
     headers: HeaderMap,
     State(state): State<Arc<ServiceState<I, S, A>>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<Bytes>
+) -> axum::response::Result<axum::response::Response>
 where
     I: IndexProvider,
     S: StorageProvider,
@@ -38,12 +37,17 @@ where
 
     let _is_yanked = state.index.confirm_existence(&name, &version).await?;
 
-    let crate_bytes = state
+    let crate_res = state
         .storage
         .pull_crate(&name, &version.to_string())
         .await?;
 
-    Ok(crate_bytes)
+    let mut res = axum::response::Response::new(crate_res.data.into());
+    if let Some(last_mod) = crate_res.last_modified.and_then(|d| d.to_rfc2822().try_into().ok()) {
+        res.headers_mut().insert(header::LAST_MODIFIED, last_mod);
+    }
+
+    Ok(res)
 }
 
 async fn handle_downloads_fallback() -> (StatusCode, &'static str) {
