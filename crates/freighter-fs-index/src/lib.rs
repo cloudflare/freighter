@@ -302,19 +302,16 @@ impl IndexProvider for FsIndexProvider {
 fn get_latest_crate_publishes(
     fs: Arc<dyn MetadataStorageProvider + Send + Sync>,
     index_keys: Vec<String>,
-) -> JoinSet<IndexResult<(Vec<CrateVersion>, Option<Publish>)>> {
+) -> JoinSet<IndexResult<(SparseEntries, Option<Publish>)>> {
     let mut join_set = JoinSet::new();
 
     for index_key in index_keys {
         let fs = Arc::clone(&fs);
         join_set.spawn(async move {
-            let (versions, publish) = fs
-                .pull_file(&index_key)
-                .await
-                .map(|res| deserialize_data(&res.data))?
-                .context("deserializing index file for list")?;
+            let res = fs.pull_file(&index_key).await?;
+            let (entries, publish) = deserialize_data(&res.data).context("deserializing index file for list")?;
 
-            Ok((versions, publish))
+            Ok((SparseEntries { entries, last_modified: res.last_modified }, publish))
         });
     }
 
@@ -322,28 +319,31 @@ fn get_latest_crate_publishes(
 }
 
 fn convert_publish_to_crate_entry(
-    mut versions: Vec<CrateVersion>,
+    mut versions: SparseEntries,
     publish: Option<Publish>,
 ) -> ListAllCrateEntry {
-    versions.sort_by_key(|v| Reverse(v.vers.clone()));
+    versions.entries.sort_by_key(|v| Reverse(v.vers.clone()));
 
     let publish = publish.unwrap_or_else(|| Publish {
-        name: versions[0].name.to_string(),
-        vers: versions[0].vers.clone(),
+        name: versions.entries[0].name.to_string(),
+        vers: versions.entries[0].vers.clone(),
         ..Publish::empty()
     });
 
+    // We don't have exact dates
+    let last_modified = versions.last_modified.unwrap_or(Utc::now());
+
     ListAllCrateEntry {
         name: publish.name.clone(),
-        versions: versions
+        versions: versions.entries
             .into_iter()
             .map(|version| ListAllCrateVersion {
                 version: version.vers,
             })
             .collect(),
         description: publish.description.unwrap_or_default(),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        created_at: last_modified,
+        updated_at: last_modified,
         homepage: publish.homepage.clone(),
         repository: publish.repository.clone(),
         documentation: publish.documentation.clone(),
