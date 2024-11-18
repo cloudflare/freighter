@@ -1,11 +1,11 @@
 pub mod common;
 
-use crate::common::{utils::crate_version, MockIndexProvider, ServiceStateBuilder};
+use crate::common::utils::crate_version;
+use crate::common::{MockIndexProvider, ServiceStateBuilder};
+use axum::body::to_bytes;
 
-use axum::{
-    body::Body,
-    http::{Request, StatusCode},
-};
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use freighter_server::index;
 use std::collections::BTreeMap;
 use tower::ServiceExt;
@@ -29,7 +29,7 @@ async fn index_config_endpoint() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let body = std::str::from_utf8(&body).unwrap();
     assert_eq!(
         body,
@@ -89,7 +89,7 @@ async fn valid_crate() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = to_bytes(response.into_body(), 100_000).await.unwrap();
     let body = std::str::from_utf8(&body).unwrap();
     assert_eq!(
         body,

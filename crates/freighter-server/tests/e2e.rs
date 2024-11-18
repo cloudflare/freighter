@@ -2,11 +2,7 @@
 #![cfg(feature = "test_e2e")]
 pub mod common;
 
-use std::collections::HashMap;
-use std::env::var;
-
 use anyhow::Result;
-use axum::{routing::IntoMakeService, Router, Server};
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_api_types::index::IndexProvider;
@@ -17,8 +13,15 @@ use freighter_fs_index::FsIndexProvider;
 use freighter_pg_index::PgIndexProvider;
 use freighter_server::ServiceConfig;
 use freighter_storage::s3_client::S3StorageProvider;
-use hyper::{server::conn::AddrIncoming, Body};
 use semver::{Version, VersionReq};
+use std::collections::HashMap;
+use std::env::var;
+use std::future::Future;
+use std::net::SocketAddr;
+use std::time::Duration;
+use tokio::net::TcpListener;
+use tokio::sync::oneshot;
+use tokio::time::timeout;
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Clone)]
@@ -65,7 +68,7 @@ fn server(
     config: &TestServerConfig,
     index_client: impl IndexProvider + Send + 'static,
     auth_client: impl AuthProvider + Send + Sync + 'static,
-) -> Result<Server<AddrIncoming, IntoMakeService<Router<(), Body>>>> {
+) -> Result<(oneshot::Receiver<()>, impl Future<Output = ()>)> {
     let storage_client = S3StorageProvider::new(
         &config.bucket_name,
         &config.bucket_endpoint_url,
@@ -74,8 +77,9 @@ fn server(
         &config.bucket_access_key_secret,
     );
 
+    let addr: SocketAddr = config.server_addr.parse()?;
     let service = ServiceConfig {
-        address: config.server_addr.parse()?,
+        address: addr.clone(),
         download_endpoint: format!(
             "http://{}/downloads/{{crate}}/{{version}}",
             config.server_addr
@@ -88,8 +92,13 @@ fn server(
     };
 
     let router = freighter_server::router(service, index_client, storage_client, auth_client);
-
-    Ok(axum::Server::bind(&config.server_addr.parse()?).serve(router.into_make_service()))
+    let service = router.into_make_service();
+    let (tx, rx) = oneshot::channel();
+    Ok((rx, async move {
+        let listener = TcpListener::bind(addr).await.unwrap();
+        tx.send(()).unwrap();
+        axum::serve(listener, service).await.unwrap();
+    }))
 }
 
 #[tokio::test]
@@ -175,7 +184,9 @@ async fn e2e_publish_crate_in_index(
     };
 
     // 0. Start Freighter
-    let server_spawned = tokio::spawn(server(&config, index_client, auth_client).unwrap());
+    let (listening, server_future) = server(&config, index_client, auth_client).unwrap();
+    let server_spawned = tokio::spawn(timeout(Duration::from_secs(5), server_future));
+    let _ = timeout(Duration::from_secs(5), listening).await;
 
     let mut freighter_client =
         Client::new(&format!("http://{server_addr}/index"), default_token).await.unwrap();

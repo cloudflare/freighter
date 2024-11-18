@@ -26,6 +26,7 @@ cfg_if::cfg_if! {
 use freighter_storage::s3_client::S3StorageProvider;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
+use tokio::net::TcpListener;
 
 mod cli;
 mod config;
@@ -89,8 +90,8 @@ async fn main() -> anyhow::Result<()> {
         std::any::type_name::<SelectedAuthProvider>()
     );
 
-    axum::Server::bind(&addr)
-        .serve(router.into_make_service())
+    let listener = TcpListener::bind(addr).await?;
+    axum::serve(listener, router.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("Freighter server exited with error")?;
