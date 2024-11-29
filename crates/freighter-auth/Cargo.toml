@@ -16,9 +16,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["pg-backend"]
 yes-backend = []
-pg-backend = ["dep:deadpool-postgres", "dep:tokio"]
 fs-backend = ["dep:base64", "dep:serde_json", "dep:parking_lot", "dep:tempfile", "dep:hmac"]
 cf-backend = ["dep:jsonwebtoken", "dep:reqwest", "dep:serde_json", "dep:tokio", "dep:cookie"]
 
@@ -29,7 +27,6 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
 cookie = { version = "0.18.1", optional = true }
-deadpool-postgres = { workspace = true, optional = true }
 http = "1.1.0"
 jsonwebtoken = { version = "9.3.0", optional = true }
 rand = { workspace = true }
