@@ -38,13 +38,12 @@ If you want to contribute a user interface for Freighter, PRs are welcome!
 
 To try out Freighter **locally**, start a `postgres:14` server:
 ```
-docker run -it -e POSTGRES_USER=freighter -e POSTGRES_PASSWORD=crates-crates-crates -p 5432:5432 -v /data:/var/lib/postgresql/data postgres:14
+docker run -it -e POSTGRES_USER=freighter -e POSTGRES_PASSWORD=crates-crates-crates -p 5432:5432 -v /var/tmp/data:/var/lib/postgresql/data postgres:14
 ```
 
 Run the migrations, e.g. with a locally installed `psql`:
 ```
 PGPASSWORD=crates-crates-crates psql -U freighter -h localhost -f sql/init-index-db.sql
-PGPASSWORD=crates-crates-crates psql -U freighter -h localhost -f sql/init-auth-db.sql
 ```
 
 Next, we need an S3-compatible server. You can use an S3 emulator for testing purposes:
@@ -60,8 +59,8 @@ service:
   download_endpoint: "http://127.0.0.1:3000/downloads/{crate}/{version}"
   api_endpoint: "http://127.0.0.1:3000"
 
-# for postgres backend
-index_db: &db
+# for postgres index backend
+index_db:
   dbname: "freighter"
   user: "freighter"
   password: "crates-crates-crates"
@@ -70,8 +69,6 @@ index_db: &db
 
 # for filesystem backend
 index_path: "/var/lib/freighter/index"
-
-auth_db: *db
 
 store:
   name: "crates"

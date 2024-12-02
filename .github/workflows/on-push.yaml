@@ -51,7 +51,7 @@ jobs:
         with:
           tool: cargo-hack@0.6.6
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack --verbose check --feature-powerset --depth=3 --at-least-one-of=postgresql-index-backend,filesystem-index-backend --at-least-one-of=postgresql-auth-backend,filesystem-auth-backend --no-dev-deps --workspace
+      - run: cargo hack --verbose check --feature-powerset --depth=3 --at-least-one-of=postgresql-index-backend,filesystem-index-backend -F filesystem-auth-backend --ignore-unknown-features --no-dev-deps --workspace
 
   clippy:
     runs-on: ubuntu-latest
@@ -79,7 +79,7 @@ jobs:
         with:
           tool: cargo-hack@0.6.6
       - uses: Swatinem/rust-cache@v2
-      - run: cargo hack --verbose test --features=postgresql-index-backend,postgresql-auth-backend --ignore-unknown-features --each-feature --exclude-features test_e2e --workspace
+      - run: cargo hack --verbose test --features=postgresql-index-backend --ignore-unknown-features --each-feature --exclude-features test_e2e --workspace
 
   minimal-versions:
     runs-on: ubuntu-latest

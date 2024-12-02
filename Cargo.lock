@@ -1028,7 +1028,6 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "cookie",
- "deadpool-postgres",
  "freighter-api-types",
  "hmac",
  "http 1.1.0",
