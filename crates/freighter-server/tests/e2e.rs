@@ -6,7 +6,7 @@ use anyhow::Result;
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
 use freighter_api_types::index::IndexProvider;
-use freighter_auth::pg_backend::PgAuthProvider;
+use freighter_auth::fs_backend::FsAuthProvider;
 use freighter_auth::AuthProvider;
 use freighter_client::Client;
 use freighter_fs_index::FsIndexProvider;
@@ -171,11 +171,13 @@ async fn e2e_publish_crate_in_index(
     let crate_to_publish_2 = format!("freighter-fruits-{test_unique_str}");
     let client_username = format!("kargo-{test_unique_str}");
 
-    type AuthConfig = <PgAuthProvider as AuthProvider>::Config;
+    let temp_auth_dir = tempfile::tempdir().unwrap();
+    type AuthConfig = <FsAuthProvider as AuthProvider>::Config;
     let auth_config = AuthConfig {
-        auth_db: config.db.clone(),
+        auth_path: temp_auth_dir.path().to_owned(),
+        auth_tokens_pepper: [255; 18],
     };
-    let auth_client = PgAuthProvider::new(auth_config).expect("Failed to initialize auth client");
+    let auth_client = FsAuthProvider::new(auth_config).expect("Failed to initialize auth client");
 
     let default_token = if config.auth_required {
         Some(auth_client.register(&client_username).await.unwrap())
