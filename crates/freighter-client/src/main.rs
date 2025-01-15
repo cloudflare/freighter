@@ -101,7 +101,7 @@ async fn publish_from_tarball(client: &Client, crate_tarball: PathBuf) -> (Strin
                         version_req: VersionReq::parse(dep.req()).unwrap(),
                         features: dep.req_features().to_vec(),
                         optional: dep.optional(),
-                        default_features: dep.detail().map_or(true, |det| det.default_features),
+                        default_features: dep.detail().is_none_or(|det| det.default_features),
                         target: target.map(From::from),
                         kind,
                         registry: if dep.detail().is_some_and(|d| d.registry.as_ref().is_some_and(|r| r != "crates-io")) {

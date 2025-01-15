@@ -17,7 +17,7 @@ impl YesAuthProvider {
         if !yes_config.auth_allow_full_access_without_any_checks {
             return Err(anyhow::anyhow!("enabled 'yes' auth without explicit opt-in").into());
         }
-        Ok(YesAuthProvider(()))
+        Ok(Self(()))
     }
 }
 

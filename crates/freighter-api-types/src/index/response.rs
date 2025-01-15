@@ -155,7 +155,7 @@ pub struct Dependency {
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_false(b: &bool) -> bool {
+const fn is_false(b: &bool) -> bool {
     !*b
 }
 
@@ -224,7 +224,7 @@ pub struct SearchResultsEntry {
 }
 
 #[cfg(any(feature = "index", feature = "client"))]
-fn default_v() -> u32 {
+const fn default_v() -> u32 {
     1
 }
 
@@ -274,6 +274,6 @@ pub struct YankResult {
 
 impl Default for YankResult {
     fn default() -> Self {
-        Self { ok: true, }
+        Self { ok: true }
     }
 }
