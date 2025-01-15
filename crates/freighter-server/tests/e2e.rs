@@ -79,7 +79,7 @@ fn server(
 
     let addr: SocketAddr = config.server_addr.parse()?;
     let service = ServiceConfig {
-        address: addr.clone(),
+        address: addr,
         download_endpoint: format!(
             "http://{}/downloads/{{crate}}/{{version}}",
             config.server_addr

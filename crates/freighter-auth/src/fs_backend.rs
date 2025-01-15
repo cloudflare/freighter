@@ -46,7 +46,9 @@ impl FsAuthProvider {
     fn random_token(&self) -> AuthResult<BareToken> {
         use rand::Rng;
         let mut token = [0; 21];
-        rand::thread_rng().try_fill(&mut token).map_err(|e| AuthError::ServiceError(e.into()))?;
+        rand::thread_rng()
+            .try_fill(&mut token)
+            .map_err(|e| AuthError::ServiceError(e.into()))?;
         Ok(token)
     }
 
@@ -60,7 +62,9 @@ impl FsAuthProvider {
     }
 
     fn token_from_str(&self, token_str: &str) -> AuthResult<HashedToken> {
-        let rest = token_str.strip_prefix(TOKEN_PREFIX).ok_or(AuthError::InvalidCredentials)?;
+        let rest = token_str
+            .strip_prefix(TOKEN_PREFIX)
+            .ok_or(AuthError::InvalidCredentials)?;
         Ok(self.hash_token(&base64_serde::decode(rest).ok_or(AuthError::InvalidCredentials)?))
     }
 
@@ -119,7 +123,8 @@ impl FsAuthProvider {
             Ok(())
         }
         inner(&self.owners_file_path, owners)
-            .context("saving owners").map_err(AuthError::ServiceError)
+            .context("saving owners")
+            .map_err(AuthError::ServiceError)
     }
 
     fn ensure_valid_token(&self, token_str: &str) -> AuthResult<()> {
@@ -247,7 +252,7 @@ impl Owners {
         }
 
         if self.owner_tokens.contains_key(login) {
-            return Err(AuthError::Forbidden)
+            return Err(AuthError::Forbidden);
         }
         self.owner_tokens.insert(login.into(), token.clone());
         self.token_owners.insert(token.clone(), login.into());

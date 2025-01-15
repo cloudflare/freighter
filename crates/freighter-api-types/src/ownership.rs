@@ -30,7 +30,7 @@ pub mod response {
     impl ChangedOwnership {
         #[must_use]
         pub fn with_msg(msg: String) -> Self {
-            Self { ok: true, msg, }
+            Self { ok: true, msg }
         }
     }
 }
