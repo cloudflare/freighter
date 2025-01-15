@@ -36,8 +36,7 @@ pub struct UserId(pub String);
 impl UserId {
     /// Used service auth token to authenticate
     pub fn is_service_token(&self) -> bool {
-        // common_name happens to look like this.
-        // CF docs are unclear on how to properly detect this.
+        // it's checked to match claims.sub when jwt is validated
         self.0.ends_with(".access")
     }
 }
@@ -145,13 +144,20 @@ impl CfAccess {
             })?
             .claims;
 
+        let sub = claims.sub.filter(|s| !s.is_empty());
+        let sub_was_empty = sub.is_none();
+
+        let user_id = UserId(
+            sub.or(claims.common_name)
+                .ok_or_else(|| anyhow::anyhow!("empty claims.sub"))?,
+        );
+
         // Service Token gets an empty string in `sub`!
-        let user_id = claims
-            .sub
-            .filter(|s| !s.is_empty())
-            .or(claims.common_name)
-            .ok_or_else(|| anyhow::anyhow!("empty claims.sub"))?;
-        Ok(UserId(user_id))
+        if user_id.is_service_token() != sub_was_empty {
+            return Err(anyhow::anyhow!("claims.sub doesn't match claims.common_name service token pattern").into());
+        }
+
+        Ok(user_id)
     }
 }
 
@@ -159,11 +165,13 @@ impl CfAccess {
 #[tokio::test]
 #[ignore]
 async fn cf_access_token_test() {
+    // curl -sI -H "CF-Access-Client-Id: ….access" -H "CF-Access-Client-Secret: …" https://access.example.com | egrep -Eo 'CF_Authorization=[^;]+
     let token = "…"; // Needs non-expired token ;(
     let a = CfAccess::new(
         "https://cf-rust.cloudflareaccess.com",
         "1de8297ce3d45d1962a73a04fcef47b434d95f0ad2134d4d5bd9876086695262",
     )
     .unwrap();
-    a.validated_user_id(token).await.unwrap();
+    let user = a.validated_user_id(token).await.unwrap();
+    assert!(user.is_service_token());
 }
