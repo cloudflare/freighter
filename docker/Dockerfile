@@ -1,4 +1,4 @@
-FROM rust:1.79-bookworm as builder
+FROM rust:1-bookworm as builder
 WORKDIR /usr/src/freighter
 
 COPY Cargo.toml .
