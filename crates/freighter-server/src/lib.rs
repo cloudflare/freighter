@@ -131,10 +131,9 @@ where
 async fn metrics_layer(request: Request<Body>, next: Next) -> Response {
     let timer = Instant::now();
 
-    let path = if let Some(path) = request.extensions().get::<MatchedPath>() {
-        path.as_str().to_string()
-    } else {
-        request.uri().path().to_string()
+    let path = match request.extensions().get::<MatchedPath>() {
+        Some(path) => path.as_str().to_string(),
+        None => String::default(),
     };
 
     let response = next.run(request).await;
