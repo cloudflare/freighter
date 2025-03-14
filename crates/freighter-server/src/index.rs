@@ -7,8 +7,6 @@ use axum::routing::get;
 use axum::{Json, Router};
 use axum_extra::extract::JsonLines;
 use freighter_api_types::index::response::{CrateVersion, RegistryConfig};
-use freighter_api_types::index::IndexProvider;
-use freighter_auth::AuthProvider;
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::sync::Arc;
@@ -16,26 +14,26 @@ use tokio_stream::StreamExt;
 
 const CARGO_AUTH_REQUIRED_ERROR: &str = "error: This registry requires cargo authentication\nhttps://doc.rust-lang.org/cargo/reference/registry-authentication.html";
 
-pub fn index_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: Send + Sync + 'static,
-    A: AuthProvider + Send + Sync + 'static,
-{
+pub fn index_router() -> Router<Arc<ServiceState>> {
     Router::new()
         .route("/config.json", get(config))
         .route("/*crate_index_path", get(get_sparse_meta))
         .fallback(handle_index_fallback)
 }
 
-async fn config<I, S, A>(headers: HeaderMap, State(state): State<Arc<ServiceState<I, S, A>>>) -> axum::response::Result<Json<RegistryConfig>>
-where
-    A: AuthProvider + Send + Sync + 'static,
-{
+async fn config(
+    headers: HeaderMap,
+    State(state): State<Arc<ServiceState>>,
+) -> axum::response::Result<Json<RegistryConfig>> {
     let auth_required = state.config.auth_required;
     if auth_required {
         let Some(token) = state.auth.token_from_headers(&headers)? else {
-            return Err((StatusCode::UNAUTHORIZED, [(WWW_AUTHENTICATE, "Cargo login_url=/me")], CARGO_AUTH_REQUIRED_ERROR).into());
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                [(WWW_AUTHENTICATE, "Cargo login_url=/me")],
+                CARGO_AUTH_REQUIRED_ERROR,
+            )
+                .into());
         };
         state.auth.auth_config(token).await?;
     }
@@ -48,15 +46,11 @@ where
     .into())
 }
 
-async fn get_sparse_meta<I, S, A>(
+async fn get_sparse_meta(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path(crate_index_path): Path<String>,
-) -> axum::response::Result<axum::response::Response>
-where
-    I: IndexProvider,
-    A: AuthProvider + Sync,
-{
+) -> axum::response::Result<axum::response::Response> {
     let Some((_, crate_name)) = crate_index_path.rsplit_once('/') else {
         tracing::warn!("Received index request with no path");
         return Err(StatusCode::BAD_REQUEST.into());
@@ -78,7 +72,6 @@ where
 
     Ok(res)
 }
-
 
 fn ensure_correct_metadata(entries: &mut [CrateVersion]) {
     for e in entries {

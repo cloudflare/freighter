@@ -31,7 +31,9 @@ use freighter_api_types::ownership::response::ListedOwner;
 
 #[async_trait]
 pub trait AuthProvider {
-    type Config;
+    type Config
+    where
+        Self: Sized;
 
     async fn healthcheck(&self) -> anyhow::Result<()>;
 

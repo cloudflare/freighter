@@ -79,7 +79,12 @@ async fn main() -> anyhow::Result<()> {
     let auth_client =
         SelectedAuthProvider::new(auth_config).context("Failed to initialize auth client")?;
 
-    let router = freighter_server::router(service, index_client, storage_client, auth_client);
+    let router = freighter_server::router(
+        service,
+        Box::new(index_client),
+        Box::new(storage_client),
+        Box::new(auth_client),
+    );
 
     tracing::info!(
         ?addr,
