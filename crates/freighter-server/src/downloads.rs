@@ -25,11 +25,11 @@ async fn serve_crate(
         state.auth.auth_crate_download(token, &name).await?;
     }
 
-    let _is_yanked = state.index.confirm_existence(&name, &version).await?;
+    let expected_crate = state.index.confirm_existence(&name, &version).await?;
 
     let crate_res = state
         .storage
-        .pull_crate(&name, &version.to_string())
+        .pull_crate(&name, &version.to_string(), expected_crate.tarball_checksum)
         .await?;
 
     let mut res = axum::response::Response::new(crate_res.data.into());

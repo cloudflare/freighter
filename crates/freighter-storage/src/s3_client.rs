@@ -27,6 +27,7 @@ use freighter_api_types::storage::{
     FileResponse, Metadata, MetadataStorageProvider, StorageError, StorageProvider, StorageResult,
 };
 use std::collections::HashMap;
+use tracing::debug;
 
 /// Storage client for working with S3-compatible APIs.
 ///
@@ -229,9 +230,29 @@ impl MetadataStorageProvider for S3StorageProvider {
 
 #[async_trait]
 impl StorageProvider for S3StorageProvider {
-    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<FileResponse> {
-        let path = construct_path(name, version);
-        self.pull_object(path).await
+    async fn pull_crate(
+        &self,
+        name: &str,
+        version: &str,
+        tarball_checksum: [u8; 32],
+    ) -> StorageResult<FileResponse> {
+        let [old_path, new_path] = construct_paths(name, version, tarball_checksum);
+        match self.pull_object(new_path.clone()).await {
+            Ok(res) => Ok(res),
+            Err(first_err) => {
+                debug!(
+                    name,
+                    version,
+                    path = old_path,
+                    "Falling back to using old path"
+                );
+                let Ok(res) = self.pull_object(old_path.clone()).await else {
+                    return Err(first_err);
+                };
+
+                Ok(res)
+            }
+        }
     }
 
     async fn put_crate(
@@ -239,28 +260,35 @@ impl StorageProvider for S3StorageProvider {
         name: &str,
         version: &str,
         crate_bytes: Bytes,
-        sha256: [u8; 32],
+        tarball_checksum: [u8; 32],
     ) -> StorageResult<()> {
         let len = crate_bytes.len();
-        let path = construct_path(name, version);
+        let [_, new_path] = construct_paths(name, version, tarball_checksum);
         self.put_object(
-            path,
+            new_path,
             crate_bytes.into(),
             Metadata {
                 content_type: Some("application/x-tar"),
                 content_length: Some(len),
                 cache_control: Some("public,immutable".into()),
                 content_encoding: None,
-                sha256: Some(sha256),
+                sha256: Some(tarball_checksum),
                 kv: HashMap::new(),
             },
         )
         .await
     }
 
-    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()> {
-        let path = construct_path(name, version);
-        self.delete_object(path).await
+    async fn delete_crate(
+        &self,
+        name: &str,
+        version: &str,
+        tarball_checksum: [u8; 32],
+    ) -> StorageResult<()> {
+        let [old_path, new_path] = construct_paths(name, version, tarball_checksum);
+        let (res1, res2) =
+            futures_util::join!(self.delete_object(new_path), self.delete_object(old_path),);
+        res1.or(res2)
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
@@ -269,6 +297,12 @@ impl StorageProvider for S3StorageProvider {
 }
 
 #[inline(always)]
-fn construct_path(name: &str, version: &str) -> String {
-    format!("crates/{name}-{version}.crate")
+fn construct_paths(name: &str, version: &str, tarball_checksum: [u8; 32]) -> [String; 2] {
+    [
+        format!("crates/{name}-{version}.crate"),
+        format!(
+            "crates/{name}-{version}_{}.tar.gz",
+            hex::encode(tarball_checksum)
+        ),
+    ]
 }

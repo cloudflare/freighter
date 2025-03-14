@@ -7,7 +7,9 @@ use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
     ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult, SparseEntries};
+use freighter_api_types::index::{
+    CrateVersionExists, IndexError, IndexProvider, IndexResult, SparseEntries,
+};
 use futures_util::StreamExt;
 use metrics::histogram;
 use postgres_types::ToSql;
@@ -166,12 +168,14 @@ impl IndexProvider for PgIndexProvider {
                         });
                     }
 
+                    let cksum: &str = version_row.get("cksum");
+
                     versions.push(CrateVersion {
+                        cksum: hex::FromHex::from_hex(cksum).context("Bad checksum")?,
                         name: crate_name.to_string(),
                         vers: Version::parse(version_row.get("version"))
                             .context("Failed to parse crate version in db")?,
                         deps,
-                        cksum: version_row.get("cksum"),
                         features,
                         yanked: version_row.get("yanked"),
                         links: version_row.get("links"),
@@ -193,7 +197,11 @@ impl IndexProvider for PgIndexProvider {
         }
     }
 
-    async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
+    async fn confirm_existence(
+        &self,
+        crate_name: &str,
+        version: &Version,
+    ) -> IndexResult<CrateVersionExists> {
         let client = self.pool.get().await.unwrap();
 
         let statement = client
@@ -207,7 +215,11 @@ impl IndexProvider for PgIndexProvider {
             .context("Failed to execute existential confirmation query")?;
 
         if let Some(row) = rows.first() {
-            Ok(row.get("yanked"))
+            let cksum: &str = row.get("cksum");
+            Ok(CrateVersionExists {
+                yanked: row.get("yanked"),
+                tarball_checksum: hex::FromHex::from_hex(cksum).context("Bad checksum")?,
+            })
         } else {
             Err(IndexError::NotFound)
         }
@@ -265,7 +277,7 @@ impl IndexProvider for PgIndexProvider {
     async fn publish(
         &self,
         version: &Publish,
-        checksum: &str,
+        tarball_checksum: [u8; 32],
         end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         let startup_timer = Instant::now();
@@ -449,6 +461,7 @@ impl IndexProvider for PgIndexProvider {
         .record(prune_keycat_timer.elapsed());
 
         let insert_version_timer = Instant::now();
+        let checksum_hex = hex::encode(tarball_checksum);
 
         let insert_version_row = transaction
             .query_one(
@@ -456,7 +469,7 @@ impl IndexProvider for PgIndexProvider {
                 &[
                     &crate_id,
                     &version.vers.to_string(),
-                    &checksum,
+                    &checksum_hex,
                     &false,
                     &version.links,
                 ],

@@ -1,23 +1,23 @@
 pub mod utils;
 
-use std::{
-    collections::{BTreeMap, HashSet},
-    future::Future,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    pin::Pin,
-    sync::Arc,
-};
+use std::collections::{BTreeMap, HashSet};
+use std::future::Future;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::pin::Pin;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum::body::Bytes;
-use freighter_api_types::{index::{request::{ListQuery, Publish}, SparseEntries}, storage::FileResponse};
+use freighter_api_types::index::request::{ListQuery, Publish};
 use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, ListAll, ListAllCrateEntry, ListAllCrateVersion,
     SearchResults,
 };
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult};
+use freighter_api_types::index::{
+    CrateVersionExists, IndexError, IndexProvider, IndexResult, SparseEntries,
+};
 use freighter_api_types::ownership::response::ListedOwner;
-use freighter_api_types::storage::{StorageProvider, StorageResult};
+use freighter_api_types::storage::{FileResponse, StorageProvider, StorageResult};
 use freighter_auth::{AuthError, AuthProvider, AuthResult};
 use freighter_server::{ServiceConfig, ServiceState};
 use semver::Version;
@@ -42,7 +42,11 @@ impl IndexProvider for MockIndexProvider {
             Err(IndexError::NotFound)
         }
     }
-    async fn confirm_existence(&self, _crate_name: &str, _version: &Version) -> IndexResult<bool> {
+    async fn confirm_existence(
+        &self,
+        _crate_name: &str,
+        _version: &Version,
+    ) -> IndexResult<CrateVersionExists> {
         unimplemented!()
     }
     async fn yank_crate(&self, _crate_name: &str, _version: &Version) -> IndexResult<()> {
@@ -57,7 +61,7 @@ impl IndexProvider for MockIndexProvider {
     async fn publish(
         &self,
         _version: &Publish,
-        _checksum: &str,
+        _checksum: [u8; 32],
         end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         end_step.await?;
@@ -100,7 +104,12 @@ pub struct MockStorageProvider;
 
 #[async_trait]
 impl StorageProvider for MockStorageProvider {
-    async fn pull_crate(&self, _name: &str, _version: &str) -> StorageResult<FileResponse> {
+    async fn pull_crate(
+        &self,
+        _name: &str,
+        _version: &str,
+        _digest: [u8; 32],
+    ) -> StorageResult<FileResponse> {
         unimplemented!()
     }
 
@@ -114,7 +123,12 @@ impl StorageProvider for MockStorageProvider {
         Ok(())
     }
 
-    async fn delete_crate(&self, _name: &str, _version: &str) -> StorageResult<()> {
+    async fn delete_crate(
+        &self,
+        _name: &str,
+        _version: &str,
+        _digest: [u8; 32],
+    ) -> StorageResult<()> {
         Ok(())
     }
 

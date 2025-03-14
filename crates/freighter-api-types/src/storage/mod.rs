@@ -10,7 +10,12 @@ mod error;
 
 #[async_trait]
 pub trait StorageProvider {
-    async fn pull_crate(&self, name: &str, version: &str) -> StorageResult<FileResponse>;
+    async fn pull_crate(
+        &self,
+        name: &str,
+        version: &str,
+        tarball_checksum: [u8; 32],
+    ) -> StorageResult<FileResponse>;
     async fn put_crate(
         &self,
         name: &str,
@@ -19,7 +24,12 @@ pub trait StorageProvider {
         sha256: [u8; 32],
     ) -> StorageResult<()>;
     /// Called to undo a put after a failed index transaction
-    async fn delete_crate(&self, name: &str, version: &str) -> StorageResult<()>;
+    async fn delete_crate(
+        &self,
+        name: &str,
+        version: &str,
+        tarball_checksum: [u8; 32],
+    ) -> StorageResult<()>;
 
     async fn healthcheck(&self) -> anyhow::Result<()>;
 }

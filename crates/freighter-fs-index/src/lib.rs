@@ -7,7 +7,9 @@ use freighter_api_types::index::response::{
     CompletedPublication, CrateVersion, Dependency, ListAll, ListAllCrateEntry,
     ListAllCrateVersion, SearchResults, SearchResultsEntry, SearchResultsMeta,
 };
-use freighter_api_types::index::{IndexError, IndexProvider, IndexResult, SparseEntries};
+use freighter_api_types::index::{
+    CrateVersionExists, IndexError, IndexProvider, IndexResult, SparseEntries,
+};
 use freighter_api_types::storage::MetadataStorageProvider;
 use freighter_storage::fs::FsStorageProvider;
 use freighter_storage::s3_client::S3StorageProvider;
@@ -163,17 +165,27 @@ impl IndexProvider for FsIndexProvider {
             .map(|(versions, _)| versions)
     }
 
-    async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool> {
-        self.access_crate(crate_name)?
+    async fn confirm_existence(
+        &self,
+        crate_name: &str,
+        version: &Version,
+    ) -> IndexResult<CrateVersionExists> {
+        let (versions, _) = self
+            .access_crate(crate_name)?
             .shared()
             .await
             .deserialized()
-            .await
-            .map(|(versions, _)| versions.entries)?
+            .await?;
+
+        let e = versions
+            .entries
             .iter()
             .rfind(|e| &e.vers == version)
-            .map(|e| e.yanked)
-            .ok_or(IndexError::NotFound)
+            .ok_or(IndexError::NotFound)?;
+        Ok(CrateVersionExists {
+            yanked: e.yanked,
+            tarball_checksum: e.cksum,
+        })
     }
 
     async fn yank_crate(&self, crate_name: &str, version: &Version) -> IndexResult<()> {
@@ -187,7 +199,7 @@ impl IndexProvider for FsIndexProvider {
     async fn publish(
         &self,
         publish: &Publish,
-        checksum: &str,
+        tarball_checksum: [u8; 32],
         end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication> {
         let release = CrateVersion {
@@ -215,7 +227,7 @@ impl IndexProvider for FsIndexProvider {
                     }
                 })
                 .collect(),
-            cksum: checksum.into(),
+            cksum: tarball_checksum,
             features: publish.features.clone(),
             yanked: false,
             links: publish.links.clone(),

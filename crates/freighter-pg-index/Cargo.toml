@@ -23,6 +23,7 @@ axum = { workspace = true }
 chrono = { workspace = true }
 deadpool-postgres = { workspace = true }
 futures-util = { workspace = true }
+hex = { workspace = true }
 metrics = { workspace = true }
 postgres-types = { workspace = true, features = ["derive", "with-chrono-0_4"] }
 semver = { workspace = true }

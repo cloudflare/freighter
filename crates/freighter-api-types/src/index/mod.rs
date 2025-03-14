@@ -91,6 +91,13 @@ pub struct SparseEntries {
     pub last_modified: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct CrateVersionExists {
+    pub yanked: bool,
+    /// Sha256 of the package
+    pub tarball_checksum: [u8; 32],
+}
+
 /// A client for talking with a backing index database or storage medium.
 ///
 /// Operations performed via this client MUST be atomic.
@@ -117,7 +124,11 @@ pub trait IndexProvider: Sync {
     /// will be returned.
     async fn get_sparse_entry(&self, crate_name: &str) -> IndexResult<SparseEntries>;
     /// Confirm that a particular crate and version pair exists, and return its yank status
-    async fn confirm_existence(&self, crate_name: &str, version: &Version) -> IndexResult<bool>;
+    async fn confirm_existence(
+        &self,
+        crate_name: &str,
+        version: &Version,
+    ) -> IndexResult<CrateVersionExists>;
     /// Yank a crate version.
     async fn yank_crate(&self, crate_name: &str, version: &Version) -> IndexResult<()>;
     /// Unyank a crate version
@@ -134,7 +145,7 @@ pub trait IndexProvider: Sync {
     async fn publish(
         &self,
         version: &Publish,
-        checksum: &str,
+        tarball_checksum: [u8; 32],
         end_step: Pin<&mut (dyn Future<Output = IndexResult<()>> + Send)>,
     ) -> IndexResult<CompletedPublication>;
     /// List crates in the index, optionally specifying pagination.

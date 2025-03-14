@@ -56,7 +56,8 @@ pub struct CrateVersion {
     /// Array of direct dependencies of the package.
     pub deps: Vec<Dependency>,
     /// A SHA256 checksum of the `.crate` file.
-    pub cksum: String,
+    #[serde(with = "hex")]
+    pub cksum: [u8; 32],
     /// Set of features defined for the package.
     ///
     /// Each feature maps to an array of features or dependencies it enables.
