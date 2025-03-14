@@ -5,7 +5,7 @@
 use crate::{AuthProvider, AuthResult};
 use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
-use rand::distributions::{Alphanumeric, DistString};
+use rand::distr::{Alphanumeric, SampleString};
 
 /// In the config specify `auth_allow_full_access_without_any_checks: true` to give full access to the registry,
 /// including crate publishing, to anyone who can connect to it.
@@ -35,7 +35,7 @@ impl AuthProvider for YesAuthProvider {
     }
 
     async fn register(&self, _username: &str) -> AuthResult<String> {
-        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+        let token = Alphanumeric.sample_string(&mut rand::rng(), 32);
 
         Ok(token)
     }

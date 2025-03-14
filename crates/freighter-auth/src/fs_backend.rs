@@ -46,9 +46,7 @@ impl FsAuthProvider {
     fn random_token(&self) -> AuthResult<BareToken> {
         use rand::Rng;
         let mut token = [0; 21];
-        rand::thread_rng()
-            .try_fill(&mut token)
-            .map_err(|e| AuthError::ServiceError(e.into()))?;
+        rand::rng().fill(&mut token);
         Ok(token)
     }
 
