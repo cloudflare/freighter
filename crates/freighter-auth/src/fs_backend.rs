@@ -43,7 +43,7 @@ impl FsAuthProvider {
     }
 
     #[allow(clippy::unused_self)]
-    fn random_token(&self) -> AuthResult<BareToken> {
+    fn random_token(&self) -> BareToken {
         use rand::Rng;
         let mut token = [0; 21];
         rand::rng().fill(&mut token);
@@ -150,7 +150,7 @@ impl AuthProvider for FsAuthProvider {
 
     async fn register(&self, username: &str) -> AuthResult<String> {
         let owners = &mut *self.owners_mut()?;
-        let bare_token = self.random_token()?;
+        let bare_token = self.random_token();
         let hashed_token = self.hash_token(&bare_token);
         let token_str = self.token_to_str(&bare_token);
         owners.register(username, &hashed_token)?;

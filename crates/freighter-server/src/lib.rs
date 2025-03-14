@@ -66,6 +66,7 @@ pub struct ServiceState {
 }
 
 impl ServiceState {
+    #[must_use]
     pub fn new(
         mut config: ServiceConfig,
         index: Box<dyn IndexProvider + Send + Sync + 'static>,

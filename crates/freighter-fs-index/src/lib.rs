@@ -123,7 +123,7 @@ impl FsIndexProvider {
                 path.push_str(&lc_crate_name[..1]);
             }
             _ => return None,
-        };
+        }
         path.push('/');
         path.push_str(lc_crate_name);
         Some(path)

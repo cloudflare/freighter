@@ -36,11 +36,11 @@ pub fn deserialize<'de, D: Deserializer<'de>, const N: usize>(deserializer: D) -
         }
 
         fn visit_str<E: Error>(self, s: &str) -> Result<Self::Value, E> {
-            decode(s).ok_or(Error::invalid_value(Unexpected::Str(s), &self))
+            decode(s).ok_or_else(|| Error::invalid_value(Unexpected::Str(s), &self))
         }
 
         fn visit_borrowed_str<E: Error>(self, s: &'de str) -> Result<Self::Value, E> {
-            decode(s).ok_or(Error::invalid_value(Unexpected::Str(s), &self))
+            decode(s).ok_or_else(|| Error::invalid_value(Unexpected::Str(s), &self))
         }
     }
 
