@@ -1,6 +1,6 @@
 [package]
 name = "freighter-auth"
-version = "1.0.0"
+version.workspace = true
 authors.workspace = true
 categories.workspace = true
 description.workspace = true

@@ -68,7 +68,7 @@ fn server(
     config: &TestServerConfig,
     index_client: impl IndexProvider + Send + 'static,
     auth_client: impl AuthProvider + Send + Sync + 'static,
-) -> Result<(oneshot::Receiver<()>, impl Future<Output = ()>)> {
+) -> Result<(oneshot::Receiver<()>, impl Future<Output = ()> + 'static)> {
     let storage_client = S3StorageProvider::new(
         &config.bucket_name,
         &config.bucket_endpoint_url,
@@ -169,8 +169,8 @@ async fn e2e_publish_crate_in_index(
 
     let server_addr = config.server_addr.clone();
 
-    use rand::distributions::{Alphanumeric, DistString};
-    let test_unique_str = Alphanumeric.sample_string(&mut rand::thread_rng(), 12);
+    use rand::distr::{Alphanumeric, SampleString};
+    let test_unique_str = Alphanumeric.sample_string(&mut rand::rng(), 12);
 
     let crate_to_publish = format!("freighter-vegetables-{test_unique_str}");
     let crate_to_publish_2 = format!("freighter-fruits-{test_unique_str}");
