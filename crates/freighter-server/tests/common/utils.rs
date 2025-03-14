@@ -9,7 +9,7 @@ pub fn crate_version(name: &str, version: &str) -> CrateVersion {
         name: name.to_owned(),
         vers: Version::parse(version).unwrap(),
         deps: vec![],
-        cksum: "beefcafe".to_owned(),
+        cksum: [255; 32],
         features: Default::default(),
         yanked: false,
         links: None,

@@ -95,13 +95,13 @@ async fn publish(
 
     let version = json.vers.to_string();
     let mut stored_crate = false;
+    let tarball_checksum: [u8; 32] = Sha256::digest(&crate_bytes).into();
 
     let res = {
-        let sha256 = Sha256::digest(&crate_bytes);
-        let hash = format!("{sha256:x}");
         let end_step = std::pin::pin!(async {
-            let res = state.storage
-                .put_crate(&json.name, &version, crate_bytes, sha256.into())
+            let res = state
+                .storage
+                .put_crate(&json.name, &version, crate_bytes, tarball_checksum)
                 .await;
 
             if let Err(e) = &res {
@@ -119,7 +119,7 @@ async fn publish(
             stored_crate = true;
             Ok(())
         });
-        state.index.publish(&json, &hash, end_step).await
+        state.index.publish(&json, tarball_checksum, end_step).await
     };
 
     match res {
@@ -139,7 +139,10 @@ async fn publish(
             counter!("freighter_publish_index_errors_total", "error" => error_label).increment(1);
 
             if stored_crate {
-                let _ = state.storage.delete_crate(&json.name, &version).await;
+                let _ = state
+                    .storage
+                    .delete_crate(&json.name, &version, tarball_checksum)
+                    .await;
             }
             Err(e.into())
         }
