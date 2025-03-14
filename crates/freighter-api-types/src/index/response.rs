@@ -83,9 +83,9 @@ pub struct CrateVersion {
     /// The current values are:
     ///
     /// * 1: The schema as documented here, not including newer additions.
-    ///      This is honored in Rust version 1.51 and newer.
+    ///   This is honored in Rust version 1.51 and newer.
     /// * 2: The addition of the `features2` field.
-    ///      This is honored in Rust version 1.60 and newer.
+    ///   This is honored in Rust version 1.60 and newer.
     #[cfg_attr(any(feature = "index", feature = "client"), serde(default = "default_v"))]
     pub v: u32,
     /// This optional field contains features with new, extended syntax.

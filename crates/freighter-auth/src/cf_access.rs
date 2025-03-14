@@ -143,6 +143,7 @@ impl CfAccess {
                 AuthError::Unauthorized
             })?
             .claims;
+        drop(locked_keys);
 
         let sub = claims.sub.filter(|s| !s.is_empty());
         let sub_was_empty = sub.is_none();

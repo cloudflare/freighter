@@ -59,14 +59,11 @@ pub fn generate_crate_payload(
     .to_string();
 
     // https://github.com/rust-lang/cargo/blob/20df9e40a4d41dd08478549915588395e55efb4c/crates/crates-io/lib.rs#L259
-    let payload = {
-        let mut payload = Vec::new();
-        payload.extend_from_slice(&(json.len() as u32).to_le_bytes());
-        payload.extend_from_slice(json.as_bytes());
-        payload.extend_from_slice(&(tarball.len() as u32).to_le_bytes());
-        payload.extend_from_slice(tarball);
-        payload
-    };
-
+    
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(json.len() as u32).to_le_bytes());
+    payload.extend_from_slice(json.as_bytes());
+    payload.extend_from_slice(&(tarball.len() as u32).to_le_bytes());
+    payload.extend_from_slice(tarball);
     payload
 }
