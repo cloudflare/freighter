@@ -101,7 +101,9 @@ pub struct SparseEntries {
 /// User actions should be authenticated before an operation is performed.
 #[async_trait]
 pub trait IndexProvider: Sync {
-    type Config;
+    type Config
+    where
+        Self: Sized;
 
     async fn healthcheck(&self) -> anyhow::Result<()>;
 

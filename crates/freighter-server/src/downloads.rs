@@ -3,35 +3,25 @@ use axum::extract::{Path, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::Router;
-use freighter_api_types::index::IndexProvider;
-use freighter_api_types::storage::StorageProvider;
-use freighter_auth::AuthProvider;
 use semver::Version;
 use std::sync::Arc;
 
-pub fn downloads_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: StorageProvider + Send + Sync + 'static,
-    A: AuthProvider + Send + Sync + 'static,
-{
+pub fn downloads_router() -> Router<Arc<ServiceState>> {
     Router::new()
         .route("/:name/:version", get(serve_crate))
         .fallback(handle_downloads_fallback)
 }
 
-async fn serve_crate<I, S, A>(
+async fn serve_crate(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<axum::response::Response>
-where
-    I: IndexProvider,
-    S: StorageProvider,
-    A: AuthProvider + Sync,
-{
+) -> axum::response::Result<axum::response::Response> {
     if state.config.auth_required {
-        let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
+        let token = state
+            .auth
+            .token_from_headers(&headers)?
+            .ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_crate_download(token, &name).await?;
     }
 

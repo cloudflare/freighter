@@ -58,15 +58,20 @@ impl ServiceConfig {
     }
 }
 
-pub struct ServiceState<I, S, A> {
+pub struct ServiceState {
     pub config: ServiceConfig,
-    pub index: I,
-    pub storage: S,
-    pub auth: A,
+    pub index: Box<dyn IndexProvider + Send + Sync + 'static>,
+    pub storage: Box<dyn StorageProvider + Send + Sync + 'static>,
+    pub auth: Box<dyn AuthProvider + Send + Sync + 'static>,
 }
 
-impl<I, S, A> ServiceState<I, S, A> {
-    pub fn new(mut config: ServiceConfig, index: I, storage: S, auth: A) -> Self {
+impl ServiceState {
+    pub fn new(
+        mut config: ServiceConfig,
+        index: Box<dyn IndexProvider + Send + Sync + 'static>,
+        storage: Box<dyn StorageProvider + Send + Sync + 'static>,
+        auth: Box<dyn AuthProvider + Send + Sync + 'static>,
+    ) -> Self {
         config.sanitize();
         Self {
             config,
@@ -77,17 +82,12 @@ impl<I, S, A> ServiceState<I, S, A> {
     }
 }
 
-pub fn router<I, S, A>(
+pub fn router(
     config: ServiceConfig,
-    index_client: I,
-    storage_client: S,
-    auth_client: A,
-) -> Router
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: StorageProvider + Clone + Send + Sync + 'static,
-    A: AuthProvider + Send + Sync + 'static,
-{
+    index_client: Box<dyn IndexProvider + Send + Sync + 'static>,
+    storage_client: Box<dyn StorageProvider + Send + Sync + 'static>,
+    auth_client: Box<dyn AuthProvider + Send + Sync + 'static>,
+) -> Router {
     let crate_size_limit = config.crate_size_limit;
     let state = Arc::new(ServiceState::new(
         config,
@@ -155,7 +155,7 @@ async fn x_powered_by(request: Request<Body>, next: Next) -> Response {
     response
 }
 
-pub async fn root_page<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> String {
+pub async fn root_page(State(state): State<Arc<ServiceState>>) -> String {
     format!(
         "The registry URL for cargo is \"sparse+https://{api}/index\".
 
@@ -169,7 +169,7 @@ Auth is always required: {auth}",
     )
 }
 
-pub async fn register<I, S, A: AuthProvider>(State(state): State<Arc<ServiceState<I, S, A>>>) -> Html<&'static str> {
+pub async fn register(State(state): State<Arc<ServiceState>>) -> Html<&'static str> {
     let page = if let Err(why) = state.auth.register_supported() {
         why
     } else {
@@ -178,15 +178,11 @@ pub async fn register<I, S, A: AuthProvider>(State(state): State<Arc<ServiceStat
     Html(page)
 }
 
-async fn list<I, S, A>(
+async fn list(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Query(query): Query<ListQuery>,
-) -> axum::response::Result<Json<ListAll>>
-where
-    I: IndexProvider,
-    A: AuthProvider + Sync,
-{
+) -> axum::response::Result<Json<ListAll>> {
     if state.config.auth_required {
         let token = state.auth.token_from_headers(&headers)?.ok_or(StatusCode::UNAUTHORIZED)?;
         state.auth.auth_view_full_index(token).await?;
@@ -197,12 +193,7 @@ where
     Ok(Json(search_results))
 }
 
-async fn healthcheck<I, S, A>(State(state): State<Arc<ServiceState<I, S, A>>>) -> axum::response::Result<String>
-where
-    I: IndexProvider,
-    S: StorageProvider,
-    A: AuthProvider + Sync,
-{
+async fn healthcheck(State(state): State<Arc<ServiceState>>) -> axum::response::Result<String> {
     let check_time = Duration::from_secs(4);
     let label = |label, res: Result<Result<(), anyhow::Error>, _>| match res {
         // healthcheck is unauthenticated and shouldn't leak internals via errors

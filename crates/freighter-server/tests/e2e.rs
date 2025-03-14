@@ -91,7 +91,12 @@ fn server(
         crate_size_limit: 1024 * 1024,
     };
 
-    let router = freighter_server::router(service, index_client, storage_client, auth_client);
+    let router = freighter_server::router(
+        service,
+        Box::new(index_client),
+        Box::new(storage_client),
+        Box::new(auth_client),
+    );
     let service = router.into_make_service();
     let (tx, rx) = oneshot::channel();
     Ok((rx, async move {

@@ -233,26 +233,22 @@ impl ServiceStateBuilder {
     }
 
     #[must_use]
-    pub fn build(
-        self,
-    ) -> Arc<ServiceState<MockIndexProvider, MockStorageProvider, MockAuthProvider>> {
+    pub fn build(self) -> Arc<ServiceState> {
         Arc::new(ServiceState {
             config: self.config,
-            index: self.index,
-            storage: self.storage,
-            auth: self.auth,
+            index: Box::new(self.index),
+            storage: Box::new(self.storage),
+            auth: Box::new(self.auth),
         })
     }
 
     #[must_use]
-    pub fn build_no_arc(
-        self,
-    ) -> ServiceState<MockIndexProvider, MockStorageProvider, MockAuthProvider> {
+    pub fn build_no_arc(self) -> ServiceState {
         ServiceState {
             config: self.config,
-            index: self.index,
-            storage: self.storage,
-            auth: self.auth,
+            index: Box::new(self.index),
+            storage: Box::new(self.storage),
+            auth: Box::new(self.auth),
         }
     }
 }

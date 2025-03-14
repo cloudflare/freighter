@@ -8,10 +8,10 @@ use axum::{Form, Json, Router};
 use freighter_api_types::auth::request::AuthForm;
 use freighter_api_types::index::request::{Publish, SearchQuery};
 use freighter_api_types::index::response::{CompletedPublication, SearchResults, YankResult};
-use freighter_api_types::index::{IndexError, IndexProvider};
+use freighter_api_types::index::IndexError;
 use freighter_api_types::ownership::response::{ChangedOwnership, OwnerList};
-use freighter_api_types::storage::{StorageError, StorageProvider};
-use freighter_auth::{AuthError, AuthProvider};
+use freighter_api_types::storage::StorageError;
+use freighter_auth::AuthError;
 use metrics::counter;
 use semver::Version;
 use serde::Deserialize;
@@ -24,12 +24,7 @@ pub struct OwnerListChange {
     pub users: Vec<String>,
 }
 
-pub fn api_router<I, S, A>() -> Router<Arc<ServiceState<I, S, A>>>
-where
-    I: IndexProvider + Send + Sync + 'static,
-    S: StorageProvider + Send + Sync + Clone + 'static,
-    A: AuthProvider + Send + Sync + 'static,
-{
+pub fn api_router() -> Router<Arc<ServiceState>> {
     Router::new()
         .route("/new", put(publish))
         .route("/:crate_name/:version/yank", delete(yank))
@@ -42,17 +37,14 @@ where
         .fallback(handle_api_fallback)
 }
 
-async fn publish<I, S, A>(
+async fn publish(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     mut body: Bytes,
-) -> axum::response::Result<Json<CompletedPublication>>
-where
-    I: IndexProvider + Send + Sync,
-    S: StorageProvider + Send + Sync + Clone + 'static,
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<CompletedPublication>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     if body.len() <= 4 {
@@ -102,14 +94,13 @@ where
     auth_result?;
 
     let version = json.vers.to_string();
-    let storage = state.storage.clone();
     let mut stored_crate = false;
 
     let res = {
         let sha256 = Sha256::digest(&crate_bytes);
         let hash = format!("{sha256:x}");
         let end_step = std::pin::pin!(async {
-            let res = storage
+            let res = state.storage
                 .put_crate(&json.name, &version, crate_bytes, sha256.into())
                 .await;
 
@@ -148,23 +139,21 @@ where
             counter!("freighter_publish_index_errors_total", "error" => error_label).increment(1);
 
             if stored_crate {
-                let _ = storage.delete_crate(&json.name, &version).await;
+                let _ = state.storage.delete_crate(&json.name, &version).await;
             }
             Err(e.into())
         }
     }
 }
 
-async fn yank<I, S, A>(
+async fn yank(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<Json<YankResult>>
-where
-    I: IndexProvider,
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<YankResult>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state.auth.auth_yank(auth, &name).await?;
@@ -174,16 +163,14 @@ where
     Ok(Json::default())
 }
 
-async fn unyank<I, S, A>(
+async fn unyank(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path((name, version)): Path<(String, Version)>,
-) -> axum::response::Result<Json<YankResult>>
-where
-    I: IndexProvider,
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<YankResult>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state.auth.auth_yank(auth, &name).await?;
@@ -193,15 +180,14 @@ where
     Ok(Json::default())
 }
 
-async fn list_owners<I, S, A>(
+async fn list_owners(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path(name): Path<String>,
-) -> axum::response::Result<Json<OwnerList>>
-where
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<OwnerList>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     let users = state.auth.list_owners(auth, &name).await?;
@@ -209,16 +195,15 @@ where
     Ok(Json(OwnerList { users }))
 }
 
-async fn add_owners<I, S, A>(
+async fn add_owners(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
-) -> axum::response::Result<Json<ChangedOwnership>>
-where
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<ChangedOwnership>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state
@@ -233,16 +218,15 @@ where
     Ok(Json(ChangedOwnership::with_msg("owners successfully added".into())))
 }
 
-async fn remove_owners<I, S, A>(
+async fn remove_owners(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Path(name): Path<String>,
     Json(owners): Json<OwnerListChange>,
-) -> axum::response::Result<Json<ChangedOwnership>>
-where
-    A: AuthProvider,
-{
-    let auth = state.auth.token_from_headers(&headers)?
+) -> axum::response::Result<Json<ChangedOwnership>> {
+    let auth = state
+        .auth
+        .token_from_headers(&headers)?
         .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
     state
@@ -254,16 +238,15 @@ where
         )
         .await?;
 
-    Ok(Json(ChangedOwnership::with_msg("owners successfully removed".into())))
+    Ok(Json(ChangedOwnership::with_msg(
+        "owners successfully removed".into(),
+    )))
 }
 
-async fn register<I, S, A>(
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+async fn register(
+    State(state): State<Arc<ServiceState>>,
     Form(auth): Form<AuthForm>,
-) -> axum::response::Result<String>
-where
-    A: AuthProvider,
-{
+) -> axum::response::Result<String> {
     if !state.config.allow_registration {
         return Err((StatusCode::UNAUTHORIZED, "Registration disabled").into());
     }
@@ -272,17 +255,15 @@ where
     Ok(token)
 }
 
-async fn search<I, S, A>(
+async fn search(
     headers: HeaderMap,
-    State(state): State<Arc<ServiceState<I, S, A>>>,
+    State(state): State<Arc<ServiceState>>,
     Query(query): Query<SearchQuery>,
-) -> axum::response::Result<Json<SearchResults>>
-where
-    I: IndexProvider,
-    A: AuthProvider + Sync,
-{
+) -> axum::response::Result<Json<SearchResults>> {
     if state.config.auth_required {
-        let token = state.auth.token_from_headers(&headers)?
+        let token = state
+            .auth
+            .token_from_headers(&headers)?
             .ok_or((StatusCode::UNAUTHORIZED, "Auth token missing"))?;
 
         state.auth.auth_view_full_index(token).await?;
