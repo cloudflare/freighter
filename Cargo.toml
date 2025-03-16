@@ -34,37 +34,37 @@ freighter-storage = { path = "crates/freighter-storage", version = "2.0" }
 
 anyhow = "1.0.93"
 async-trait = "0.1.83"
-aws-credential-types = "1.2.1"
 aws-sdk-s3 = "1.78.0"
+aws-credential-types = "1.2.2"
 axum = { version = "0.7.9", default-features = false }
 axum-extra = { version = "0.9.6", features = ["json-lines"] }
 base64 = "0.22"
-bytes = "1.7.1"
-chrono = { version = "0.4.38", default-features = false, features = ["std", "serde"] }
+bytes = "1.10.1"
+chrono = { version = "0.4.40", default-features = false, features = ["std", "serde"] }
 clap = { version = "4.5", default-features = false }
 deadpool-postgres = { version = "0.14.0", features = ["serde"] }
 futures-util = { version = "0.3.31", default-features = false, features = ["async-await-macro"] }
-hyper = { version = "1.5.0", default-features = false }
+hyper = { version = "1.6.0", default-features = false }
 hex = { version = "0.4.3", features = ["serde"] }
 metrics = "0.24.0"
 metrics-exporter-prometheus = { version = "0.16.0", default-features = false, features = ["http-listener"] }
 postgres-types = "0.2.7"
 rand = { version = "0.9" }
 reqwest = { version = "0.12.9", default-features = false, features = ["json"] }
-semver = { version = "1.0.23", features = ["serde"] }
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.125"
+semver = { version = "1.0.26", features = ["serde"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 serde_yaml = "0.9.34"
 sha2 = "0.10.8"
 hmac = "0.12.1" # must share digest with sha2
-tempfile = "3.9.0"
 thiserror = "2.0.3"
 tokio = { version = "1.41.1", features = ["rt-multi-thread", "macros", "signal", "sync"] }
 tokio-stream = { version = "0.1.16", default-features = false }
 tower = { version = "0.5.1", default-features = false }
-tower-http = "0.6.1"
-tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["std", "fmt"] }
+tempfile = "3.19.0"
+tower-http = "0.6.2"
+tracing = "0.1.41"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
