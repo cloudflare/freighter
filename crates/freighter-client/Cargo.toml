@@ -26,8 +26,8 @@ thiserror = { workspace = true }
 # bin only
 tokio = { workspace = true, optional = true }
 clap = { workspace = true, optional = true, features = ["std", "env", "derive", "cargo", "help", "wrap_help", "usage"] }
-crate_untar = { version = "1.0.0-rc.2", optional = true }
-cargo_toml = { version = "0.20.5", optional = true }
+crate_untar = { version = "1.0.0-rc.3", optional = true }
+cargo_toml = { version = "0.22.1", optional = true }
 
 [features]
 binary = ["dep:tokio", "dep:clap", "dep:crate_untar", "dep:cargo_toml", "reqwest/default-tls"]

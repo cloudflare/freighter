@@ -47,7 +47,7 @@ impl FsAuthProvider {
         use rand::Rng;
         let mut token = [0; 21];
         rand::rng().fill(&mut token);
-        Ok(token)
+        token
     }
 
     fn token_to_str(&self, bare_token: &BareToken) -> String {
