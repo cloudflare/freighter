@@ -29,11 +29,18 @@ pub mod cli;
 mod config;
 
 pub async fn run(args: cli::FreighterArgs) -> anyhow::Result<()> {
-    let config: config::Config<SelectedIndexProvider, SelectedAuthProvider> = serde_yaml::from_str(
-        &read_to_string(args.config)
-            .context("Failed to read config file from disk, is it present?")?,
-    )
-    .context("Failed to deserialize config file, please make sure its in the right format")?;
+    let config: config::Config<SelectedIndexProvider, SelectedAuthProvider> =
+        serde_yaml::from_str(&read_to_string(&args.config).with_context(|| {
+            format!(
+                "Failed to read config file from disk, is {} present in {}?",
+                args.config.display(),
+                std::env::current_dir()
+                    .as_deref()
+                    .unwrap_or(".".as_ref())
+                    .display()
+            )
+        })?)
+        .context("Failed to deserialize config file, please make sure its in the right format")?;
 
     let config::Config {
         service,
