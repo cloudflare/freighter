@@ -1,5 +1,4 @@
 use anyhow::Context;
-use clap::Parser;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "filesystem-index-backend")] {
@@ -26,15 +25,10 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use std::fs::read_to_string;
 use tokio::net::TcpListener;
 
-mod cli;
+pub mod cli;
 mod config;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
-    let args = cli::FreighterArgs::parse();
-
+pub async fn run(args: cli::FreighterArgs) -> anyhow::Result<()> {
     let config: config::Config<SelectedIndexProvider, SelectedAuthProvider> = serde_yaml::from_str(
         &read_to_string(args.config)
             .context("Failed to read config file from disk, is it present?")?,
