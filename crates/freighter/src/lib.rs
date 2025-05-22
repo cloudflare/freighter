@@ -28,7 +28,9 @@ use tokio::net::TcpListener;
 pub mod cli;
 mod config;
 
-pub async fn run(args: cli::FreighterArgs) -> anyhow::Result<()> {
+pub async fn start_listening(
+    args: cli::FreighterArgs,
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
     let config: config::Config<SelectedIndexProvider, SelectedAuthProvider> =
         serde_yaml::from_str(&read_to_string(&args.config).with_context(|| {
             format!(
@@ -95,14 +97,16 @@ pub async fn run(args: cli::FreighterArgs) -> anyhow::Result<()> {
     );
 
     let listener = TcpListener::bind(addr).await?;
-    axum::serve(listener, router.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("Freighter server exited with error")?;
 
-    tracing::info!("Completed graceful shutdown");
+    return Ok(async move {
+        axum::serve(listener, router.into_make_service())
+            .with_graceful_shutdown(shutdown_signal())
+            .await
+            .context("Freighter server exited with error")?;
 
-    Ok(())
+        tracing::info!("Completed graceful shutdown");
+        Ok(())
+    });
 }
 
 // Based on: https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs

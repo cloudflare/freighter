@@ -6,5 +6,5 @@ async fn main() -> anyhow::Result<()> {
 
     let args = freighter::cli::FreighterArgs::parse();
 
-    freighter::run(args).await
+    freighter::start_listening(args).await?.await
 }
