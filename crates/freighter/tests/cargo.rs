@@ -8,6 +8,8 @@
 #[cfg(not(feature = "cloudflare-auth-backend"))]
 #[tokio::test]
 async fn cargo_client_yes_auth_backend() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let listener = freighter::start_listening(freighter::cli::FreighterArgs {
         config: "../../configs/local.s3-based.yaml".into(),
     })

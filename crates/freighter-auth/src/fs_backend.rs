@@ -290,6 +290,8 @@ impl fmt::Debug for HashedToken {
 #[cfg(test)]
 #[tokio::test]
 async fn test_fs_tokens() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let dir = tempfile::tempdir().unwrap();
     let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
     let user1 = auth.register("user1").await.unwrap();

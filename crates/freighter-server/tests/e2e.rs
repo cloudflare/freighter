@@ -37,6 +37,8 @@ struct TestServerConfig {
 
 impl TestServerConfig {
     fn from_env(default_port: u16) -> Self {
+        let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
         Self {
             db: Config {
                 user: Some(var("POSTGRES_USER").unwrap_or("freighter".to_owned())),
