@@ -30,6 +30,7 @@ pub struct FsAuthProvider {
 }
 
 impl FsAuthProvider {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(config: Config) -> AuthResult<Self> {
         std::fs::create_dir_all(&config.auth_path)
             .with_context(|| format!("Auth root at {}", config.auth_path.display()))

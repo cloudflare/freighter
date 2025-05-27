@@ -98,7 +98,7 @@ pub async fn start_listening(
 
     let listener = TcpListener::bind(addr).await?;
 
-    return Ok(async move {
+    Ok(async move {
         axum::serve(listener, router.into_make_service())
             .with_graceful_shutdown(shutdown_signal())
             .await
@@ -106,7 +106,7 @@ pub async fn start_listening(
 
         tracing::info!("Completed graceful shutdown");
         Ok(())
-    });
+    })
 }
 
 // Based on: https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs

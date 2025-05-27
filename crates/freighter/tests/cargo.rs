@@ -26,6 +26,7 @@ async fn cargo_client_yes_auth_backend() {
     .unwrap();
 }
 
+#[allow(dead_code)]
 fn test_cargo_publish() {
     let tempdir = tempfile::tempdir().unwrap();
     let path = tempdir.path();
@@ -38,26 +39,24 @@ fn test_cargo_publish() {
     let cargo_config = cargo_dir.join("config.toml");
     std::fs::write(
         &cargo_config,
-        format!(
-            r#"
+        r#"
 [registries.test_registry]
 index = "sparse+http://127.0.0.1:8080/index/"
-    "#
-        ),
+    "#,
     )
     .unwrap();
 
     let test_crate1 = path.join("test_crate1");
     let src = test_crate1.join("src");
-    std::fs::create_dir_all(&test_crate1.join("src")).unwrap();
+    std::fs::create_dir_all(test_crate1.join("src")).unwrap();
 
     std::fs::write(
-        &src.join("lib.rs"),
+        src.join("lib.rs"),
         format!("pub const ID_{random_id}: bool = true;"),
     )
     .unwrap();
     std::fs::write(
-        &test_crate1.join("Cargo.toml"),
+        test_crate1.join("Cargo.toml"),
         format!(
             r#"
 [package]
@@ -82,15 +81,15 @@ publish = ["test_registry"]
 
     let test_crate2 = path.join("test_crate2");
     let src = test_crate2.join("src");
-    std::fs::create_dir_all(&test_crate2.join("src")).unwrap();
+    std::fs::create_dir_all(test_crate2.join("src")).unwrap();
 
     std::fs::write(
-        &src.join("lib.rs"),
+        src.join("lib.rs"),
         format!("pub use {test_crate1_name}::ID_{random_id};"),
     )
     .unwrap();
     std::fs::write(
-        &test_crate2.join("Cargo.toml"),
+        test_crate2.join("Cargo.toml"),
         format!(
             r#"
 [package]
