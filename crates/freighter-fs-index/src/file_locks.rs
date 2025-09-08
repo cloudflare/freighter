@@ -49,10 +49,8 @@ impl<T> AccessLocks<T> {
     pub fn on_unlocked(&self, key: &str) {
         let mut locks = self.locks.lock().unwrap();
         // Can drop the entry in the shared hashtable after the last user is dropped
-        if let Some(entry) = locks.get_mut(key) {
-            if Weak::strong_count(entry) == 0 {
-                locks.remove(key);
-            }
+        if let Some(entry) = locks.get_mut(key) && Weak::strong_count(entry) == 0 {
+            locks.remove(key);
         }
     }
 }

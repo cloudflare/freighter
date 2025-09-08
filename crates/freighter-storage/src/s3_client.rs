@@ -76,10 +76,10 @@ impl S3StorageProvider {
             .await;
 
         // on 404, we return a different error variant
-        if let Err(SdkError::ServiceError(e)) = &resp {
-            if e.err().is_no_such_key() {
-                return Err(StorageError::NotFound);
-            }
+        if let Err(SdkError::ServiceError(e)) = &resp
+            && e.err().is_no_such_key()
+        {
+            return Err(StorageError::NotFound);
         }
 
         let resp = resp.context("Storage response error")?;

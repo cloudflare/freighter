@@ -89,7 +89,7 @@ impl FsAuthProvider {
         }
     }
 
-    fn owners(&self) -> AuthResult<MappedRwLockReadGuard<Owners>> {
+    fn owners(&self) -> AuthResult<MappedRwLockReadGuard<'_, Owners>> {
         let mut read_lock = self.owners.read();
         loop {
             if let Ok(loaded) = RwLockReadGuard::try_map(read_lock, |x| x.as_ref()) {
@@ -103,7 +103,7 @@ impl FsAuthProvider {
         }
     }
 
-    fn owners_mut(&self) -> AuthResult<MappedRwLockWriteGuard<Owners>> {
+    fn owners_mut(&self) -> AuthResult<MappedRwLockWriteGuard<'_, Owners>> {
         RwLockWriteGuard::try_map(self.owners.write(), |x| x.as_mut()).or_else(|mut locked| {
             *locked = Some(self.load_owners_file()?);
             Ok(RwLockWriteGuard::map(locked, |x| x.as_mut().unwrap()))
