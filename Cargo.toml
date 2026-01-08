@@ -34,7 +34,7 @@ freighter-storage = { path = "crates/freighter-storage", version = "2.0" }
 
 anyhow = "1.0.93"
 async-trait = "0.1.83"
-aws-sdk-s3 = "1.78.0"
+aws-sdk-s3 = "1.82.0"
 aws-credential-types = "1.2.2"
 axum = { version = "0.7.9", default-features = false }
 axum-extra = { version = "0.9.6", features = ["json-lines"] }
