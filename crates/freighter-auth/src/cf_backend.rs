@@ -184,7 +184,7 @@ fn cookie_parse() {
     let a = CfAuthProvider::new(Config {
         auth_audience: "...".into(),
         auth_team_base_url: "https://test.example.net".into(),
-        auth_publish_access_ids: Default::default(),
+        auth_publish_access_ids: HashSet::default(),
     })
     .unwrap();
 

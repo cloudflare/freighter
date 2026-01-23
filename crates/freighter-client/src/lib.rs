@@ -302,6 +302,7 @@ impl Client {
         dl
     }
 
+    #[allow(clippy::literal_string_with_formatting_args)]
     fn apply_markers(url: &str, name: &str, version: &str, shasum: &str) -> String {
         let prefix = Self::crate_prefix(name);
         url.replace("{crate}", name)

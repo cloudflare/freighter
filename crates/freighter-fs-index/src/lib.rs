@@ -337,13 +337,13 @@ fn convert_publish_to_crate_entry(
     versions.entries.sort_by_key(|v| Reverse(v.vers.clone()));
 
     let publish = publish.unwrap_or_else(|| Publish {
-        name: versions.entries[0].name.to_string(),
+        name: versions.entries[0].name.clone(),
         vers: versions.entries[0].vers.clone(),
         ..Publish::empty()
     });
 
     // We don't have exact dates
-    let last_modified = versions.last_modified.unwrap_or(Utc::now());
+    let last_modified = versions.last_modified.unwrap_or_else(Utc::now);
 
     ListAllCrateEntry {
         name: publish.name.clone(),
