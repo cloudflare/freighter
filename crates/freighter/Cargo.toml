@@ -28,7 +28,7 @@ serde_yaml = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["std", "smallvec", "fmt", "tracing-log", "ansi"] }
-cfg-if = "1.0.0"
+cfg-if = "1.0.4"
 
 [features]
 postgresql-index-backend = ["dep:freighter-pg-index"]
