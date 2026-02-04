@@ -30,6 +30,7 @@ pub struct FsAuthProvider {
 }
 
 impl FsAuthProvider {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(config: Config) -> AuthResult<Self> {
         std::fs::create_dir_all(&config.auth_path)
             .with_context(|| format!("Auth root at {}", config.auth_path.display()))
@@ -290,6 +291,8 @@ impl fmt::Debug for HashedToken {
 #[cfg(test)]
 #[tokio::test]
 async fn test_fs_tokens() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let dir = tempfile::tempdir().unwrap();
     let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
     let user1 = auth.register("user1").await.unwrap();

@@ -164,7 +164,7 @@ impl CfAccess {
 
 #[cfg(test)]
 #[tokio::test]
-#[ignore]
+#[ignore = "needs access token set up"]
 async fn cf_access_token_test() {
     // curl -sI -H "CF-Access-Client-Id: ….access" -H "CF-Access-Client-Secret: …" https://access.example.com | egrep -Eo 'CF_Authorization=[^;]+
     let token = "…"; // Needs non-expired token ;(
