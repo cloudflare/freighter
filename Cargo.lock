@@ -1067,8 +1067,10 @@ dependencies = [
  "freighter-server",
  "freighter-storage",
  "metrics-exporter-prometheus",
+ "rand 0.9.0",
  "serde",
  "serde_yaml",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1115,6 +1117,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

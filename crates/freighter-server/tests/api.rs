@@ -14,6 +14,8 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn publish_crate() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let router = api::api_router();
 
     const TOKEN: &str = "12345";
@@ -44,6 +46,8 @@ async fn publish_crate() {
 
 #[tokio::test]
 async fn publish_crate_auth_denied() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let router = api::api_router();
 
     let state = ServiceStateBuilder::default()
@@ -72,6 +76,8 @@ async fn publish_crate_auth_denied() {
 
 #[tokio::test]
 async fn index_auth() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let state = ServiceStateBuilder::default()
         .auth_required(true)
         .index_provider(MockIndexProvider {
@@ -114,6 +120,8 @@ async fn index_auth() {
 
 #[tokio::test]
 async fn list_all_crates() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let crates = BTreeMap::from([
         (
             "example-lib".to_owned(),

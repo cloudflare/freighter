@@ -12,6 +12,8 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn index_config_endpoint() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let router = index::index_router();
 
     let state = ServiceStateBuilder::default().build();
@@ -42,6 +44,8 @@ async fn index_config_endpoint() {
 
 #[tokio::test]
 async fn missing_crate() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let router = index::index_router();
 
     let state = ServiceStateBuilder::default().build();
@@ -62,6 +66,8 @@ async fn missing_crate() {
 
 #[tokio::test]
 async fn valid_crate() {
+    let _ = tracing_subscriber::fmt::fmt().with_test_writer().try_init();
+
     let router = index::index_router();
 
     let crates = BTreeMap::from([(
