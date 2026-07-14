@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 /// Check for new keys (Cloudflare gives them 4h max-age)
-const REFRESH_DURATION: Duration = Duration::from_secs(3600);
+const REFRESH_DURATION: Duration = Duration::from_hours(1);
 
 /// Cloudflare Access JWT verifier
 pub struct CfAccess {
