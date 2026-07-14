@@ -126,8 +126,8 @@ jobs:
       s3:
         image: adobe/s3mock
         env:
-          initialBuckets: crates
-          validKmsKeys: "arn:aws:kms:us-east-1:1234567890:key/valid-secret"
+          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: crates
+          COM_ADOBE_TESTING_S3MOCK_STORE_VALID_KMS_KEYS: "arn:aws:kms:us-east-1:1234567890:key/valid-secret"
         ports:
           - 9090:9090
 

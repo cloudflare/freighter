@@ -103,7 +103,7 @@ impl Client {
     pub async fn fetch_index(&self, name: &str) -> Result<Vec<CrateVersion>> {
         let prefix = Self::crate_prefix(name);
 
-        let url = format!("{}/{prefix}/{name}", &self.endpoint);
+        let url = format!("{}/{prefix}/{name}", self.endpoint);
 
         let mut req = self.http.get(url).build().unwrap();
 
