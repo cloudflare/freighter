@@ -1,7 +1,7 @@
 service:
   address: 0.0.0.0:8080
-  download_endpoint: 127.0.0.1:8080/downloads/{crate}/{version}
-  api_endpoint: 127.0.0.1:8080
+  download_endpoint: http://127.0.0.1:8080/downloads/{crate}/{version}
+  api_endpoint: http://127.0.0.1:8080
   metrics_address: 0.0.0.0:8081
   auth_required: false
 
