@@ -77,6 +77,7 @@ impl IndexProvider for MockIndexProvider {
                     .iter()
                     .map(|v| ListAllCrateVersion {
                         version: v.vers.clone(),
+                        yanked: v.yanked,
                     })
                     .collect();
 

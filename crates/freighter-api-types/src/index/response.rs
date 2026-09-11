@@ -196,6 +196,10 @@ pub struct ListAllCrateEntry {
 #[cfg_attr(feature = "server", derive(Serialize))]
 pub struct ListAllCrateVersion {
     pub version: Version,
+    /// Boolean of whether or not this version has been yanked.
+    #[cfg_attr(feature = "client", serde(default))]
+    #[cfg_attr(feature = "server", serde(skip_serializing_if = "is_false"))]
+    pub yanked: bool,
 }
 
 #[cfg_attr(feature = "client", derive(Deserialize))]

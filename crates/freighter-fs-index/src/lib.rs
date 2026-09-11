@@ -351,6 +351,7 @@ fn convert_publish_to_crate_entry(
             .into_iter()
             .map(|version| ListAllCrateVersion {
                 version: version.vers,
+                yanked: version.yanked,
             })
             .collect(),
         description: publish.description.unwrap_or_default(),
