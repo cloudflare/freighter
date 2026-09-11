@@ -1,3 +1,5 @@
+#![expect(clippy::result_large_err, reason="axum routes can return a Response in an Err")]
+
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, MatchedPath, Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, Request, StatusCode};
