@@ -114,7 +114,7 @@ async fn index_auth() {
 
 #[tokio::test]
 async fn list_all_crates() {
-    let crates = BTreeMap::from([
+    let mut crates = BTreeMap::from([
         (
             "example-lib".to_owned(),
             ["1.3.0", "1.3.1"]
@@ -130,6 +130,7 @@ async fn list_all_crates() {
                 .collect::<Vec<_>>(),
         ),
     ]);
+    crates.get_mut("example-lib").unwrap()[1].yanked = true;
 
     let state = ServiceStateBuilder::default()
         .index_provider(MockIndexProvider { crates })
@@ -159,6 +160,7 @@ async fn list_all_crates() {
                         },
                         {
                             "version": "1.3.1",
+                            "yanked": true,
                         }
                     ],
                     "created_at": "1970-01-01T00:00:00Z",

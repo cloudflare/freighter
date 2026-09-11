@@ -15,7 +15,7 @@ use metrics::histogram;
 use postgres_types::ToSql;
 use semver::{Version, VersionReq};
 use serde::Deserialize;
-use std::cmp::Ordering;
+use std::cmp::{Ordering, Reverse};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
@@ -603,14 +603,18 @@ impl IndexProvider for PgIndexProvider {
 
 fn list_row_to_entry(row: &Row) -> ListAllCrateEntry {
     let versions: Vec<String> = row.get("versions");
+    let yanked: Vec<bool> = row.get("yanked");
 
     // we should never receive 0 versions from our query
-    let versions = versions
+    let mut versions: Vec<_> = versions
         .iter()
-        .map(|s| ListAllCrateVersion {
-            version: Version::parse(s).unwrap(),
+        .zip(yanked)
+        .map(|(version, yanked)| ListAllCrateVersion {
+            version: Version::parse(version).unwrap(),
+            yanked,
         })
         .collect();
+    versions.sort_by_key(|v| Reverse(v.version.clone()));
 
     ListAllCrateEntry {
         name: row.get("name"),
