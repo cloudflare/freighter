@@ -22,7 +22,8 @@ auth_tokens_pepper: "AAAAAAAAAAxAAAAAAAAARJgA"
 # Cloudflare Access
 # auth_audience: "<insert audience tag here>"
 auth_team_base_url: "https://cf-rust.cloudflareaccess.com"
-# Service tokens allowed to publish crates
+# Service tokens allowed to publish crates; all others are read-only.
+# Publishing service tokens still cannot yank or mutate owners.
 auth_publish_access_ids: ["abc...def.access"]
 
 store:

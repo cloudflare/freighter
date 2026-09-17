@@ -34,6 +34,28 @@ impl CfAuthProvider {
     async fn validated_user_id(&self, token: &str) -> AuthResult<UserId> {
         self.access.validated_user_id(token).await
     }
+
+    async fn validated_non_service_user_id(&self, token: &str) -> AuthResult<UserId> {
+        let id = self.validated_user_id(token).await?;
+        Self::authorize_non_service_mutation(&id)?;
+        Ok(id)
+    }
+
+    fn authorize_non_service_mutation(id: &UserId) -> AuthResult<()> {
+        if id.is_service_token() {
+            Err(AuthError::Forbidden)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn authorize_publish(&self, id: &UserId) -> AuthResult<()> {
+        if id.is_service_token() && self.publish_access_ids.contains(&id.0) {
+            Ok(())
+        } else {
+            Err(AuthError::Forbidden)
+        }
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -101,7 +123,7 @@ cloudflared access login <var>hostname of the registry</var> | fgrep . | cargo l
 
     async fn add_owners(&self, token: &str, _users: &[&str], _crate_name: &str) -> AuthResult<()> {
         // everyone is an owner, so it's technically a no-op
-        self.validated_user_id(token).await?;
+        self.validated_non_service_user_id(token).await?;
         Ok(())
     }
 
@@ -111,22 +133,18 @@ cloudflared access login <var>hostname of the registry</var> | fgrep . | cargo l
         _users: &[&str],
         _crate_name: &str,
     ) -> AuthResult<()> {
-        self.validated_user_id(token).await?;
+        self.validated_non_service_user_id(token).await?;
         Err(AuthError::Unimplemented)
     }
 
     async fn publish(&self, token: &str, _crate_name: &str) -> AuthResult<()> {
         // only CI (using service token) is allowed to publish
         let id = self.validated_user_id(token).await?;
-        if id.is_service_token() && self.publish_access_ids.contains(&id.0) {
-            Ok(())
-        } else {
-            Err(AuthError::Forbidden)
-        }
+        self.authorize_publish(&id)
     }
 
     async fn auth_yank(&self, token: &str, _crate_name: &str) -> AuthResult<()> {
-        self.validated_user_id(token).await?;
+        self.validated_non_service_user_id(token).await?;
         Ok(())
     }
 
@@ -179,18 +197,68 @@ cloudflared access login <var>hostname of the registry</var> | fgrep . | cargo l
     }
 }
 
-#[test]
-fn cookie_parse() {
-    let a = CfAuthProvider::new(Config {
-        auth_audience: "...".into(),
-        auth_team_base_url: "https://test.example.net".into(),
-        auth_publish_access_ids: HashSet::default(),
-    })
-    .unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let mut h = http::HeaderMap::new();
-    h.insert("cookie", http::HeaderValue::from_static("other.cookie=1; lastViewedForm-TEST={}; JSESSIONID=EE; CF_AppSession=2; CF_Authorization=aaaaaaaaa.bbbbbbb.cccccc; X=1"));
+    fn config(publish: &[&str]) -> Config {
+        Config {
+            auth_audience: "...".into(),
+            auth_team_base_url: "https://test.example.net".into(),
+            auth_publish_access_ids: publish.iter().map(|id| (*id).to_owned()).collect(),
+        }
+    }
 
-    let cookie = a.token_from_headers(&h).unwrap().unwrap();
-    assert_eq!("aaaaaaaaa.bbbbbbb.cccccc", cookie);
+    #[test]
+    fn cookie_parse() {
+        let a = CfAuthProvider::new(config(&[])).unwrap();
+
+        let mut h = http::HeaderMap::new();
+        h.insert("cookie", http::HeaderValue::from_static("other.cookie=1; lastViewedForm-TEST={}; JSESSIONID=EE; CF_AppSession=2; CF_Authorization=aaaaaaaaa.bbbbbbb.cccccc; X=1"));
+
+        let cookie = a.token_from_headers(&h).unwrap().unwrap();
+        assert_eq!("aaaaaaaaa.bbbbbbb.cccccc", cookie);
+    }
+
+    #[test]
+    fn service_identities_cannot_authorize_non_publish_mutations() {
+        let auth = CfAuthProvider::new(config(&["publisher.access"])).unwrap();
+
+        assert!(matches!(
+            CfAuthProvider::authorize_non_service_mutation(&UserId("reader.access".into())),
+            Err(AuthError::Forbidden)
+        ));
+        assert!(matches!(
+            CfAuthProvider::authorize_non_service_mutation(&UserId("publisher.access".into())),
+            Err(AuthError::Forbidden)
+        ));
+        assert!(
+            CfAuthProvider::authorize_non_service_mutation(&UserId("user@example.com".into()))
+                .is_ok()
+        );
+
+        // The publisher allowlist grants only publish permission.
+        assert!(
+            auth.authorize_publish(&UserId("publisher.access".into()))
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn publish_permission_requires_allowlisted_service_identity() {
+        let auth = CfAuthProvider::new(config(&["publisher.access"])).unwrap();
+
+        assert!(
+            auth.authorize_publish(&UserId("publisher.access".into()))
+                .is_ok()
+        );
+        assert!(matches!(
+            auth.authorize_publish(&UserId("reader.access".into())),
+            Err(AuthError::Forbidden)
+        ));
+        assert!(matches!(
+            auth.authorize_publish(&UserId("user@example.com".into())),
+            Err(AuthError::Forbidden)
+        ));
+    }
 }
