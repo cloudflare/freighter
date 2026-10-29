@@ -2,9 +2,13 @@
 #![cfg(feature = "test_e2e")]
 pub mod common;
 
+use crate::common::utils::generate_crate_payload;
 use anyhow::Result;
+use axum::body::{Body, to_bytes};
+use axum::http::{Request, StatusCode};
 use deadpool_postgres::Config;
 use freighter_api_types::index::request::{Publish, PublishDependency};
+use freighter_api_types::index::response::CrateVersion;
 use freighter_api_types::index::IndexProvider;
 use freighter_auth::fs_backend::FsAuthProvider;
 use freighter_auth::AuthProvider;
@@ -22,6 +26,7 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use tower::ServiceExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Clone)]
@@ -155,6 +160,68 @@ async fn e2e_publish_crate_fs_auth_required() {
     type ProviderConfig = <FsIndexProvider as IndexProvider>::Config;
     let index_config = ProviderConfig::Path(dir.path().into());
     e2e_publish_crate_in_index(FsIndexProvider::new(index_config).unwrap(), config).await;
+}
+
+#[tokio::test]
+async fn e2e_fs_auth_rejects_case_variant_publish_and_yank() {
+    let index_dir = tempfile::tempdir().unwrap();
+    let auth_dir = tempfile::tempdir().unwrap();
+    let auth = FsAuthProvider::new(freighter_auth::fs_backend::Config {
+        auth_path: auth_dir.path().to_owned(),
+        auth_tokens_pepper: [255; 18],
+    }).unwrap();
+    let owner = auth.register("owner").await.unwrap();
+    let attacker = auth.register("attacker").await.unwrap();
+    let index = FsIndexProvider::new(freighter_fs_index::Config::Path(index_dir.path().into())).unwrap();
+    let defaults = common::ServiceStateBuilder::default().build_no_arc();
+    let app = freighter_server::router(defaults.config, Box::new(index), defaults.storage, Box::new(auth));
+
+    let response = app.clone().oneshot(
+        Request::builder()
+            .uri("/api/v1/crates/new")
+            .method("PUT")
+            .header(hyper::header::AUTHORIZATION, &owner)
+            .body(Body::from(generate_crate_payload("victimcrate", "1.0.0", &[1], &[])))
+            .unwrap(),
+    ).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let response = app.clone().oneshot(
+        Request::builder()
+            .uri("/api/v1/crates/new")
+            .method("PUT")
+            .header(hyper::header::AUTHORIZATION, &attacker)
+            .body(Body::from(generate_crate_payload("VictimCrate", "1.0.1", &[2], &[])))
+            .unwrap(),
+    ).await.unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    let response = app.clone().oneshot(
+        Request::builder()
+            .uri("/api/v1/crates/VICTIMCRATE/1.0.0/yank")
+            .method("DELETE")
+            .header(hyper::header::AUTHORIZATION, &attacker)
+            .body(Body::empty())
+            .unwrap(),
+    ).await.unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    let response = app.oneshot(
+        Request::builder()
+            .uri("/index/vi/ct/victimcrate")
+            .body(Body::empty())
+            .unwrap(),
+    ).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 10_000).await.unwrap();
+    let versions: Vec<CrateVersion> = body
+        .split(|byte| *byte == b'\n')
+        .filter(|line| !line.is_empty())
+        .map(|line| serde_json::from_slice(line).unwrap())
+        .collect();
+    assert_eq!(versions.len(), 1);
+    assert_eq!(versions[0].name, "victimcrate");
+    assert!(!versions[0].yanked);
 }
 
 async fn e2e_publish_crate_in_index(
