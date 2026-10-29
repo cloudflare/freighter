@@ -8,6 +8,7 @@ pub use error::{StorageError, StorageResult};
 
 mod error;
 
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait StorageProvider {
     async fn pull_crate(
@@ -49,6 +50,7 @@ pub struct FileResponse {
     pub data: Bytes,
 }
 
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait MetadataStorageProvider {
     async fn pull_file(&self, path: &str) -> StorageResult<FileResponse>;
