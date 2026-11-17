@@ -1,4 +1,4 @@
-FROM rust:1-trixe as builder
+FROM rust:1-trixie as builder
 WORKDIR /usr/src/freighter
 
 COPY Cargo.toml .
