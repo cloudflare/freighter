@@ -1,4 +1,4 @@
-FROM rust:1-bookworm as builder
+FROM rust:1-trixe as builder
 WORKDIR /usr/src/freighter
 
 COPY Cargo.toml .
@@ -7,7 +7,7 @@ COPY crates/ crates
 
 RUN cargo install --path crates/freighter --features filesystem-index-backend --features cloudflare-auth-backend
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 COPY --from=builder /usr/local/cargo/bin/freighter /usr/local/bin/freighter
 
 RUN apt-get update \
