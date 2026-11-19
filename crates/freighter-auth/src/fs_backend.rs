@@ -1,6 +1,6 @@
 use crate::base64_serde;
 use crate::{AuthError, AuthProvider, AuthResult};
-use anyhow::Context;
+use anyhow::{Context, bail};
 use async_trait::async_trait;
 use freighter_api_types::ownership::response::ListedOwner;
 use parking_lot::MappedRwLockWriteGuard;
@@ -21,6 +21,10 @@ use tempfile::NamedTempFile;
 /// 28 base64 chars
 pub type BareToken = [u8; 21];
 const TOKEN_PREFIX: &str = "fr1_";
+
+fn canonical_crate_name(crate_name: &str) -> String {
+    crate_name.to_ascii_lowercase()
+}
 
 pub struct FsAuthProvider {
     owners_file_path: PathBuf,
@@ -76,10 +80,15 @@ impl FsAuthProvider {
 
     fn load_owners_file(&self) -> AuthResult<Owners> {
         if self.owners_file_path.try_exists().context("access to owners dir").map_err(AuthError::ServiceError)? {
-            std::fs::File::open(&self.owners_file_path)
+            let owners: Owners = std::fs::File::open(&self.owners_file_path)
                 .map(BufReader::new).context("read owners")
                 .and_then(|r| serde_json::from_reader(r).context("parse owners"))
-                .map_err(AuthError::ServiceError)
+                .map_err(AuthError::ServiceError)?;
+            let (mut owners, changed) = owners.canonicalize_crate_names().map_err(AuthError::ServiceError)?;
+            if changed {
+                self.sync_owners(&mut owners)?;
+            }
+            Ok(owners)
         } else {
             Ok(Owners {
                 crate_owners: HashMap::default(),
@@ -160,8 +169,9 @@ impl AuthProvider for FsAuthProvider {
     }
 
     async fn list_owners(&self, _owner_list_is_public: &str, crate_name: &str) -> AuthResult<Vec<ListedOwner>> {
+        let crate_name = canonical_crate_name(crate_name);
         let all_owners = &*self.owners()?;
-        let owners = all_owners.crate_owners.get(crate_name).ok_or(AuthError::CrateNotFound)?;
+        let owners = all_owners.crate_owners.get(crate_name.as_str()).ok_or(AuthError::CrateNotFound)?;
         Ok(owners.iter().map(|login| ListedOwner {
             id: 0,
             login: login.to_string(),
@@ -170,20 +180,22 @@ impl AuthProvider for FsAuthProvider {
     }
 
     async fn add_owners(&self, token_str: &str, users: &[&str], crate_name: &str) -> AuthResult<()> {
+        let crate_name = canonical_crate_name(crate_name);
         let hashed_token = self.token_from_str(token_str)?;
         let owners = &mut *self.owners_mut()?;
-        owners.ensure_authorized_for_crate(&hashed_token, crate_name)?;
-        let crate_owners = owners.crate_owners.get_mut(crate_name).ok_or(AuthError::CrateNotFound)?;
+        owners.ensure_authorized_for_crate(&hashed_token, &crate_name)?;
+        let crate_owners = owners.crate_owners.get_mut(crate_name.as_str()).ok_or(AuthError::CrateNotFound)?;
         crate_owners.extend(users.iter().map(|&login| login.into()));
         self.sync_owners(owners)?;
         Ok(())
     }
 
     async fn remove_owners(&self, token_str: &str, users: &[&str], crate_name: &str, ) -> AuthResult<()> {
+        let crate_name = canonical_crate_name(crate_name);
         let hashed_token = self.token_from_str(token_str)?;
         let owners = &mut *self.owners_mut()?;
-        owners.ensure_authorized_for_crate(&hashed_token, crate_name)?;
-        let crate_owners = owners.crate_owners.get_mut(crate_name).ok_or(AuthError::CrateNotFound)?;
+        owners.ensure_authorized_for_crate(&hashed_token, &crate_name)?;
+        let crate_owners = owners.crate_owners.get_mut(crate_name.as_str()).ok_or(AuthError::CrateNotFound)?;
         for &login in users {
             if crate_owners.len() > 1 {
                 crate_owners.remove(login);
@@ -197,22 +209,24 @@ impl AuthProvider for FsAuthProvider {
     }
 
     async fn publish(&self, token_str: &str, crate_name: &str) -> AuthResult<()> {
+        let crate_name = canonical_crate_name(crate_name);
         let hashed_token = self.token_from_str(token_str)?;
         let owners = &mut *self.owners_mut()?;
 
         // If the crate doesn't exist yet, allow anybody to publish
-        if owners.crate_owners.get_mut(crate_name).is_none() {
+        if owners.crate_owners.get_mut(crate_name.as_str()).is_none() {
             let login = owners.login_for_token(&hashed_token)?.into();
-            owners.crate_owners.insert(crate_name.into(), [login].into_iter().collect());
+            owners.crate_owners.insert(crate_name.as_str().into(), [login].into_iter().collect());
         }
 
-        owners.ensure_authorized_for_crate(&hashed_token, crate_name)?;
+        owners.ensure_authorized_for_crate(&hashed_token, &crate_name)?;
         Ok(())
     }
 
     async fn auth_yank(&self, token_str: &str, crate_name: &str) -> AuthResult<()> {
+        let crate_name = canonical_crate_name(crate_name);
         let hashed_token = self.token_from_str(token_str)?;
-        self.owners()?.ensure_authorized_for_crate(&hashed_token, crate_name).map(drop)
+        self.owners()?.ensure_authorized_for_crate(&hashed_token, &crate_name).map(drop)
     }
 
     /// Fetch of config.json.
@@ -244,6 +258,22 @@ struct Owners {
 }
 
 impl Owners {
+    fn canonicalize_crate_names(mut self) -> anyhow::Result<(Self, bool)> {
+        let mut canonical_crate_owners = HashMap::with_capacity(self.crate_owners.len());
+        let mut changed = false;
+
+        for (crate_name, owners) in self.crate_owners {
+            let canonical_name = canonical_crate_name(&crate_name).into_boxed_str();
+            changed |= canonical_name != crate_name;
+            if canonical_crate_owners.insert(canonical_name, owners).is_some() {
+                bail!("crate ownership records collide after ASCII case normalization");
+            }
+        }
+
+        self.crate_owners = canonical_crate_owners;
+        Ok((self, changed))
+    }
+
     pub fn register(&mut self, login: &str, token: &HashedToken) -> AuthResult<()> {
         if self.owner_tokens.is_empty() {
             self.owner_tokens = self.token_owners.iter().map(|(k, v)| (v.clone(), k.clone())).collect();
@@ -321,4 +351,75 @@ async fn test_fs_tokens() {
     assert!(matches!(auth.auth_yank(&user2, "crate1").await, Err(AuthError::InvalidCredentials)));
     assert!(matches!(auth.publish(&user2, "crate1").await, Err(AuthError::InvalidCredentials)));
     assert!(matches!(auth.publish(&user1, "crate1").await, Err(AuthError::InvalidCredentials)));
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn crate_names_are_case_insensitive() {
+    let dir = tempfile::tempdir().unwrap();
+    let auth = FsAuthProvider::new(Config { auth_path: dir.path().to_path_buf(), auth_tokens_pepper: [123; 18] }).unwrap();
+    let owner = auth.register("owner").await.unwrap();
+    let attacker = auth.register("attacker").await.unwrap();
+
+    auth.publish(&owner, "victimcrate").await.unwrap();
+
+    assert!(matches!(auth.publish(&attacker, "VictimCrate").await, Err(AuthError::Forbidden)));
+    assert!(matches!(auth.auth_yank(&attacker, "VICTIMCRATE").await, Err(AuthError::Forbidden)));
+    auth.auth_yank(&owner, "VictimCrate").await.unwrap();
+    assert_eq!(auth.list_owners("", "VICTIMCRATE").await.unwrap()[0].login, "owner");
+
+    auth.add_owners(&owner, &["attacker"], "VictimCrate").await.unwrap();
+    auth.auth_yank(&attacker, "VICTIMCRATE").await.unwrap();
+    auth.remove_owners(&owner, &["attacker"], "VICTIMCRATE").await.unwrap();
+    assert!(matches!(auth.auth_yank(&attacker, "VictimCrate").await, Err(AuthError::Forbidden)));
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn loads_legacy_crate_names_and_rejects_collisions() {
+    let dir = tempfile::tempdir().unwrap();
+    let owners = Owners {
+        token_owners: HashMap::default(),
+        crate_owners: HashMap::from([("LegacyCrate".into(), BTreeSet::from(["owner".into()]))]),
+        owner_tokens: HashMap::default(),
+    };
+    serde_json::to_writer(std::fs::File::create(dir.path().join("owners.json")).unwrap(), &owners).unwrap();
+
+    let auth = FsAuthProvider::new(Config {
+        auth_path: dir.path().to_path_buf(),
+        auth_tokens_pepper: [123; 18],
+    }).unwrap();
+    assert_eq!(auth.list_owners("", "legacycrate").await.unwrap()[0].login, "owner");
+    let persisted: Owners = serde_json::from_reader(
+        std::fs::File::open(dir.path().join("owners.json")).unwrap(),
+    ).unwrap();
+    assert!(persisted.crate_owners.contains_key("legacycrate"));
+    assert!(!persisted.crate_owners.contains_key("LegacyCrate"));
+
+    drop(auth);
+    let auth = FsAuthProvider::new(Config {
+        auth_path: dir.path().to_path_buf(),
+        auth_tokens_pepper: [123; 18],
+    }).unwrap();
+    assert_eq!(auth.list_owners("", "LegacyCrate").await.unwrap()[0].login, "owner");
+
+    let colliding_dir = tempfile::tempdir().unwrap();
+    let colliding_owners = Owners {
+        token_owners: HashMap::default(),
+        crate_owners: HashMap::from([
+            ("victimcrate".into(), BTreeSet::from(["owner".into()])),
+            ("VictimCrate".into(), BTreeSet::from(["attacker".into()])),
+        ]),
+        owner_tokens: HashMap::default(),
+    };
+    serde_json::to_writer(
+        std::fs::File::create(colliding_dir.path().join("owners.json")).unwrap(),
+        &colliding_owners,
+    ).unwrap();
+
+    let auth = FsAuthProvider::new(Config {
+        auth_path: colliding_dir.path().to_path_buf(),
+        auth_tokens_pepper: [123; 18],
+    }).unwrap();
+    assert!(auth.healthcheck().await.is_err());
 }

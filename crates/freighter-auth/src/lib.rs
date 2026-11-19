@@ -29,6 +29,7 @@ pub mod cf_backend;
 pub use error::*;
 use freighter_api_types::ownership::response::ListedOwner;
 
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait AuthProvider {
     type Config

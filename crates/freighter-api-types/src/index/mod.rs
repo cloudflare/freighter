@@ -106,6 +106,7 @@ pub struct CrateVersionExists {
 /// # Note
 /// The index client does NOT authenticate user actions.
 /// User actions should be authenticated before an operation is performed.
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait IndexProvider: Sync {
     type Config
