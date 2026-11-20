@@ -207,7 +207,10 @@ async fn healthcheck(State(state): State<Arc<ServiceState>>) -> axum::response::
             }
             Err(format!("{label} failed"))
         },
-        Err(_) => Err(format!("{label} timed out")),
+        Err(_) => {
+            tracing::warn!("{label} healthcheck timed out after {check_time:?}");
+            Err(format!("{label} timed out"))
+        },
     };
 
     try_join! {
